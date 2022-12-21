@@ -1,0 +1,31 @@
+<script type="text/javascript">
+var functionlist = {};
+<%
+	local uci = luci.model.uci.cursor()
+	local t = uci:get_all('functionlist','functionlist')
+	if t ~= nil  then
+		for k,v in pairs(uci:get_all('functionlist','functionlist')) do
+	        if not (string.sub(k, 1, 1) == '.') then
+%>
+				functionlist['<%=k%>'] = '<%=v%>';
+<%
+			end
+		end
+	end
+%>
+
+var vendorlist = {};
+<%
+	local uci = luci.model.uci.cursor()
+	local t = uci:get_all('functionlist','vendorlist')
+	if t ~= nil  then
+		for k,v in pairs(uci:get_all('functionlist','vendorlist')) do
+			if not (string.sub(k, 1, 1) == '.') then
+%>
+				vendorlist['<%=k%>'] = '<%=v%>';
+<%
+			end
+		end
+	end
+%>
+</script>

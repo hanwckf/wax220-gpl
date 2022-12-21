@@ -1,0 +1,194 @@
+<%+header%>
+<script type="text/javascript">
+document.getElementById('menu_right_style').style.display = "none";
+$("#maincontent").removeClass();
+$("#maincontent").css('margin','auto');
+$("#maincontent").css('padding-top','30px');
+$("#maincontent").css('padding-bottom','50px');
+$("#maincontent").css('width','80%');
+var meshdata;
+var throughputdata;
+var t = 10;
+var myinterval;
+function copyto()
+{
+	;
+}
+function notice_throughput()
+{
+	var url, data, fromIP, toIP;
+	t=10;
+	fromIP = document.getElementsByName("left_device")[0].value;
+	toIP = document.getElementsByName("right_device")[0].value;
+	if( fromIP == toIP )
+	{
+		alert("<%:Throughput can not choose same node%>");
+		return false;
+	}
+    url = '<%=luci.dispatcher.build_url("admin/network/ajax_notice_throughput")%>';
+    data = {myselfIP:'<%=luci.http.getenv("SERVER_NAME")%>',fromIP:fromIP,toIP:toIP};
+   
+    ajax_normal({
+		async: false,
+        type : "GET",
+        url:url,
+        data:data,
+        dataType:"json",
+        error:function(){
+        },
+        success:function(result){
+        	//location.href = '<%=luci.dispatcher.build_url("admin/network/wireless_reload")%>'
+			document.getElementById('maincontainer').style.display = "";
+			document.getElementById('topology').style.display = "none";			
+			document.getElementById('throughput').style.display = "none";
+        }
+    });
+
+	myinterval = setInterval("get_throughput()", 1000);
+
+}
+function get_throughput()
+{
+	var url, data, fromIP, toIP, obj;
+
+	if(t == 0)
+	{
+		window.clearInterval(myinterval);
+
+		obj = JSON.parse(throughputdata);
+		document.getElementById("upload").innerHTML = obj.UploadThroughput;
+		document.getElementById("download").innerHTML = obj.DownloadThroughput;
+		document.getElementById('maincontainer').style.display = "none";
+		document.getElementById('topology').style.display = "";
+		document.getElementById('throughput').style.display = "";
+		t = 10;
+		document.getElementById("countdownString").innerHTML = String.format("<%:Please wait for %s %d %s secs.%>", "<span style='color:darkred;'>", t, "</span>");
+	}
+	else
+	{
+		document.getElementById("countdownString").innerHTML = String.format("<%:Please wait for %s %d %s secs.%>", "<span style='color:darkred;'>", t, "</span>");
+
+		fromIP = document.getElementsByName("left_device")[0].value;
+		toIP = document.getElementsByName("right_device")[0].value;
+	    url = '<%=luci.dispatcher.build_url("admin/network/ajax_get_throughput")%>';
+	    data = {myselfIP:'<%=luci.http.getenv("SERVER_NAME")%>',fromIP:fromIP,toIP:toIP};
+	    ajax_normal({
+			async: false,
+	        type : "GET",
+	        url:url,
+	        data:data,
+	        dataType:"json",
+	        error:function(){
+	        },
+	        success:function(result){
+				throughputdata = result;
+	        }
+	    });
+		t -= 1;
+	}
+}
+function devicelist()
+{
+    var url , container ,data ;
+    var meshlist, maclist = "";
+    var mac, i, j,batctl_mac; 
+    var match = 0;
+    var obj, jsonlist;
+    url = '<%=luci.dispatcher.build_url("admin/network/ajax_getMeshList")%>';
+
+    ajax_normal({
+		async: false,
+        type : "GET",
+        url:url,
+        dataType:"json",
+        error:function(){
+        },
+        success:function(result){
+        	if(result[0].meshData!="")
+        	{
+        		result[0].meshData=result[0].meshData.replace(/\\/g, '');
+				result[0].meshData=result[0].meshData.replace(/u0022/g, '"');
+				result[0].meshData=result[0].meshData.replace(/},{/g, '},\n{');
+				meshlist = result[0].meshData ;
+				maclist = result[0].macData ;
+			}
+        }
+    });
+    if(maclist != "")
+    {
+  		meshdata = meshlist.split("\n");
+		for(i=0;i<meshdata.length ;i++)
+		{
+			jsonlist=meshdata[i].substring(24,meshdata[i].length-4);
+			obj = JSON.parse(jsonlist);
+			dw('<option value='+obj.IPAddress+'>'+obj.DeviceName+'</option>');
+		}  	
+    }
+}
+</script>
+
+<body onLoad="copyto();">
+<form name="mesh_link" action="<%=REQUEST_URI%>" method="post">
+<input type="hidden" id="submitType" value="1" name="submitType"/>
+<div  id="maincontainer" style="display:none">
+	<h2 ><p><a id="content" name="content" style="font-size:28px "><%:System Loading...%></a></p></h2><br><br>
+	<p id="countdownString"></p>
+	<p><%:Changes applied.%></p>
+	<p><img src="<%=resource%>/icons/loading.gif" alt="<%:Loading%>" style="vertical-align:middle" />
+		<%:Waiting for changes to be applied...%>
+	</p>
+</div>
+<fieldset class="cbi-section" >
+<table id="topology" width="100%">
+	<tr style="text-align:left;background-color:#FFFFFF" class="title" >
+		<td colspan="3" width="500" >
+		<%:WiFi Conection%>
+		</td>
+	</tr>
+	<tr style="text-align:left;background-color:#FFFFFF;height: 8px;font-size: 16px;color: #000000;vertical-align: middle;">
+		<td colspan="3" width="500" >
+		<%:Check WiFi setting and keep both debices close.%>
+		</td>
+	</tr>	
+	<tr>
+	<td colspan="1" ></td>
+		<td colspan="1" width="500" >
+		  <iframe src="<%=luci.dispatcher.build_url('admin/network/topology')%>" width="500" height="350" marginwidth="0" #marginheight="0"#scrolling="no" frameborder="0" align="center"></iframe>
+		</td>
+		<td colspan="1" > </td>	
+	</tr>
+</table>
+<table id="throughput">
+	<tr class="title">
+		<td colspan="2"><%:Two Point Throughput%>
+		</td>
+	</tr>
+	<tr class="title-option">
+		<td><select name="left_device" style="height:27px;">
+			<script>devicelist();</script>
+			</select>
+		</td>
+		<td style="text-align:center"><%:to%>
+		</td>
+		<td><select name="right_device" style="height:27px;">
+			<script>devicelist();</script>		
+			</select>
+		</td>
+		<td>
+		<input class="cbi-button cbi-button-save" onclick="notice_throughput();" type="button" value="<%:Start%>">
+		</td>
+	</tr>
+	<tr class="title-option">
+		<td ><div style="text-align:center" id="upload" name="upload" value=""></div>
+		</td>
+		<td ><div style="text-align:center" pic: "<%=media%>/pictures/iperf_arrow.png"></div>
+		</td>
+		<td ><div style="text-align:center" id="download" name="download" value=""></div></td>
+		<td></td>
+	</tr>
+</table>
+</fieldset>
+</form>
+<body>
+
+<%+footer%>

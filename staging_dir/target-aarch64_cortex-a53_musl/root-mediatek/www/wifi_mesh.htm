@@ -1,0 +1,388 @@
+<%+header%>
+<%
+local uci = require("luci.model.uci").cursor()
+local disp = require "luci.dispatcher"
+local country = uci:get('wireless','wifi1','country');
+local mesh, channel, passwd, deviceName
+local mesh_5g, channel_5g, rssi
+local mesh_disabled = uci:get("mesh","wifi","disabled")
+mesh = uci:get("wireless","wifi0_mesh","disabled")
+passwd = uci:get("wireless","wifi0_mesh","aeskey")
+--channel = uci:get("wireless","wifi0","channel")
+mesh_ID = uci:get("wireless","wifi0_mesh","Mesh_id")
+mesh_5g = uci:get("wireless","wifi1_mesh","disabled")
+mesh_ID_5g = uci:get("wireless","wifi1_mesh","Mesh_id")
+passwd_5g = uci:get("wireless","wifi1_mesh","aeskey")
+channel_5g = uci:get("wireless","wifi1","channel")
+rssi = uci:get("wireless","wifi0_mesh","LinkRobustThreshold")
+deviceName = uci:get_first("system","system","SystemName")
+if passwd ~= nil then
+	passwd  = string.gsub(passwd,"\\","\\\\")
+	passwd  = string.gsub(passwd,"\"","\\\"")
+else
+	passwd = ""
+end
+if passwd_5g ~= nil then
+	passwd_5g  = string.gsub(passwd_5g,"\\","\\\\")
+	passwd_5g  = string.gsub(passwd_5g,"\"","\\\"")
+else
+	passwd_5g = ""
+end
+operation_mode = uci:get("mesh","wifi","mode")
+%>
+<script src="/luci-static/web_NTGR/jquery-1.12.4.min.js"></script>
+<script type="text/javascript">
+var link_to_wireless = "<%=link_to_wireless%>";
+var band2_3 = ["52","56","60","64","100","104","108","112","116","120","124","128","132","136","140"];
+if(link_to_wireless==1)
+	location.href="<%=disp.build_url('admin/network/wireless_device')%>";
+
+function savechanges(){
+	var f = document.wifi_mesh;
+	var passwd = document.getElementsByName("passwd")[0].value;
+	var mesh_ID = document.getElementsByName("mesh_ID")[0].value;
+	var rssi = document.getElementsByName("rssi")[0].value;
+
+	if ( mesh_ID == "")
+	{
+        alert("<%:The Mesh ID cannot be empty%>");
+			return false;
+	}
+	else if ( mesh_ID == "00000000")
+	{
+        alert("<%:The Mesh ID cannot be 00000000%>");
+			return false;
+	}		
+	if( mesh_ID.length != 8)
+	{
+        alert("<%:The Mesh ID length should 8 bits%>");
+		return false;        
+	}
+	for( var i =0; i<mesh_ID.length;i++)
+	{	
+		if(mesh_ID[i] < "0" ||  mesh_ID[i] > "9")
+		{
+        	alert("<%:The Mesh ID should between 0~9%>");
+			return false;
+		}
+	}
+	if(passwd.length < 8 || passwd.length > 63)
+	{
+       alert("<%:The Password should between 8~63%>");
+		return false;
+	}
+
+	if ( rssi == "")
+	{
+        alert("<%:The rssi cannot be empty%>");
+		return false;
+	}
+
+	parseInt(rssi);	
+
+	if(rssi > -75 || rssi < -95)
+	{
+       alert("<%:The rssi should between -75~-95%>");
+		return false;
+	}
+	else if (rssi < -80)
+	{
+       alert("<%:Warning! The rssi value is too small%>");
+	}
+<% if uci:get("wireless","wifi0","opmode")~="ap" or uci:get("wireless","wifi1","opmode")~="ap" then %>
+	if(document.getElementsByName("mesh")[0].checked == true)
+	{
+		alert("<%:The opmode must be \"Access Point\" for both 2.4G and 5G when enabling mesh function.%>");
+		return false;
+	}
+<% end %>
+
+	/*if(document.getElementsByName("channel")[0].value != "<%=channel%>" || document.getElementsByName("channel_5g")[0].value != "<%=channel_5g%>")
+	{
+       alert("<%:Mesh Channel setting may affect Wireless Channel and Extension Channel settings.%>");
+	}*/
+	document.getElementsByName("mesh_disable")[0].value  = (document.getElementsByName("mesh")[0].checked == true)?"0":"1";
+    if ("<%=uci:get('functionlist', 'functionlist', 'SUPPORT_WLAN5G')%>" == "1")
+    {
+	document.getElementsByName("meshband")[0].value  = (document.getElementsByName("band")[0].checked == true)?"0":"1";
+    }
+    else
+    {
+	document.getElementsByName("meshband")[0].value = "0";
+    }
+    if ("<%=uci:get('functionlist', 'functionlist', 'SUPPORT_MESH_AUTOCHAN')%>" != "1")
+    {
+        if ( document.getElementsByName("mesh_disable")[0].value == "0" && document.getElementsByName("meshband")[0].value == "1")
+    	{
+    		for (i=0;i<band2_3.length;i++)
+    		{
+    			if ("<%=channel_5g%>" == band2_3[i])
+    			{
+    				alert("<%:5GHz channel must be non-DFS channel when mesh enabled in 5GHz%>");
+    				return false;
+    			}
+    		}
+    	}
+    	var msg = "<%:For the mesh connection, please also check the %sChannel Settings%s in wireless setting page.%>";
+    	alert(String.format(msg, "\"","\""));
+    }
+
+	ajax_setCsrf();
+
+	return true;
+}
+
+function copyto()
+{
+	var f = document.wifi_mesh;
+
+    document.getElementsByName("rssi")[0].value = "<%=rssi%>";
+    	if ("<%=uci:get('functionlist', 'functionlist', 'SUPPORT_WLAN5G')%>" == "1")
+	{
+		document.getElementById('mesh_band').style.display = ""
+	}
+	document.getElementById('mesh_apply').style.display = "";
+	document.getElementById('show_mesh_24g').style.display = "";
+	document.getElementById('show_Mesh_ID_24g').style.display = "";
+	document.getElementById('show_passwd_24g').style.display = "";
+	document.getElementById('show_rssi').style.display = "";
+	document.getElementById('show_deviceName_24g').style.display = "";
+	document.getElementById('show_operation_mode').style.display = "";	
+
+	//ajax_getChannelList("<%=country%>");
+	if("<%=operation_mode%>" == "mesh_ap")
+	{
+		document.getElementsByName("operation_mode")[0].checked = true;
+	}
+	else
+	{
+		document.getElementsByName("operation_mode")[1].checked = true;
+	}		
+
+	//document.getElementsByName("operation_mode")[0].value == "<%=operation_mode%>";
+	if("<%=mesh_disabled%>" == "0")
+	{
+		document.getElementsByName("mesh")[0].checked = true;
+	}
+	else
+	{
+		document.getElementsByName("mesh")[1].checked = true;
+	}
+	if("<%=mesh%>" == "0")
+	{
+	    if ("<%=uci:get('functionlist', 'functionlist', 'SUPPORT_WLAN5G')%>" == "1")
+		{
+			document.getElementsByName("band")[0].checked = true;
+		}
+		document.getElementsByName("passwd")[0].value = "<%=passwd%>";
+		document.getElementsByName("mesh_ID")[0].value = "<%=mesh_ID%>";
+	}
+	else
+	{
+	    if ("<%=uci:get('functionlist', 'functionlist', 'SUPPORT_WLAN5G')%>" == "1")
+		{
+			document.getElementsByName("band")[1].checked = true;
+		}
+		document.getElementsByName("passwd")[0].value = "<%=passwd_5g%>";
+		document.getElementsByName("mesh_ID")[0].value = "<%=mesh_ID_5g%>";
+	}
+	$('input[type="radio"][name="mesh"]').triggerHandler("change");
+}
+function ajax_getChannelList(countryCode){
+
+    var url , container ,data;
+    url = '<%=luci.dispatcher.build_url("admin/network/ajax_getChannelList")%>';
+    //container = "#cbi_set";
+    data = {countryCode:countryCode};
+    ajax_normal({
+		async: false,
+        type : "GET",
+        url:url,
+        data:data,
+        dataType:"json",
+        error:function(){
+            // ajax_getChannelList(countryCode);
+        },
+        success:function(result){
+            var channel_now = jQuery.parseJSON(result);
+            for (var key in channel_now) {
+
+            var obj = channel_now[key];
+            for (var prop in obj) {
+                if(key == "ChInfo2G"){
+                	if(obj[prop]["Value"]=="<%=channel%>")
+                		var s = String.format(
+                        	'<option  name="%s%s" value="%s" selected="selected">%s</option>',key,obj[prop]["Value"],obj[prop]["Value"],obj[prop]["Channel"]
+                    	)
+                	else
+	                    var s = String.format(
+	                        '<option  name="%s%s" value="%s">%s</option>',key,obj[prop]["Value"],obj[prop]["Value"],obj[prop]["Channel"]
+	                    )
+                    $("select[name='channel']").append(s);
+                }
+                else
+                {
+                    if(obj[prop]["Value"]=="<%=channel_5g%>")
+                    	var s = String.format(
+                        	'<option  name="%s%s" value="%s" selected="selected">%s</option>',key,obj[prop]["Value"],obj[prop]["Value"],obj[prop]["Channel"]
+                   		)
+                    else
+                    	var s = String.format(
+                        	'<option  name="%s%s" value="%s">%s</option>',key,obj[prop]["Value"],obj[prop]["Value"],obj[prop]["Channel"]
+                   		)
+                    $("select[name='channel_5g']").append(s);
+                }
+			}
+            }
+        }
+    });
+}
+
+function change(value)
+{
+	var f = document.wifi_mesh;
+
+	if(value==0)
+	{
+		document.getElementById('show_channel_24g').style.display = "";
+		document.getElementById('show_channel_5g').style.display = "none";
+	}
+	else
+	{
+		document.getElementById('show_channel_24g').style.display = "none";
+		document.getElementById('show_channel_5g').style.display = "";
+	}
+}
+
+function gotowizard()
+{
+	location.href="<%=disp.build_url('admin/network/wizard_init_2')%>";
+}
+
+function channel_link()
+{
+	savechanges();
+	//document.wifi_mesh.link_wireless.value=1;
+	alert("<%:The page will be submitted and redirect to wireless page.%>");
+	document.wifi_mesh.submit();
+	return false;
+}
+
+$(function(){
+	$('input[type="radio"][name="mesh"]').change(function(){
+		$('[name$="operation_mode"]').attr("disabled", !$('input[type="radio"][name="mesh"][value="0"]').prop("checked"));
+		$('[name$="band"]').attr("disabled", !$('input[type="radio"][name="mesh"][value="0"]').prop("checked"));
+		$('[name$="mesh_ID"]').attr("disabled", !$('input[type="radio"][name="mesh"][value="0"]').prop("checked"));
+		$('[name$="passwd"]').attr("disabled", !$('input[type="radio"][name="mesh"][value="0"]').prop("checked"));
+		$('[name$="rssi"]').attr("disabled", !$('input[type="radio"][name="mesh"][value="0"]').prop("checked"));
+		if (!$('input[type="radio"][name="mesh"][value="0"]').prop("checked"))
+		{
+			$('[name$="deviceName"]').removeAttr("href");
+		}
+		else
+		{
+			$('[name$="deviceName"]').attr("href","<%=disp.build_url('admin/network/wireless_device')%>");
+		}
+	});
+	$('input[type="radio"][name="mesh"]').triggerHandler("change");
+});
+
+</script>
+<body onLoad="copyto();">
+<form name="wifi_mesh" action="<%=REQUEST_URI%>" method="post">
+<input type="hidden" name="mesh_disable" value="1">
+<input type="hidden" name="meshband" value="1">
+<input type="hidden" name="mesh_auto_config" value="1">
+<input type="hidden" name="link_wireless" value="0">
+<fieldset class="cbi-section">
+<div id="mesh_setting" class="cbi-page-actions">
+<table>
+	<tr>
+		<td colspan="2" class="title"><%:Mesh Settings%></td>
+	</tr>
+	<tr id = "show_mesh_24g" class="title-option" style="display:none">
+		<td><%:Mesh %></td>
+		<td><input type="radio"  maxlength="12" name="mesh" id="mesh_enable" value="0" myid="mesh_enable">
+			<%:Enable%>
+			<input type="radio"  maxlength="12" name="mesh" id="mesh_disable" value="1" myid="mesh_disable">
+			<%:Disable%>
+		</td>
+	</tr>
+	<tr id = "show_operation_mode" class="title-option" style="display:none">
+		<td><%:Operation Mode %></td>
+		<td><input type="radio" value="mesh_ap" maxlength="12" name="operation_mode" id="operation_mode_enable" myid="operation_mode_enable">
+			<%:Mesh AP%>
+			<input type="radio" value="mesh_point" maxlength="12" name="operation_mode" id="operation_mode_disable" myid="operation_mode_disable">
+			<%:Mesh Point%>
+		</td>
+	</tr>
+	<tr id="show_deviceName_24g" class="title-option" style="display:none">
+		<td><%:Mesh Device Name %></td>
+		<td>
+			<u style="color:#1b489c"><a name="deviceName" href="<%=disp.build_url('admin/network/wireless_device')%>"><%=deviceName%></a></u>
+
+		</td>
+	</tr>
+	<% if uci:get('functionlist', 'functionlist', 'SUPPORT_WLAN5G') == "1" then %>
+	<tr id="mesh_band" class="title-option" style="display:none">
+		<td><%:Mesh Band%></td>
+		<td>
+		<input type="radio" maxlength="12" name="band" id="band_24g" myid="band_24g">
+			<%:2.4GHz%>
+		<input type="radio" maxlength="12" name="band" id="band_5g" myid="band_5g">
+			<%:5GHz%>
+		</td>
+	</tr>
+	<%end%>
+	<!--
+	<tr id="show_channel_24g" class="title-option" style="display:none">
+		<td><%:Channel%></td>
+		<td>
+			<u style="color:#1b489c"><a href="#" onclick="channel_link();"><%=channel%></a></u>
+			<select name="channel" id="channel" style="height:27px;">
+			</select>
+		</td>
+	</tr>
+	<tr id = "ch_bk_color_3" class="title-option" style="display:none"><td></td></tr>
+	<tr id="show_channel_5g" class="title-option" style="display:none">
+		<td><%:Channel%></td>
+		<td>
+			<u style="color:#1b489c"><a href="#" onclick="channel_link();"><%=channel_5g%></a></u>
+			<select name="channel_5g" id="channel_5g" style="height:27px;">
+			</select>
+		</td>
+	</tr>-->
+	<tr id="show_Mesh_ID_24g" class="title-option" style="display:none">
+		<td><%:Mesh ID%></td>
+		<td><input type="text" maxlength="8" name="mesh_ID" id="mesh_ID" style="height:27px;">
+		</td>
+	</tr>
+	<tr id="show_passwd_24g" class="title-option" style="display:none">
+		<td><%:Password%></td>
+		<td><input type="text" name="passwd" id="passwd" maxlength="63" style="height:27px;">
+		</td>
+	</tr>
+	<tr id="show_rssi" class="title-option" style="display:none">
+		<td><%:Mesh RSSI%></td>
+		<td><input type="text" name="rssi" id="rssi" maxlength="3" style="height:27px;">&nbsp;<%:(dBm)%>
+		</td>
+	</tr>	
+</table>
+</div>
+</fieldset>
+<div id = "mesh_apply" class="cbi-page-actions" style="display:none">
+	<input type="hidden" id="submitType" value="1" name="submitType"/>
+<%if luci.model.uci.cursor():get('functionlist','functionlist','HAS_ALL_APPLY') == '1' then%>       
+	<input class="cbi-button cbi-button-save" onclick="return savechanges('0')" type="submit" value="<%:Apply%>" class="cbi-button cbi-button-save" myid="button_save">&nbsp;<!-- <span class="btn_desc"><%:Apply saved settings to take effect%></span> -->
+<%else%>
+	<input class="cbi-button cbi-button-save" onclick="return savechanges('0')" type="submit" value="<%:Save%>" class="cbi-button cbi-button-save" myid="button_save">&nbsp;
+<%end%>
+	<input class="cbi-button cbi-button-save" onclick="window.location.href='wireless_mesh'" type="button" value="<%:Cancel%>" class="cbi-button cbi-button-save">&nbsp;
+	<% if uci:get('functionlist','functionlist','SUPPORT_HIDE_WIZARD') ~= "1" then %>
+	<input class="cbi-button cbi-button-save" onclick="gotowizard();" type="button" value="<%:Wizard%>" class="cbi-button cbi-button-save">
+	<% end %>
+</div>
+</form>
+</body>
+<%+footer%>
+

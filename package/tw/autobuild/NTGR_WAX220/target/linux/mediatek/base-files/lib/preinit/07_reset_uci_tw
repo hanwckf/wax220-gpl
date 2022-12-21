@@ -1,0 +1,208 @@
+#
+# Copyright (C) 2009 OpenWrt.org
+#
+
+. /lib/mediatek.sh
+
+reset_uci_wireless_ssid() {
+	local factory_mode=`envctl factory get factory_mode`
+	if [ "$factory_mode" != "off" ]; then
+		return
+	fi
+	local ssid=$(echo `envctl factory get ssid`)
+	local model=$(echo `envctl factory get model`)
+	
+	if [ -n "$ssid" ]; then
+		uci -q set "wireless.@wifi-iface[0].ssid=${ssid}"
+		uci -q set "wireless.@wifi-iface[1].ssid=${ssid}_2"
+		uci -q set "wireless.@wifi-iface[2].ssid=${ssid}_3"
+		uci -q set "wireless.@wifi-iface[3].ssid=${ssid}_4"
+		uci -q set "wireless.@wifi-iface[4].ssid=${ssid}-CONFIG-ONLY"
+		
+		uci -q set "wireless.@wifi-iface[5].ssid=${ssid}"
+		uci -q set "wireless.@wifi-iface[6].ssid=${ssid}_2"
+		uci -q set "wireless.@wifi-iface[7].ssid=${ssid}_3"
+		uci -q set "wireless.@wifi-iface[8].ssid=${ssid}_4"
+		uci -q set "wireless.@wifi-iface[9].ssid=${ssid}-CONFIG-ONLY"
+	else
+		local mac=$(echo `envctl factory get mac`)
+		local mac_sn_num=`printf "%d" "0X${mac:6:6}"`
+		local mac_sn_num2=`expr ${mac_sn_num} + 1`
+		
+		mac_sn=`printf "%06X" $mac_sn_num`
+		mac_sn2=`printf "%06X" $mac_sn_num2`
+		
+		uci -q set "wireless.@wifi-iface[0].ssid=NETGEAR${mac_sn}"
+		uci -q set "wireless.@wifi-iface[1].ssid=NETGEAR${mac_sn}_2"
+		uci -q set "wireless.@wifi-iface[2].ssid=NETGEAR${mac_sn}_3"
+		uci -q set "wireless.@wifi-iface[3].ssid=NETGEAR${mac_sn}_4"
+		uci -q set "wireless.@wifi-iface[4].ssid=${model}${mac_sn2}-CONFIG-ONLY"
+		
+		uci -q set "wireless.@wifi-iface[5].ssid=NETGEAR${mac_sn}"
+		uci -q set "wireless.@wifi-iface[6].ssid=NETGEAR${mac_sn}_2"
+		uci -q set "wireless.@wifi-iface[7].ssid=NETGEAR${mac_sn}_3"
+		uci -q set "wireless.@wifi-iface[8].ssid=NETGEAR${mac_sn}_4"
+		uci -q set "wireless.@wifi-iface[9].ssid=${model}${mac_sn2}-CONFIG-ONLY"
+	fi
+}
+
+reset_uci_wireless_password() {
+	local passphrase=$(echo `envctl factory get passphrase`)
+	local factory_mode=`envctl factory get factory_mode`
+	if [ "$factory_mode" != "off" ]; then
+		return
+	fi
+	if [ -n "$passphrase" ]; then
+		uci -q set "wireless.@wifi-iface[4].security=WPA2-Personal"
+		uci -q set "wireless.@wifi-iface[9].security=WPA2-Personal"
+
+		uci -q set "wireless.@wifi-iface[4].key=$passphrase"
+		uci -q set "wireless.@wifi-iface[9].key=$passphrase"
+	fi
+}
+
+reset_uci_wireless() {
+	reset_uci_wireless_ssid
+	reset_uci_wireless_password
+	echo "do uci commit wireless"
+	uci commit wireless
+	echo "do uci2dat"
+	uci2dat
+}
+
+reset_uci_region() {
+	local region=`envctl factory get region`
+	local channel_2g=0
+	local channel_5g=0
+	local wirelessmode_2g=""
+	local wirelessmode_5g=""
+	local country=""
+	if [ "$region" = "US" -o $region = "NA" ]; then
+		uci -q set "wireless.5g.skipChList=52;56;60;64;100;104;108;112;116;120;124;132;136;140;144;169;173;177;"
+	fi
+	if [ "$region" = "EU" ]; then
+		uci -q set "wireless.5g.skipChList=52;56;60;64"
+	fi
+
+	# 1. Set “Germany(GR)” for “Europe(EU)” region.
+	# 2. Set “Brazil(BZ)” for “South America(BR)” region
+	# 3. Set “China(PR)” for “China(CN)” region
+	# 4. Set “Korea(KO)” for “Korea(KR)” region
+	if [ "$region" = "GR" ]; then
+		country="EU"
+	elif [ "$region" = "BZ" ]; then
+		country="BR"
+	elif [ "$region" = "PR" ]; then
+		country="CN"
+	elif [ "$region" = "EU" ]; then
+		country="DE"
+	elif [ "$region" = "NA" ]; then
+		country="US"
+        elif [ "$region" = "AP" ]; then
+                country="JP"
+	fi
+
+	if [ "$region" = "TR" -o $region = "SA" -o $region = "AS" ]; then
+		wirelessmode_5g="54Mbps"
+	fi
+	if [ "x$wirelessmode_2g" != "x" ]; then
+		uci set wireless.2g.wirelessMode=$wirelessmode_2g
+	fi
+	if [ "x$wirelessmode_5g" != "x" ]; then
+		uci set wireless.5g.wirelessMode=$wirelessmode_5g
+	fi
+	if [ -n "$region" ]; then
+		uci set wireless.2g.country=$country
+		uci set wireless.5g.country=$country
+		uci set wireless.2g.skuregion=$region
+		uci set wireless.5g.skuregion=$region
+		uci set wireless.2g.channel=$channel_2g
+		uci set wireless.5g.channel=$channel_5g
+	else
+		uci set wireless.2g.country=US
+		uci set wireless.5g.country=US
+		uci set wireless.2g.skuregion=US
+		uci set wireless.5g.skuregion=US
+		uci set wireless.2g.channel=0
+		uci set wireless.5g.channel=0
+	fi
+}
+
+reset_uci_pinCode(){
+	local pinCode=$(echo `envctl factory get pin`)
+	uci -q set "wireless.2g_5g.wpsPinCode=$pinCode"
+}
+
+reset_uci_wscProfile(){
+	local deviceName=$(echo `envctl factory get model`)
+	local deviceSN=$(echo `envctl factory get sn`)
+	local mac=$(echo `envctl factory get mac`)
+	local mac_sn_num=`printf "%d" "0X${mac:6:6}"`
+
+	mac_sn=`printf "%06X" $mac_sn_num`
+
+	uci -q set "wireless.2g_5g.deviceName=NETGEAR$mac_sn"
+	uci -q set "wireless.2g_5g.wscManufacturer=NTGR"
+	uci -q set "wireless.2g_5g.wscModelName=$deviceName"
+	uci -q set "wireless.2g_5g.wscModelNumber=$deviceName"
+	uci -q set "wireless.2g_5g.wscSerialNumber=$deviceSN"
+}
+
+reset_uci_system(){
+	local deviceName=$(envctl factory get model 2> /dev/null)
+	local deviceSN=$(envctl factory get sn 2> /dev/null)
+	local mac=$(envctl factory get mac 2> /dev/null)
+	local mac_sn_num=`printf "%d" "0X${mac:6:6}"`
+
+	mac_sn=`printf "%06X" $mac_sn_num`
+	mac=`printf "%012X" "0x$mac"`
+	mac=${mac:0:12}
+
+	if [ -n "$deviceName" ]; then
+		uci -q set "system.@system[0].model=$deviceName"
+	fi
+
+	if [ -n "$deviceSN" ]; then
+		uci -q set "system.@system[0].sn=$deviceSN"
+	fi
+
+	if [ -n "$mac" ]; then
+		local basemac="${mac:0:2}:${mac:2:2}:${mac:4:2}:${mac:6:2}:${mac:8:2}:${mac:10:2}"
+		uci -q set "system.@system[0].basemac=$basemac"
+	fi
+	uci -q set "system.@system[0].hostname=NETGEAR$mac_sn"
+	echo "do uci commit system"
+	uci commit system
+}
+
+reset_uci_ntp() {
+	local region=`envctl factory get region`
+	if [ "$region" != "NA" ];then
+		uci -q set system.ntp.server=time-g.netgear.com
+		uci commit system
+	fi
+}
+
+reset_uci_timezone() {
+	local region=`envctl factory get region`
+	if [ "$region" != "NA" ];then
+		uci -q set system.ntp.tz_idx=21
+                uci -q set system.@system[0].timezone=GMT0
+                uci -q set system.@system[0].zonename=GMT0
+		uci commit system
+	fi
+}
+
+preinit_reset_uci() {
+	if [ -e /tmp/.restore ]; then
+		reset_uci_system
+		reset_uci_region
+		reset_uci_pinCode
+		reset_uci_wscProfile
+		reset_uci_wireless
+		reset_uci_ntp
+		reset_uci_timezone
+	fi
+}
+
+boot_hook_add preinit_main preinit_reset_uci

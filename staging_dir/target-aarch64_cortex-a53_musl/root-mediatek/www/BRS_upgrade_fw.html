@@ -1,0 +1,148 @@
+<!DOCTYPE html
+	PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+
+<head>
+	<% new_hijack_flow_head() %>
+</head>
+
+<body onload="loadvalue();">
+	<% cfg_set("hijack_config_status", "5") %>
+	<style>
+		#cur_firm>span {
+			background-color: #f4f4d5;
+		}
+		#new_firm>span {
+			background-color: #d1f4d4;
+		}
+		#cur_firm>span, #new_firm>span {
+			width: 280px;
+			padding: 10px 20px;
+			border-radius: 4px;
+			display: inline-block;
+		}
+	</style>
+	<% form_submit("func", "BRS_upgrade_download_image.html" , "download_image" )%>
+		<input type="hidden" name="hid_save_time" value="8">
+		<% save_timestamp("download_image", "hijack_save_time" , "hijack_register_router" ) %>
+		<script>
+			<% check_version() %>
+		</script>
+		<div id="container">
+			<div class="dialog-content">
+				<div id="card-orbi-config-complete" class="install-card clearfix" style="width:100%; min-width: 750px;">
+					<div class="logos">
+						<div><img class="netgear-logo" src="image/netgear_business.png"></div>
+						<% hijack_logo_title() %>
+					</div>
+					<div class="content">
+						<div class="desc-title w3-xlarge" id="title_msg" style="display:none">
+							<script>document.write("$firm_upgrade");</script>
+						</div>
+						<div class="desc-text w3-large" id="update_msg" style="display:none">
+							<p id="new_ver_note">
+								<script>document.write("$new_firmware_found");</script>
+							</p>
+						</div>
+						<div id="cur_firm" class="desc-text w3-large">
+							<span>
+								<!-- <script>document.write("$current_firmware" + ": " + '<% cat_file("/firmware_version") %><% get_firmware_region("single_blank", "ww_blank") %>');</script> -->
+								<script>document.write("$current_firmware" + ": " + '<% cat_file("/firmware_version") %>');</script>
+							</span>
+						</div>
+						<div id="new_firm" class="desc-text w3-large" style="display:none;">
+							<span>
+								<!-- <script>document.write("$current_firmware" + ": " + '<% cat_file("/firmware_version") %><% get_firmware_region("single_blank", "ww_blank") %>');</script> -->
+								<script>document.write("$new_firmware" + ": " + '<% cat_file("/tmp/auto_version") %>');</script>
+							</span>
+						</div>
+					</div>
+					<div class="buttons">
+						<button class="btn-flat button-nav-skip" id="new_ver_skip" type="submit" onclick="return toInternet();" style="display:none;">
+							<span><script>document.write("$orbi_skip_mark");</script></span>
+						</button>
+						<button class="btn button-nav" id="new_ver_update" type="submit" style="display:none;">
+							<span><script>document.write("$update");</script></span>
+						</button>
+						<button class="btn-flat button-nav-skip" id="no_ver_back" type="button" onclick="return btn_back();" style="display:none;">
+							<span><script>document.write("$orbi_back_mark");</script></span>
+						</button>
+						<button class="btn button-nav" id="no_ver_next" type="submit" onclick="return toInternet();" style="display:none;">
+							<span><script>document.write("$orbi_next_mark");</script></span>
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<style>
+			.cur_height {
+				margin-top: 15%;
+			}
+		</style>
+		<script>
+			var ts = '<% cfg_get("hijack_save_time") %>';
+			// var wan_status =detwan_valid_upgrade_fw();
+			var wan_status = <% detect_internet() %>;
+
+			function loadvalue() {
+				if (wan_status == 1) {
+					if (updateFirmware == 1) {
+						document.getElementById("title_msg").innerHTML = "$firm_upgrade";
+						document.getElementById("title_msg").style.display = "";
+
+						document.getElementById("update_msg").innerHTML = "$new_firmware_found";
+						document.getElementById("update_msg").style.display = "";
+
+						document.getElementById("new_firm").style.display = "";
+
+						document.getElementById("no_ver_back").style.display = "none";
+						document.getElementById("no_ver_next").style.display = "none";
+						document.getElementById("new_ver_update").style.display = "";
+						document.getElementById("new_ver_skip").style.display = "";
+					} else {
+						document.getElementById("title_msg").innerHTML = "$no_new_version";
+						document.getElementById("title_msg").style.display = "";
+
+						document.getElementById("update_msg").innerHTML = "";
+						document.getElementById("update_msg").style.display = "none";
+
+						document.getElementById("new_firm").style.display = "none";
+
+						document.getElementById("no_ver_back").style.display = "";
+						document.getElementById("no_ver_next").style.display = "";
+						document.getElementById("new_ver_update").style.display = "none";
+						document.getElementById("new_ver_skip").style.display = "none";
+					}
+				} else {
+					document.getElementById("title_msg").innerHTML = "$no_new_version";
+					document.getElementById("title_msg").style.display = "";
+
+					document.getElementById("update_msg").innerHTML = "$auto_fail_no_internet";
+					document.getElementById("update_msg").style.display = "";
+
+					document.getElementById("new_firm").style.display = "none";
+
+					document.getElementById("no_ver_back").style.display = "";
+					document.getElementById("no_ver_next").style.display = "";
+					document.getElementById("new_ver_update").style.display = "none";
+					document.getElementById("new_ver_skip").style.display = "none";
+				}
+			}
+
+			function toInternet() {
+				var cf = document.forms[0];
+
+				cf.action = "/apply.cgi?/to_internet_no_auth.htm timestamp=" + ts;
+				cf.submitType.value = "hijack_save_time";
+				cf.anticsrf.value = '<% generateToken("hijack_save_time") %>';
+				cf.target = "_top";
+				return true;
+			}
+
+			function btn_back() {
+				location.href = "BRS_orbi_complete.html";
+			}
+		</script>
+	</form>
+</body>
+</html>

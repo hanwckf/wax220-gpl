@@ -1,0 +1,25 @@
+From add9f9f9b4cee696096bc0860e206ff555f64e6c Mon Sep 17 00:00:00 2001
+From: jiangdingyong <jiangdingyong@twsh.com>
+Date: Thu, 8 Sep 2022 16:19:12 +0800
+Subject: [PATCH] 2
+
+---
+ .../mt_wifi/mt_wifi/embedded/common/multi_profile.c                     | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/mt_wifi/embedded/common/multi_profile.c b/mt_wifi/embedded/common/multi_profile.c
+index 6255b26c9..0ea71d2d0 100755
+--- a/mt_wifi/embedded/common/multi_profile.c
++++ b/mt_wifi/embedded/common/multi_profile.c
+@@ -916,6 +916,8 @@ static INT multi_profile_merge_security(
+ 	multi_profile_merge_increase(mpf, 0, "AccessPolicy", buf1, buf2, final);
+ 	/*AccessControlList*/
+ 	multi_profile_merge_increase(mpf, 0, "AccessControlList", buf1, buf2, final);
++	/*L2WhiteMacList*/
++	multi_profile_merge_increase(mpf, 0, "L2WhiteMacList", buf1, buf2, final); //[TW Jiangdingyong 2022.9.8 add]    
+ 	/*RADIUS_Server*/
+ 	multi_profile_merge_perbss(mpf, "RADIUS_Server", buf1, buf2, final, MPF_APPEND_BSS0);
+ 	/*RADIUS_Port*/
+-- 
+2.13.1
+

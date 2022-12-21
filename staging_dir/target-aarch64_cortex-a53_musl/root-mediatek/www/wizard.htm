@@ -1,0 +1,451 @@
+<%+header%>
+<%
+local uci = require("luci.model.uci").cursor()
+local disp = require "luci.dispatcher"
+local ssid, channel, passwd, encryption
+local ssid_5g, channel_5g, passwd_5g, encryption_5g
+	uci:foreach("wireless","wifi-iface",
+		function(s)
+		if s["ifname"] == 'ath0'  then
+			passwd = uci:get("wireless",s[".name"],"key")
+			ssid = uci:get("wireless",s[".name"],"ssid")
+			encryption = uci:get("wireless",s[".name"],"encryption")
+		end
+	end)
+	uci:foreach("wireless","wifi-iface",
+		function(s)
+		if s["ifname"] == 'ath1'  then
+			passwd_5g = uci:get("wireless",s[".name"],"key")
+			ssid_5g = uci:get("wireless",s[".name"],"ssid")
+			encryption_5g = uci:get("wireless",s[".name"],"encryption")
+		end
+	end)
+	ssid  = string.gsub(ssid,"\\","\\\\")
+	ssid  = string.gsub(ssid,"\"","\\\"")
+	ssid_5g  = string.gsub(ssid_5g,"\\","\\\\")
+	ssid_5g  = string.gsub(ssid_5g,"\"","\\\"")
+	if passwd then
+		passwd  = string.gsub(passwd,"\\","\\\\")
+		passwd  = string.gsub(passwd,"\"","\\\"")
+	end
+	if passwd_5g then
+		passwd_5g  = string.gsub(passwd_5g,"\\","\\\\")
+		passwd_5g  = string.gsub(passwd_5g,"\"","\\\"")
+	end
+%>
+<script>document.getElementById('menu_right_style').style.display = "none";
+var MESH_AP_SAME = <%=MESH_AP_SAME%>;
+
+$("#maincontent").removeClass();
+$("#maincontent").css('margin','auto');
+$("#maincontent").css('padding-top','20px');
+$("#maincontent").css('width','100%');
+
+function saveChanges() // add wep check rule
+{
+	var f = document.wizard_mesh;
+	var passwd = document.getElementsByName("passwd")[0].value;
+	var passwd_5g = document.getElementsByName("passwd_5g")[0].value;
+	var ssid = document.getElementsByName("ssid")[0].value;
+	var ssid_5g = document.getElementsByName("ssid_5g")[0].value;
+
+	if(ssid == "" || ssid_5g == "")
+	{
+   		alert("<%:The SSID cannot be empty%>");
+		return false;
+	}
+	if(f.encryption.selectedIndex == 1) // aes
+	{
+		if(passwd.length < 8 || passwd.length > 64)
+		{
+			alert("<%:Please fill the key  match the selected input type and key length!%>");
+			return false;
+		}
+		if( passwd.length == 64)
+		{
+			for( var i =0; i<passwd.length;i++)
+			{	
+	    		if ( (passwd.charAt(i) >= '0' && passwd.charAt(i) <= '9') ||
+				(passwd.charAt(i) >= 'a' && passwd.charAt(i) <= 'f') ||
+				(passwd.charAt(i) >= 'A' && passwd.charAt(i) <= 'F') )
+	    			continue;
+   		    	alert("<%:Invalid pre-shared key value. It should be in hexadecimal number: 0-9 or a-f%>");
+					return false;
+			}
+			document.getElementsByName("passwd_type")[0].value = "1"; //hex
+		}
+	}
+	if(f.encryption_5g.selectedIndex == 1) // aes
+	{
+		if(passwd_5g.length < 8 || passwd_5g.length > 64)
+		{
+			alert("<%:Please fill the key  match the selected input type and key length!%>");
+			return false;
+		}
+		if( passwd_5g.length == 64)
+		{
+			for( var i =0; i<passwd_5g.length;i++)
+			{	
+	    		if ( (passwd_5g.charAt(i) >= '0' && passwd_5g.charAt(i) <= '9') ||
+				(passwd_5g.charAt(i) >= 'a' && passwd_5g.charAt(i) <= 'f') ||
+				(passwd_5g.charAt(i) >= 'A' && passwd_5g.charAt(i) <= 'F') )
+	    			continue;
+   		    	alert("<%:Invalid pre-shared key value. It should be in hexadecimal number: 0-9 or a-f%>");
+					return false;
+			}
+			document.getElementsByName("passwd_type_5g")[0].value = "1"; //hex
+		}
+	}
+	if(MESH_AP_SAME == "0")
+	{
+		meshSSID();
+		document.getElementsByName("meshband")[0].value  = (document.getElementsByName("band")[0].checked == true)?"0":"1"; // 1:5g 0:2.4g
+	}
+   	document.getElementsByName("mesh_followAP")[0].value = MESH_AP_SAME;
+
+	return true;
+}
+function saveChanges2() // add wep check rule
+{
+	var f = document.wizard_mesh;
+	var passwd = document.getElementsByName("passwd")[0].value;
+	var passwd_5g = document.getElementsByName("passwd_5g")[0].value;
+	var ascii = 0;
+	var ascii_5g = 0;
+
+	if(f.encryption.selectedIndex == 1) //wep
+	{
+		if(passwd.length == 5 || passwd.length == 13 || passwd.length == 16 ) // ASCII
+		{
+			ascii++;
+		}
+		else if(passwd.length == 10 || passwd.length == 26 || passwd.length == 32 )
+		{
+			;
+		}
+		else
+		{
+			alert("<%:Please fill the key  match the selected input type and key length!%>");
+			return false;
+		} 		
+	}
+	else if(f.encryption.selectedIndex == 2) // aes
+	{
+		if(passwd.length < 8 || passwd.length > 64)
+		{
+			alert("<%:Please fill the key  match the selected input type and key length!%>");
+			return false;
+		}
+	}
+	if(f.encryption_5g.selectedIndex == 1) //wep
+	{
+		if(passwd_5g.length == 5 || passwd_5g.length == 13 || passwd_5g.length == 16 ) // ASCII
+		{
+			ascii_5g++;
+			passwd_5g = "s:"+passwd_5g;
+			document.getElementsByName("passwd_5g")[0].value = passwd_5g;
+		}
+		else if(passwd_5g.length == 10 || passwd_5g.length == 26 || passwd_5g.length == 32 )
+		{
+			;
+		}
+		else
+		{
+			alert("<%:Please fill the key  match the selected input type and key length!%>");
+			return false;
+		} 
+	}
+	else if(f.encryption_5g.selectedIndex == 2) // aes
+	{
+		if(passwd_5g.length < 8 || passwd_5g.length > 64)
+		{
+			alert("<%:Please fill the key  match the selected input type and key length!%>");
+			return false;
+		}
+	}
+	if(ascii==1)
+	{
+		passwd = "s:"+passwd;
+		document.getElementsByName("passwd")[0].value = passwd;		
+	}	
+	if(ascii_5g==1)
+	{
+		passwd_5g = "s:"+passwd_5g;
+		document.getElementsByName("passwd_5g")[0].value = passwd_5g;
+	}
+	
+	return true;
+}
+
+function meshSSID()
+{
+
+	var mesh_ssid = "Mesh_" + document.getElementsByName("ssid")[0].value;
+	var mesh_ssid_5g = "Mesh_" + document.getElementsByName("ssid_5g")[0].value;
+	if(mesh_ssid.length > 32)
+	{
+		mesh_ssid = mesh_ssid.substr(0,32);
+	}
+	if(mesh_ssid_5g.length > 32)
+	{
+		mesh_ssid_5g = mesh_ssid_5g.substr(0,32);
+	}
+
+   document.getElementsByName("mesh_ssid")[0].value = mesh_ssid;
+    document.getElementsByName("mesh_ssid_5g")[0].value = mesh_ssid_5g;
+      
+}
+function nextSetup4()
+{
+		document.getElementById('join_setup').style.display = "none";
+		document.getElementById('join_network').style.display = "none";
+}
+function copyto()
+{
+	var f = document.wizard_mesh;
+
+	document.getElementById('join_setup').style.display = (MESH_AP_SAME == "0")?"none":"";
+	document.getElementById('create_setup').style.display = (MESH_AP_SAME == "0")?"":"none";
+	document.getElementById('create_meshband').style.display = (MESH_AP_SAME == "0")?"":"none";	
+    document.getElementsByName("ssid")[0].value = "<%=ssid%>";
+	document.getElementsByName("ssid_5g")[0].value = "<%=ssid_5g%>";
+    document.getElementsByName("passwd")[0].value = "<%=passwd%>";
+	document.getElementsByName("passwd_5g")[0].value = "<%=passwd_5g%>";
+	document.getElementsByName("band")[1].checked = true;
+
+    f.encryption.selectedIndex = ("<%=encryption%>"=="none")?0:1;
+    f.encryption_5g.selectedIndex = ("<%=encryption_5g%>"=="none")?0:1;	
+	/* wep 
+    if("<%=encryption%>"=="none")
+    {
+    	f.encryption.selectedIndex = 0;
+    }
+    else if ("<%=encryption%>"=="wep")
+    {
+    	f.encryption.selectedIndex = 1;
+    }
+    else
+    {
+    	f.encryption.selectedIndex = 2;
+    }
+    if("<%=encryption_5g%>"=="none")
+    {
+    	f.encryption_5g.selectedIndex = 0;
+    }
+    else if ("<%=encryption_5g%>"=="wep")
+    {
+    	f.encryption_5g.selectedIndex = 1;
+    }
+    else
+    {
+    	f.encryption_5g.selectedIndex = 2;
+    }
+    */
+    changeSecType(f.encryption.selectedIndex);
+    changeSecType_ra2(f.encryption_5g.selectedIndex);
+
+}
+function changeSecType(value)
+{
+	document.getElementById('key_block').style.display = (value==0)?"none":"";
+		document.getElementById('key_head').style.display = (value==0)?"none":"";
+}
+function changeSecType_ra2(value)
+{
+	document.getElementById('key_block_5g').style.display = (value==0)?"none":"";
+	document.getElementById('key_head_5g').style.display = (value==0)?"none":"";
+}
+
+</script>
+
+<body onLoad="copyto();">
+<form name="wizard_mesh" action="<%=luci.dispatcher.build_url("admin", "network", "wizard")%>" method="post">
+<input type="hidden" name="mesh_ssid" value="1">
+<input type="hidden" name="mesh_ssid_5g" value="1">
+<input type="hidden" name="mesh_followAP" value="1">
+<input type="hidden" name="meshband" value="1">
+<input type="hidden" name="passwd_type" value="0">
+<input type="hidden" name="passwd_type_5g" value="0">
+<div style="display:none;" id="join_network">
+	<table >
+		<tr class="title" style="background: url('<%=media%>/banner_model.png');">
+			<td style="color:#ffffff;padding-left:20px;">
+				<%:Join to existing Mesh network%>
+			</td>
+		</tr>
+	</table>
+</div>
+
+<div id="setup_wireless_security">
+	<table>
+	<tr>
+		<td>
+			<div id="create_setup" style="border-bottom: 1px solid #1B489C;border-top: 1px solid #1B489C;border-left: 1px solid #1B489C;border-right: 1px solid #1B489C;margin-left 0px; width:200px;display:none">
+			<table>
+			<tr style="background-color: #1B489C;font-weight:bold;padding-left: 10px;color:#ffffff;height: 31px;border-bottom: 1px solid #1B489C;">
+			<td style="padding-bottom: 10px;padding-top: 10px;">
+				<span style="font-size: 16px"><%:Step 1.%></span><br>
+				<span style="font-size: 14px"><%:Set up the Wireless Security/Device Password%></span>
+			</td></tr>
+
+			<tr style="background-color:#ffffff;font-size: 18px;padding-left: 10px;color:#000000;height: 31px;">
+			<td style="padding-top: 10px;">
+				<span style="font-size: 16px"><%:Step 2.%></span><br>
+				<span style="font-size: 14px"><%:Check the Status and Save Settings%></span>
+			</td></tr>
+			</table>
+			</div>
+			<div id="join_setup" style="border-bottom: 1px solid #1B489C;border-top: 1px solid #1B489C;border-left: 1px solid #1B489C;border-right: 1px solid #1B489C;margin-left 0px; width:200px;display:none">
+			<table>
+			<tr style="font-size: 18px;padding-left: 10px;border-bottom: 1px solid #1B489C;color:#000000;height: 31px;">			
+			<td style="padding-bottom: 10px;padding-top: 10px;">
+				<span style="font-size: 16px"><%:Step 1.%></span><br>
+				<span style="font-size: 14px"><%:Set up Mesh network settings%></span>
+			</td></tr>
+			<tr style="background-color: #1B489C;font-weight:bold;padding-left: 10px;color:#ffffff;height: 31px;border-bottom: 1px solid #1B489C;">
+			<td style="padding-bottom: 10px;padding-top: 10px;">
+				<span style="font-size: 16px"><%:Step 2.%></span><br>
+				<span style="font-size: 14px"><%:Set up the Wireless Security/Device Password%></span>
+			</td></tr>
+			<tr style="font-size: 18px;padding-left: 10px;color:#000000;height: 31px;">
+			<td style="padding-top: 10px;">
+				<span style="font-size: 16px"><%:Step 3.%></span><br>
+				<span style="font-size: 14px"><%:Check the Status and Save Settings%></span>
+			</td></tr>
+			</table>
+			</div>
+		</td>
+		<td style="width:100%">
+			<div >
+				<table >
+					<tr class="title" style="background: url('<%=media%>/banner_model.png');">
+						<td style="color:#ffffff;padding-left:20px;">
+							<script>
+							if(MESH_AP_SAME == "0")
+							{
+								dw('<%:Step 1.Set up the Wireless Security/Device Password%>');
+							}
+							else
+							{
+								dw('<%:Step 2.Set up the Wireless Security/Device Password%>');
+							}
+							</script>
+						</td>
+					</tr>
+				</table>
+			</div>
+			<div><table><tr><td></td></tr></table></div>
+			<div style="border-bottom: 1px solid #1B489C;border-top: 1px solid #1B489C;border-left: 1px solid #1B489C;border-right: 1px solid #1B489C;padding-left:20px;padding-right:20px">
+	<table>
+		<tr style="font-size: 16px;vertical-align: middle;color:#000000;height: 8px;">
+		<td colspan="4">
+		<br><%:Create the Service Set Identifier(SSID) for your network.%>
+		<br><br><%:To enforce the network security, it's highly suggested to enable the encryption for your network and avoid mailcious intrusion%><br><br>
+		</td>
+		</tr>
+
+		<tr class="title-option" style="font-size: 16px;vertical-align: middle;color:#000000;height: 8px;">
+			<td colspan="2" >
+				<%:Wireless Security:2.4GHz%>
+			</td>
+			<td colspan="2">
+				<%:Wireless Security:5GHz%>
+			</td>
+		</tr>
+		<tr class="title-option" style="font-size: 16px;vertical-align: middle;color:#000000;height: 8px;">
+			<td colspan="1">
+				<%:Wi-Fi Name(SSID):%>
+			</td>
+			<td colspan="1">
+				<input type="text"  name="ssid" id="ssid" maxlength="255" style="height:27px;">
+			</td>
+			<td colspan="1">
+				<%:Wi-Fi Name(SSID):%>
+			</td>
+			<td colspan="1">
+				<input type="text"  name="ssid_5g" id="ssid_5g" maxlength="255" style="height:27px;">
+			</td>
+		</tr>
+		<tr class="title-option" style="font-size: 16px;vertical-align: middle;color:#000000;height: 8px;">
+			<td colspan="1">
+				<%:Encryption:%>
+			</td>
+			<td colspan="1">
+				<select name="encryption" onChange="changeSecType(this.options[this.selectedIndex].value);" id="encryption" style="height:27px;">
+					<option value="0"><%:None%></option>
+					<option value="1"><%:WPA2(AES)%></option>
+				</select>
+			</td>
+			<td colspan="1">
+				<%:Encryption:%>
+			</td>
+			<td colspan="1">
+				<select name="encryption_5g" onChange="changeSecType_ra2(this.options[this.selectedIndex].value);" id="encryption_5g" style="height:27px;">
+					<option value="0"><%:None%></option>
+					<option value="1"><%:WPA2(AES)%></option>
+				</select>
+			</td>
+		</tr>
+		<tr style="font-size: 16px;vertical-align: middle;color:#000000;height: 8px;">
+			<td colspan="1">
+				<div id="key_head" style="display:none">
+					<%:Encryption Key:%>
+				</div>
+			</td>
+			<td colspan="1">
+				<div id="key_block" style="display:none">
+					<input type="text" name="passwd" id="passwd" maxlength="64" style="height:27px;">
+				</div>
+			</td>
+			<td colspan="1">
+				<div id="key_head_5g" style="display:none">
+					<%:Encryption Key:%>
+				</div>
+			</td>
+			<td colspan="1">
+				<div id="key_block_5g" style="display:none">
+					<input type="text" name="passwd_5g" id="passwd_5g" maxlength="64" style="height:27px;">
+				</div>
+			</td>
+		</tr>
+	</table>
+
+			</div>
+		</td>
+	</tr>
+	<tr style="background-color:#ffffff"><td></td></tr>	
+	<tr><td></td><td>
+<div id = "create_meshband" style="border-bottom: 1px solid #1B489C;border-top: 1px solid #1B489C;border-left: 1px solid #1B489C;border-right: 1px solid #1B489C;padding-left:20px;padding-right:20px;display:none">
+	<table>
+		<tr style="font-size: 16px;vertical-align: middle;color:#000000;height: 8px;">
+		<td colspan="4">
+		<br><%:Set up Mesh Band in your Mesh Network%>
+		<br><br><p style = "padding: 12px;background:#DCDCDC "> <%:Mesh Band default settings is 5GHz, you can also change to 2.4GHz on combo box as below%></p>
+		</td>
+		</tr>
+		<tr style="font-size: 16px;background-color:#ffffff;vertical-align: middle;color:#000000;height: 8px;">
+		<td >
+			<%:Mesh Band settings:%>
+			<input type="radio" maxlength="12" name="band" id="band_24g">
+			<%:2.4GHz%>
+			<input type="radio" maxlength="12" name="band" id="band_5g">
+			<%:5GHz%>
+		</td>
+		</tr>
+	</table>
+	</div>	
+	</td>
+	</tr>
+	</table>
+</div>
+<div>
+	<table>
+		<tr style="background-color:#ffffff">
+			<td style="text-align:center" ><input class="cbi-button cbi-button-save" onclick="return saveChanges();" type="submit" value="<%:Next%>">
+			<input type="hidden" id="submitType" value="1" name="submitType"/></td>
+		</tr>
+</table>
+</div>
+</form>
+</body>
+<%+footer%>

@@ -1,0 +1,11 @@
+prefix=/home2/caojingzhe/mtk7986_openwrt2/opt2102/staging_dir/host
+exec_prefix=/home2/caojingzhe/mtk7986_openwrt2/opt2102/staging_dir/host
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: e2p
+Description: Ext2fs userspace programs utility library
+Version: 1.45.6
+Requires: 
+Cflags: -I${includedir}/e2p -I${includedir}
+Libs: -L${libdir} -le2p

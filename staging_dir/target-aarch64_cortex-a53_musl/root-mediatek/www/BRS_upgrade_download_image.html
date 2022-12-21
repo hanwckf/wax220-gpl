@@ -1,0 +1,149 @@
+<!DOCTYPE html
+	PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+
+<head>
+	<% new_hijack_flow_head() %>
+</head>
+
+<body onload="loadvalue()">
+	<% cfg_set("hijack_config_status", "6") %>
+	<% form_submit("func", "BRS_upgrade_write_image.html" , "write_image")%>
+		<% save_timestamp("write_image", "hijack_save_time") %>
+		<div id="container">
+			<div class="dialog-content">
+				<!--checking new formware-->
+				<div id="card-checking-for-updates" class="install-card" style="width:100%; min-width: 750px;">
+					<div class="logos">
+						<div><img class="netgear-logo" src="image/netgear_business.png"></div>
+						<% hijack_logo_title() %>
+					</div>
+					<img class="card-image" src="<% product_img_path() %>" onerror="this.onerror=null; this.src='image/robot.png'">
+					<div class="content">
+						<!-- <div class="desc-title w3-xlarge">
+							<script>document.write("$firmware_updating")</script>
+						</div> -->
+						<div class="desc-title w3-xlarge" id="upg_msg"></div>
+
+						<div class="loader" id="loader_img">
+							<div class="preloader-wrapper small active">
+								<div class="spinner-layer">
+									<div class="circle-clipper left">
+										<div class="circle"></div>
+									</div>
+									<div class="gap-patch">
+										<div class="circle"></div>
+									</div>
+									<div class="circle-clipper right">
+										<div class="circle"></div>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="desc-text w3-large" id="wait_text">
+							<script>document.write("$orbi_pls_wait");</script>
+						</div>
+					</div>
+					<div class="buttons">
+						<button id="back_btn" class="btn-flat button-nav-skip" type="submit" onclick="location.herf='BRS_orbi_complete.html';" style="display:none;">
+							<span>
+								<script>document.write("$orbi_back_mark");</script>
+							</span>
+						</button>
+						<button id="next_btn" class="btn button-nav" type="submit" onclick="return toInternet();" style="display:none;">
+							<span>
+								<script>document.write("$orbi_next_mark");</script>
+							</span>
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<script>
+			var ts = '<% cfg_get("hijack_save_time") %>';
+			var wan_status = "<% detwan_valid() %>";//fix bug 25310,[Netgear]Auto-Update issue
+			var delay_time = 2000;//msecs
+			var percComplete = 0;
+
+			function display_upg_fail(msg) {
+				document.getElementById("upg_msg").innerHTML = msg;
+				document.getElementById("next_btn").style.display = "";
+				document.getElementById("back_btn").style.display = "";
+				document.getElementById("loader_img").style.display = "none";
+				document.getElementById("wait_text").style.display = "none";
+			}
+
+			function loadvalue() {
+				if (wan_status == 0) {
+					display_upg_fail("$auto_fail_no_internet");
+				} else {
+					detec_status();
+				}
+			}
+
+			function createXMLHttpRequest() {
+				if (typeof XMLHttpRequest == "undefined")
+					XMLHttpRequest = function () {
+						try { return new ActiveXObject("Msxml2.XMLHTTP.6.0"); }
+						catch (e) { }
+						try { return new ActiveXObject("Msxml2.XMLHTTP.3.0"); }
+						catch (e) { }
+						try { return new ActiveXObject("Msxml2.XMLHTTP"); }
+						catch (e) { }
+						return false;
+					}
+				return new XMLHttpRequest();
+			}
+
+			function detec_status() {
+				var url = "get_upgrade_status.txt?ts=" + new Date().getTime();
+				var xmlHttp = createXMLHttpRequest();
+				xmlHttp.onreadystatechange = function () {
+					if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
+						var result = xmlHttp.responseText;
+						var ret_info = result.split("*");
+						var img_status = ret_info[1];
+						var md5 = ret_info[2];
+
+						if (img_status < 1000) {
+							document.getElementById("upg_msg").innerHTML = "$downloading_ver";
+							setTimeout("detec_status()", delay_time);
+						}
+						else if (img_status >= 1000 && img_status < 2000) {
+							percComplete = img_status - 1000;
+							if (percComplete >= 100 && md5 == 1) {
+								document.getElementById("upg_msg").innerHTML = "$downloading_ver";
+								document.forms[0].submit();
+							}
+							else {
+								if (percComplete >= 100)
+									percComplete = 99;
+								document.getElementById("upg_msg").innerHTML = "$downloading_ver";
+								setTimeout("detec_status()", delay_time);
+							}
+						}
+						else if (img_status == 10008) {
+							display_upg_fail("$upg_md5_check_error");
+						}
+						else if (img_status >= 10000) {
+							display_upg_fail("$download_confile_fail");
+						}
+					}
+				}
+				xmlHttp.open("GET", url, true);
+				xmlHttp.send();
+			}
+
+			function toInternet() {
+				var cf = document.forms[0];
+				cf.action = "/apply.cgi?/to_internet_no_auth.htm timestamp=" + ts;
+				cf.submitType.value = "hijack_save_time";
+				cf.anticsrf.value = '<% generateToken("hijack_save_time") %>';
+				cf.target = "_top";
+				return true;
+			}
+		</script>
+	</form>
+</body>
+
+</html>

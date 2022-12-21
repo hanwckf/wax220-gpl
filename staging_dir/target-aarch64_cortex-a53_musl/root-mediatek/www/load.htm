@@ -1,0 +1,57 @@
+<% http_header( "style/cascade2.css", "style/cascade.css", "style/cascade-custom.css", "script/jquery-1.12.4.min.js", "script/cbi.js", "script/common.js", "script/load.js") %>
+<body onLoad="please_wait(false);" bgcolor="#ffffff">
+<div id="maincontent" class="container">
+	<ul class="tabs">
+			<li class="tabmenu-item-load active">
+			    <a href="/load.htm">$load</a>
+			</li>
+		
+			<li class="tabmenu-item-bandwidth">
+			    <a href="/bandwidth.htm">$traffic</a>
+			</li>
+	</ul>
+
+<h2><a id="content" name="content">$cpu_loading (%)</a></h2>
+<div class="realtime_chart">
+	<div id="label_25" class="label_75"></div>
+	<div id="label_50" class="label_50"></div>
+	<div id="label_75" class="label_25"></div>
+	<embed id="bwsvg" style="width:96%; height:300px; border:1px solid #000000; background-color:#FFFFFF" src="/image/load.svg" /> 
+</div>
+<div style="text-align:right"><small id="scale">-</small></div>
+<br />
+
+<table style="width:100%; table-layout:fixed" cellspacing="5">
+	<tr>
+		<td style="text-align:right; vertical-align:top"><strong style="border-bottom:2px solid #ff0000; white-space:nowrap">$current: </strong></td>
+		<td style="text-indent:0.3em; line-height:14px" id="lb_load01_cur">0</td>
+
+		<td style="text-align:right; vertical-align:top"><strong>$average: </strong></td>
+		<td style="text-indent:0.3em; line-height:14px" id="lb_load01_avg">0</td>
+
+		<td style="text-align:right; vertical-align:top"><strong>$peak: </strong></td>
+		<td style="text-indent:0.3em; line-height:14px" id="lb_load01_peak">0</td>
+	</tr>
+	<tr style="display: none;">
+		<td style="text-align:right; vertical-align:top"><strong style="border-bottom:2px solid #ff6600; white-space:nowrap">$minute_load_5: </strong></td>
+		<td id="lb_load05_cur">0</td>
+
+		<td style="text-align:right; vertical-align:top"><strong>$average: </strong></td>
+		<td id="lb_load05_avg">0</td>
+
+		<td style="text-align:right; vertical-align:top"><strong>$peak: </strong></td>
+		<td id="lb_load05_peak">0</td>
+	</tr>
+	<tr style="display: none;">
+		<td style="text-align:right; vertical-align:top"><strong style="border-bottom:2px solid #ffaa00; white-space:nowrap">$minute_load_15: </strong></td>
+		<td id="lb_load15_cur">0</td>
+
+		<td style="text-align:right; vertical-align:top"><strong>$average: </strong></td>
+		<td id="lb_load15_avg">0</td>
+
+		<td style="text-align:right; vertical-align:top"><strong>$peak: </strong></td>
+		<td id="lb_load15_peak">0</td>
+	</tr>
+</table>
+</div>
+</body>

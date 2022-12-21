@@ -1,0 +1,43 @@
+#!/bin/sh /etc/rc.common
+
+START=99
+USE_PROCD=1
+
+start_service() {
+	procd_open_instance
+	procd_set_param command /sbin/ping-netgear
+	procd_set_param respawn
+	procd_close_instance
+}
+
+service_triggers() {
+	local script name netmode
+
+	script=$(readlink -f "$initscript")
+	name=$(basename ${script:-$initscript})
+	netmode=$(uci_get system.@system[0].netmode)
+
+	if [ -z "$netmode" -o "$netmode" = "router" ]; then
+		procd_add_interface_trigger "interface.*" "wan" /etc/init.d/$name reload
+	else
+		procd_add_interface_trigger "interface.*" "lan" /etc/init.d/$name reload
+	fi
+}
+
+reload_service()
+{
+	local netmode ifstaus
+
+	netmode=$(uci_get system.@system[0].netmode)
+
+	if [ -z "$netmode" -o "$netmode" = "router" ]; then
+		ifstaus=$(ubus call network.interface.wan status | jsonfilter -e "@.up")
+	else
+		ifstaus=$(ubus call network.interface.lan status | jsonfilter -e "@.up")
+	fi
+
+	if [ "$ifstaus" = "true" ]; then
+		stop
+		start
+	fi
+}

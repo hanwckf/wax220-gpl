@@ -1,0 +1,17 @@
+<%+header%>
+<script>
+<%
+local ip = luci.http.getenv("REMOTE_ADDR")
+if ip == "127.0.0.1" then
+%>
+document.write('<iframe width="100%" height="1000px" style="border-top-width: 0px; border-left-width: 0px; border-bottom-width: 0px;border-right-width: 0px;" src="https://<%=luci.http.getenv("SERVER_NAME")%>/ipcam_storage.htm'+camLiveViewInfo+'">');
+<%
+else
+%>
+document.write('<iframe width="100%" height="1000px" style="border-top-width: 0px; border-left-width: 0px; border-bottom-width: 0px;border-right-width: 0px;" src="http://<%=luci.http.getenv("SERVER_NAME")%>:'+camGuiTraversalPort+'/ipcam_storage.htm'+camLiveViewInfo+'">');
+<%
+end
+%>
+document.write('</iframe>');
+</script>
+<%+footer%>

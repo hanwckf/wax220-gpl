@@ -1,0 +1,69 @@
+<%#
+LuCI - Lua Configuration Interface
+Copyright 2008 Steven Barth <steven@midlink.org>
+Copyright 2008 Jo-Philipp Wich <xm@leipzig.freifunk.net>
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+	http://www.apache.org/licenses/LICENSE-2.0
+
+$Id: changes.htm 9014 2012-08-14 13:08:18Z jow $
+
+-%>
+<% local uci = require "luci.model.uci".cursor() %>
+<%+header%>
+
+<h2><a id="content" name="content"><%:Configuration%> / <%:Changes%></a></h2>
+
+<% if changes then %>
+	<%+admin_uci/changelog%>
+	<%- uci_changelog(changes) -%>
+<% else %>
+	<p><strong><%:There are no pending changes!%></strong></p>
+<% end %>
+
+<div class="cbi-page-actions">
+	<% local r = luci.http.formvalue("redir"); if r and #r > 0 then %>
+	<div style="float:left">
+		<form class="inline" method="get" action="<%=luci.util.pcdata(r)%>">
+			<input class="cbi-button cbi-button-save" style="float:left; margin:0" type="submit" value="<%:Back%>" myid="button_back"/>
+		</form>
+	</div>
+	<% end %>
+
+	<div style="text-align:left">
+		<form class="inline" method="get" action="<%=controller%>/admin/uci/apply" style="display:none;">
+			<input type="hidden" name="redir" value="<%=pcdata(luci.http.formvalue("redir"))%>" />
+			<input class="cbi-button cbi-button-apply" type="submit" onclick="ajax_setCsrf();" value="<%:Apply%>" />
+		</form>
+<% if uci:get('functionlist','functionlist','SUPPORT_MANAGEMENT_SSID') == '1' and uci:get('functionlist','functionlist','SUPPORT_MYID') ~= '1' then %>
+	<% if not( uci:get('functionlist','functionlist','SUPPORT_AP_RP_SETUP_WIZARD') == "1" and (uci:get('system','firmware','first_login') == "1" or reboot_flag == "1" )) then %>
+				<form class="inline" method="get" action="<%=controller%>/admin/uci/saveapply">
+					<input type="hidden" name="redir" value="<%=pcdata(luci.http.formvalue("redir"))%>" />
+					<input class="cbi-button cbi-button-save" type="submit" onclick="ajax_setCsrf();" value="<%:Save & Apply%>" style="display: none" />
+					<input class="cbi-button cbi-button-save" myid="button_apply" onclick="ajax_setCsrf();" type="submit" value="<%:Apply%>" />
+				</form>
+	<% else %>
+		<form class="inline" method="get" action="<%=controller%>/admin/uci/saveapply">
+			<input type="hidden" name="redir" value="<%=pcdata(luci.http.formvalue("redir"))%>" />
+			<input class="cbi-button cbi-button-save" type="submit" onclick="ajax_setCsrf();" value="<%:Save & Apply%>" style="display: none" />
+			<input class="cbi-button cbi-button-save" myid="button_apply" onclick="ajax_setCsrf();" type="submit" value="<%:Apply%>" />
+		</form>
+	<% end %>
+<% else %>
+		<form class="inline" method="get" action="<%=controller%>/admin/uci/saveapply">
+			<input type="hidden" name="redir" value="<%=pcdata(luci.http.formvalue("redir"))%>" />
+			<input class="cbi-button cbi-button-save" type="submit" onclick="ajax_setCsrf();" value="<%:Save & Apply%>" style="display: none" />
+			<input class="cbi-button cbi-button-save" myid="button_apply" onclick="ajax_setCsrf();" type="submit" value="<%:Apply%>" />
+		</form>
+<% end %>
+		<form class="inline" method="get" action="<%=controller%>/admin/uci/revert">
+			<input type="hidden" name="redir" value="<%=pcdata(luci.http.formvalue("redir"))%>" />
+			<input class="cbi-button cbi-button-reset" myid="button_reset" type="submit" value="<%:Revert%>" />
+		</form>
+	</div>
+</div>
+
+<%+footer%>

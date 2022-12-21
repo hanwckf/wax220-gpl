@@ -1,0 +1,28 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2015 OpenWrt.org
+
+START=80
+
+USE_PROCD=1
+
+start_service() {
+	[ -d /var/log/nginx ] || mkdir -p /var/log/nginx
+	[ -d /var/lib/nginx ] || mkdir -p /var/lib/nginx
+	[ -d /tmp/dl ] || mkdir -p /tmp/dl
+
+	if [[ -e /etc/config/https/cert.bin && -e /etc/config/https/key.bin && -e /etc/config/https/init_flag ]]; then
+		cat /etc/config/https/cert.bin | enigma -m DEC > /tmp/cert.pem
+		chmod 0600 /tmp/cert.pem
+		cat /etc/config/https/key.bin | enigma -m DEC > /tmp/key.pem
+		chmod 0600 /tmp/key.pem
+	else
+		enigma -m CRT
+		touch /etc/config/https/init_flag
+	fi
+
+	procd_open_instance
+	procd_set_param command /usr/sbin/nginx -c /etc/nginx/nginx.conf -g 'daemon off;'
+	procd_set_param file /etc/nginx/nginx.conf
+	procd_set_param respawn
+	procd_close_instance
+}

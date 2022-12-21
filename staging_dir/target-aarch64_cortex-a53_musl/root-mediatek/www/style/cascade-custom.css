@@ -1,0 +1,43 @@
+.btn.primary,
+.cbi-button,
+.cbi-button-apply,
+.cbi-button-save,
+.cbi-button-reset,
+.cbi-page-actions .cbi-button-apply,
+.cbi-page-actions .cbi-button-save,
+.cbi-page-actions .cbi-button-reset {
+    color:#ffffff;
+    background-color: #3a3a3a !important;
+    background-image: -webkit-linear-gradient(top, #3a3a3a, #3a3a3a);
+}
+
+input[type="button"][disabled] {
+    color:#ffffff;
+    background-color: #727272;
+    background-image: -webkit-linear-gradient(top, #727272, #727272);
+}
+
+input[type="submit"][disabled] {
+    color:#ffffff;
+    background-color: #727272;
+    background-image: -webkit-linear-gradient(top, #727272, #727272);
+}
+
+.btn:hover,
+.cbi-button:hover {
+	color: #ffffff;
+	text-decoration: none;
+}
+
+.btn:focus,
+.cbi-button:focus {
+	outline: 1px dotted #3a3a3a;
+}
+
+input[type="button"]:focus {
+    border-color: #3a3a3a;
+}
+
+input[type="submit"]:focus {
+    border-color: #3a3a3a;
+}

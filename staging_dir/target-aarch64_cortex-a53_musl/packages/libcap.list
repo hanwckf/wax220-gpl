@@ -1,0 +1,16 @@
+./
+./host
+./usr
+./usr/include
+./usr/include/sys
+./usr/include/sys/capability.h
+./usr/include/sys/psx_syscall.h
+./usr/lib
+./usr/lib/libcap.so
+./usr/lib/libcap.so.2
+./usr/lib/libcap.so.2.43
+./usr/lib/libcap.a
+./usr/lib/libpsx.a
+./usr/lib/pkgconfig
+./usr/lib/pkgconfig/libcap.pc
+./usr/lib/pkgconfig/libpsx.pc

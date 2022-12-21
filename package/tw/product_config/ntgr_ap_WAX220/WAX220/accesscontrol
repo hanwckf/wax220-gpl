@@ -1,0 +1,3 @@
+config accesscontrol 'config'
+	option enabled '0'
+	option control_type 'Allow'

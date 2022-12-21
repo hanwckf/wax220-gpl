@@ -1,0 +1,97 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head>
+<style>
+html, body{ margin: 0; border:none; background-color:#FFFFFF; font-family:Arial, Helvetica, sans-serif; font-size:10pt; font-style:normal; font-weight:normal; width:100%; height:100%;overflow:hidden;}
+</style>
+<% hijack_title() %>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no" />
+
+<script language="javascript" type="text/javascript">
+var dns_hijack = '<% cfg_get("dns_hijack") %>';
+var ap_mode = '<% cfg_get("ap_mode") %>';
+var apmode_get_ip='<% ap_mode_ip() %>';
+var lanip = '<% cfg_get("lan_ipaddr") %>';
+var from_restore = '<% cfg_get("from_restore") %>';
+var from_nowan = '<% cfg_get("from_nowan_retry") %>';
+var from_setting = '<% cfg_get("from_setting") %>';
+var form_set2 = '<% cfg_get("form_set2") %>';
+var first_hdd_nofind = '<% cfg_get("hddnofind") %>'; ////when no hdd is find, run this case. and we set one value hddnofind to 1(default is 0). after reboot router.the BRS_index to check hddnofind,if 1,show hdd_not_find page. if 0, run previous old process.
+var browser_lang = '<% get_browser_language() %>';
+var netgear_region='<% get_firmware_region() %>';
+var from_download = '<% cfg_get("from_download") %>';
+var new_sold_board = '<% cfg_get("new_sold_board") %>';
+var agree_collect_TC = '<% cfg_get("agree_collect_TC") %>';
+var set_wan_preference = '<% cfg_get("set_wan_preference") %>';
+var support_wan_preference = parent.support_wan_preference;
+<% cfg_set("from_restore", "0") %>
+<% cfg_set("from_nowan_retry", "0") %>
+<% cfg_set("have_click_take_me_to_internet", "0") %>
+<% cfg_set("hddnofind", "0") %>
+<% cfg_set("from_download", "0") %>
+<% ru_web_flag() %>
+<% web_flag() %>
+
+
+function loadValue()
+{
+	var config_status = '<% cfg_get("hijack_config_status") %>';
+	var wan_status="<% detwan_valid() %>";
+	var content_frame = document.getElementById("content_frame");
+
+	if (config_status == "1") {
+		// welcome page
+		content_frame.setAttribute("src", "/BRS_orbi_welcome.html");
+	} else if (config_status == "2") {
+		// config user password, ssid and password
+		content_frame.setAttribute("src", "/BRS_config_basic.html");
+	} else if (config_status == "3") {
+		// waitting for device to apply configs
+		content_frame.setAttribute("src", "/BRS_orbi_complete.html");
+	} else if (config_status == "4") {
+		// check new firmware
+		content_frame.setAttribute("src", "/BRS_orbi_check_fw.html");
+	} else if (config_status == "5") {
+		// show new firmware info
+		content_frame.setAttribute("src", "/BRS_upgrade_fw.html");
+	} else if (config_status == "6") {
+		// download new firmware
+		content_frame.setAttribute("src", "/BRS_upgrade_download_image.html");
+	} else if (config_status == "7") {
+		// write new firmware and reboot device
+		content_frame.setAttribute("src", "/BRS_upgrade_write_image.html");
+	} else if (config_status == "8") {
+		// upgrade new firmware success
+		content_frame.setAttribute("src", "/BRS_upgrade_success.html");
+	} else if (config_status == "99") {
+		location.href = "sysauth.htm";
+	} else {
+		content_frame.setAttribute("src", "/BRS_orbi_welcome.html");
+	}
+}
+
+function changeUrl()
+{
+	if(( apmode_flag == "1" && ap_mode == "1"))
+	{
+		if((dns_hijack == "1") && (this.location.hostname != apmode_get_ip && this.location.hostname.indexOf("routerlogin.com") == -1 && this.location.hostname.indexOf("routerlogin.net") == -1))
+			this.location.hostname = apmode_get_ip;
+	}
+	else
+	{
+		if((dns_hijack == "1") && (this.location.hostname != lanip && this.location.hostname.indexOf("routerlogin.com") == -1 && this.location.hostname.indexOf("routerlogin.net") == -1))
+			this.location.hostname = "routerlogin.com";
+	}
+}
+</script>
+</head>
+
+<!-- <body onload="loadValue();changeUrl();"> -->
+<body onload="loadValue();">
+<iframe id="content_frame" name="content_frame" allowtransparency="true" height="100%" width="100%" scrolling="auto" frameborder="0">
+		</iframe>
+</body>
+
+</html>

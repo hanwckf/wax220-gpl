@@ -1,0 +1,35 @@
+#!/bin/sh /etc/rc.common
+
+START=16
+USE_PROCD=1
+
+start_service() {
+	guest_1="$(uci get wireless.@wifi-iface[0].guest_network 2> /dev/null)"
+	guest_2="$(uci get wireless.@wifi-iface[1].guest_network 2> /dev/null)"
+	guest_3="$(uci get wireless.@wifi-iface[2].guest_network 2> /dev/null)"
+	guest_4="$(uci get wireless.@wifi-iface[3].guest_network 2> /dev/null)"
+	guest_ifname="$(uci get network.guest.ifname 2> /dev/null)"
+	net_model="$(uci get system.@system[0].model 2> /dev/null)"
+
+	procd_open_instance
+	if [ $guest_1 == 1 ] || [ $guest_2 == 1 ] || [ $guest_3 == 1 ] || [ $guest_4 == 1 ];then
+		if [ -z $guest_ifname];then
+			procd_set_param command /usr/bin/devProbe -i br-lan,br-mgmt
+		else
+			procd_set_param command /usr/bin/devProbe -i br-lan,br-guest,br-mgmt
+		fi
+	else
+		procd_set_param command /usr/bin/devProbe -i br-lan,br-mgmt
+	fi
+
+	ebtables -t nat -A PREROUTING -p ipv4 --ip-proto udp --ip-dport 67 --nflog-group 1 -j ACCEPT
+	ebtables -t nat -A PREROUTING -p ipv4 --ip-proto udp --ip-sport 67 --nflog-group 1 -j ACCEPT
+	conntrack -F
+	if [ "$net_model" == "WAX220" ];then
+		ethtool -r eth1
+	else
+		ethtool -r eth0
+	fi
+	procd_set_param respawn 3600 5 60
+	procd_close_instance
+}

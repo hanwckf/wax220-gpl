@@ -1,0 +1,71 @@
+<!DOCTYPE html
+	PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+
+<head>
+	<% new_hijack_flow_head() %>
+</head>
+
+<body onload="loadvalue()">
+	<% cfg_set("hijack_config_status", "4") %>
+	<div id="container">
+		<div class="dialog-content">
+			<!--checking new formware-->
+			<div id="card-checking-for-updates" class="install-card clearfix" style="width:100%; min-width: 750px;">
+				<div class="logos">
+					<div><img class="netgear-logo" src="image/netgear_business.png"></div>
+					<% hijack_logo_title() %>
+				</div>
+				<img class="card-image" src="<% product_img_path() %>">
+				<div class="content">
+					<div class="desc-title w3-xlarge">
+						<script>document.write("$orbi_check_update")</script>
+					</div>
+
+					<div class="loader">
+						<div class="preloader-wrapper small active">
+							<div class="spinner-layer">
+								<div class="circle-clipper left">
+									<div class="circle"></div>
+								</div>
+								<div class="gap-patch">
+									<div class="circle"></div>
+								</div>
+								<div class="circle-clipper right">
+									<div class="circle"></div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="desc-text w3-large wait">
+						<script>document.write("$orbi_pls_wait");</script>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<script>
+		// var wan_status = detwan_valid_upgrade_fw();
+		var wan_status = <% detwan_valid() %>;
+		function loadvalue() {
+			if (wan_status == 1) {
+				check_firmware();
+				setTimeout("check_new_firmware()", 30000);
+			} else {
+				location.href = "/BRS_upgrade_fw.html";
+			}
+		}
+
+		function check_firmware() {
+			var data = {submitType: "download_confile", hid_save_time: "7", anticsrf: '<% generateToken("download_confile") %>'};
+			$$.post('<% action_url("func.cgi", "BRS_orbi_check_fw.html") %>',
+				data,
+				function () {return 0;});
+		}
+		function check_new_firmware() {
+            location.href = "/BRS_upgrade_fw.html";
+		}
+	</script>
+</body>
+
+</html>

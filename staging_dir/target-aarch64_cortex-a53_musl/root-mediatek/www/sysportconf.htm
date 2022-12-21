@@ -1,0 +1,344 @@
+<%+header%>
+<script type="text/javascript">
+<%
+    local uci = luci.model.uci.cursor()
+    local httpPort = uci:get('lighttpd', 'http', 'port')
+    local rtspPort = uci:get('firewall', 'rtsp', 'src_dport')
+    local storagePort = uci:get('firewall', 'ipcam_redir_9000', 'src_dport')
+    local appPort = uci:get('app_agent', 'agent', 'port_aes')
+    local httpExPort = uci:get('nat-traversal', 'nattraversal', 'ex_gui_port')
+    local rtspExPort = uci:get('nat-traversal', 'nattraversal', 'ex_onboard_cam_rtsp_port')
+    
+    if (uci:get('nat-traversal', 'nattraversal', 'upnpc_enabled'))=="0" then
+        httpExPort = "---"
+        rtspExPort = "---"
+    end
+%>
+
+function validateKey(str) {
+    for (var i=0; i<str.length; i++) {
+        if ( (str.charAt(i) >= '0' && str.charAt(i) <= '9') ||
+            (str.charAt(i) == '.' ) )
+            continue;
+        return 0;
+    }
+    return 1;
+}
+
+function getDigit(str, num) {
+    i=1;
+    if ( num != 1 ) {
+    while (i!=num && str.length!=0) {
+        if ( str.charAt(0) == '.' ) {
+            i++;
+        }
+        str = str.substring(1);
+    }
+    if ( i!=num )
+        return -1;
+    }
+    for (i=0; i<str.length; i++) {
+        if ( str.charAt(i) == '.' ) {
+            str = str.substring(0, i);
+            break;
+        }
+    }
+    if ( str.length == 0)
+        return -1;
+    d = parseInt(str, 10);
+    return d;
+}
+
+function setFocus(field) {
+    field.value = field.defaultValue;
+    field.focus();
+    return;
+}
+
+function sprintf(fmt)
+{
+    var reg = /%s/, space = / /;;
+    var result = new String(fmt);
+    var tmp="";
+    for (var i = 1; i < arguments.length; i++)
+    {
+        tmp=arguments[i];
+
+        /* remove useless padding space */
+        if(!isContainAlphabet(tmp))
+            tmp=tmp.toString().replace(space, "");
+
+        result = result.replace(reg, new String(tmp));
+    }
+
+    return result; 
+}
+
+function isContainAlphabet(input)
+{
+    if(input.length==0)
+    {
+        return false;
+    }
+    else
+    {
+        for(var i=0;i<input.length;i++)
+        {
+            if((input.charAt(i) >= 'a' && input.charAt(i) <= 'z') ||
+              (input.charAt(i) >= 'A' && input.charAt(i) <= 'Z')){
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+function portRule( fromPort, fromStr, toPort, toStr, min, max, defVal) {
+/*
+var minihttp_remote_port=10000;
+var portInfo={http_port:"8080",minihttp_port:'8081',ftp_rm_enable:'1',ftp_rm_port:'8888',app_rm_enable:'1',app_rm_port:'9091',easyupload_port:'2000',end:'0'};
+*/
+    var regx = /[^0-9]/
+//********** from port **********
+    if (fromPort.value=="") {
+        //"%s cannot be empty! You should set a value between %s-%s.",
+        alert(sprintf("<%:%s cannot be empty! You should set a value between %s-%s.%>",fromStr,min,max));
+        if ( defVal == 1 )
+            fromPort.value = fromPort.defaultValue;
+        fromPort.focus();
+        return false;
+    }
+    if ( validateKey( fromPort.value ) == 0 || fromPort.value.match(regx)!=null) {
+        //"Invalid value of %s! It should be the decimal number (0-9).",
+        alert(sprintf("<%:Invalid value of %s! It should be the decimal number (0-9).%>",fromStr));
+        if ( defVal == 1 )
+            fromPort.value = fromPort.defaultValue;
+        fromPort.focus();
+        return false;
+    }
+    d1 = getDigit(fromPort.value, 1);
+    if (d1 > max || d1 < min) {
+        //"Invalid value of %s! You should set a value between %s-%s.",
+        alert(sprintf("<%:Invalid value of %s! You should set a value between %s-%s.%>",fromStr,min,max));
+        if ( defVal == 1 )
+            fromPort.value = fromPort.defaultValue;
+        fromPort.focus();
+        return false;
+    }
+/*
+    //check USB storage port
+    if(FunctionList2.HAS_LIGHTTPD_SERVER)
+    {
+        if(fromPort.value =="9000")
+        {
+            alert(sprintf("Invalid Port value. The Port value %s is used in device service.",9000));
+            fromPort.focus();
+            return false;
+        }
+    }
+
+    if(FunctionList2.HAS_MINIHTTPD)
+    {
+        if(fromPort.value ==minihttp_remote_port)
+        {
+            alert(sprintf("Invalid Port value. The Port value %s is used in device service.",minihttp_remote_port));
+            fromPort.focus();
+            return false;
+        }
+    }
+
+    if(FunctionList2.HAS_SUPPORT_EASYUPLOAD)
+    {
+        if(fromPort.value == portInfo.easyupload_port)
+        {
+            alert(sprintf("Invalid Port value. The Port value %s is used in device service.",portInfo.easyupload_port));
+            fromPort.focus();
+            return false;
+        }
+    }
+
+    //check APP remote port
+    if(FunctionList2.HAS_SMARTPHONE_APP_AGENT)
+    {
+        if(portInfo.app_rm_enable)
+        {
+            if(fromPort.value==portInfo.app_rm_port)
+            {
+                alert(sprintf("Invalid Port value. The Port value %s is used in device service.",portInfo.app_rm_port));
+                fromPort.focus();
+                return false;
+            }
+        }
+    }
+
+    if(fromPort.value == portInfo.http_port)
+    {
+        alert("Port 8080 is occupied. Please enter another service port.");
+        fromPort.focus();
+        return false;
+    }
+*/
+
+    return true;
+}
+
+function savechanges() {
+    var f = document.sysportconf;
+    if(functionlist.SUPPORT_ADVANCED_SERVICE_PORT==1)
+        var invalidPort = [1935, 2000, 2323, 4430 ,5540, 8080, 8081, 9091];
+    else
+        var invalidPort = [1935, 2000, 2323, 4430 ,5540, 8080, 8081, 9000, 9090, 9091];
+
+    if (!portRule(f.httpPort, "<%:HTTP Port%>", 0, "", 1, 65535, 0))
+    {
+        setFocus(f.httpPort);
+        return false;
+    }
+
+    if (f.httpPort.value=="554")
+    {
+        alert(sprintf("<%:Invalid Port value. The Port value %s is used in device service.%>",554));
+        setFocus(f.httpPort);
+        return false;
+    }
+
+    if (!portRule(f.rtspPort, "<%:Video Port%>", 0, "", 1, 65535, 0))
+    {
+        setFocus(f.rtspPort);
+        return false;
+    }
+
+    if (f.httpPort.value==f.rtspPort.value)
+    {
+        alert("<%:Set Port Duplicate.%>");
+        setFocus(f.rtspPort);
+        return false;
+    }
+
+    if(parseInt(f.httpPort.value)<=1024 && parseInt(f.httpPort.value)!=80)
+    {
+        alert("<%:Invalid value of HTTP Port!%>");
+        setFocus(f.httpPort);
+        return false;
+    }
+
+    if(parseInt(f.rtspPort.value)<=1024 && parseInt(f.rtspPort.value)!=554)
+    {
+        alert("<%:Invalid value of Video Port!%>");
+        setFocus(f.rtspPort);
+        return false;
+    }
+
+    if(functionlist.SUPPORT_ADVANCED_SERVICE_PORT==1)
+    {
+        if (!portRule(f.storagePort, "<%:Storage Port%>", 0, "", 1025, 65535, 0))
+        {
+            setFocus(f.storagePort);
+            return false;
+        }
+        if (!portRule(f.appPort, "<%:APP Port%>", 0, "", 1025, 65535, 0))
+        {
+            setFocus(f.appPort);
+            return false;
+        }
+        if ((f.httpPort.value==f.storagePort.value) || (f.httpPort.value==f.appPort.value) ||
+                (f.rtspPort.value==f.storagePort.value) || (f.rtspPort.value==f.appPort.value) ||
+                (f.storagePort.value==f.appPort.value))
+        {
+            alert("<%:Set Port Duplicate.%>");
+            return false;
+        }
+    }
+
+    for(var i=0;i<invalidPort.length;i++)
+    {
+        if(f.httpPort.value==invalidPort[i])
+        {
+            alert("<%:Invalid value of HTTP Port!%>");
+            setFocus(f.httpPort);
+            return false;
+        }
+        if(f.rtspPort.value==invalidPort[i])
+        {
+            alert("<%:Invalid value of Video Port!%>");
+            setFocus(f.rtspPort);
+            return false;
+        }
+        if(functionlist.SUPPORT_ADVANCED_SERVICE_PORT==1)
+        {
+            if(f.storagePort.value==invalidPort[i])
+            {
+                alert("<%:Invalid value of Storage Port!%>");
+                setFocus(f.storagePort);
+                return false;
+            }
+            if(f.appPort.value==invalidPort[i])
+            {
+                alert("<%:Invalid value of APP Port!%>");
+                setFocus(f.appPort);
+                return false;
+            }
+        }
+    }
+    ajax_setCsrf();
+
+    return true;
+}
+</script>
+<form name="sysportconf" action="<%=REQUEST_URI%>" method="post">
+<fieldset class="cbi-section">
+<table>
+    <tr>
+        <td colspan="2" class="title"><%:Port Settings%></td>
+    </tr>
+    <tr>
+        <td colspan="2"><%:Note: We recommend that you keep the default settings to ensure that the service to function properly.%></td>
+    </tr>
+    <tr class="title-option">
+        <td>-&nbsp;<%:HTTP Port%></td>
+        <td>
+            <input type="text" name="httpPort" id="httpPort" size="20" maxlength="5" value="<%=httpPort%>">
+        </td>
+    </tr>
+    <!--tr class="title-option">
+        <td>-&nbsp;<%:HTTP External Port%></td>
+        <td>
+            <input type="text" name="httpExPort" id="httpExPort" size="20" maxlength="5" value="<%=httpExPort%>" disabled>
+        </td>
+    </tr-->
+    <tr class="title-option">
+        <td>-&nbsp;<%:Video Port%></td>
+        <td>
+            <input type="text" name="rtspPort" id="rtspPort" size="20" maxlength="5" value="<%=rtspPort%>">
+        </td>
+    </tr>
+    <!--tr class="title-option">
+        <td>-&nbsp;<%:RTSP External Port%></td>
+        <td>
+            <input type="text" name="rtspExPort" id="rtspExPort" size="20" maxlength="5" value="<%=rtspExPort%>" disabled>
+        </td>
+    </tr-->
+<%
+if uci:get('functionlist','functionlist','SUPPORT_ADVANCED_SERVICE_PORT') == "1" then --
+%>
+    <tr class="title-option">
+        <td>-&nbsp;<%:Storage Port%></td>
+        <td>
+            <input type="text" name="storagePort" id="storagePort" size="20" maxlength="5" value="<%=storagePort%>">
+        </td>
+    </tr>
+    <tr class="title-option">
+        <td>-&nbsp;<%:APP Port%></td>
+        <td>
+            <input type="text" name="appPort" id="appPort" size="20" maxlength="5" value="<%=appPort%>">
+        </td>
+    </tr>
+<%end%>
+</table>
+</fieldset>
+<br>
+<div class="cbi-page-actions">
+    <input class="cbi-button cbi-button-apply" onclick="return savechanges()" type="submit" name="submitType" value="<%:Apply%>">&nbsp;<span class="btn_desc"><%:Apply saved settings to take effect%></span>
+</div>
+</form>
+<%+footer%>

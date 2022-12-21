@@ -1,0 +1,10 @@
+--- a/main.c
++++ b/main.c
+@@ -553,6 +553,7 @@ int main(int argc, char **argv)
+ 	if (conf.ubus_prefix && uh_plugin_init("uhttpd_ubus.so"))
+ 		return 1;
+ #endif
++	uh_plugin_init("uhttpd_cgi_plugin.so");
+ 
+ 	/* fork (if not disabled) */
+ 	if (!nofork) {

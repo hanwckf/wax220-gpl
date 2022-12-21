@@ -1,0 +1,902 @@
+
+<script type="text/javascript">
+    var functionlist = {};
+    
+                    functionlist['SUPPORT_WLAN_L2_ISOLATION'] = '1';
+    
+                    functionlist['SUPPORT_GUI_APPLY_WITHOUT_REBOOT'] = '1';
+    
+                    functionlist['SUPPORT_AP_MODE_ONLY'] = '1';
+    
+                    functionlist['SUPPORT_ALL_ENCRYPTION_HAS_RADIUS_ACCOUNTING'] = '1';
+    
+                    functionlist['SUPPORT_BANDSTEER_FORCE_5G'] = '1';
+    
+                    functionlist['SUPPORT_HIDDEN_CHANGES_OPTION'] = '1';
+    
+                    functionlist['SUPPORT_MIN_RATE_SETTING'] = '1';
+    
+                    functionlist['HWMODE_AC'] = '1';
+    
+                    functionlist['SUPPORT_RENEW_CONNECT_STATUS_BY_BUTTON'] = '1';
+    
+                    functionlist['SUPPORT_TX_POWER_SETTING'] = '1';
+    
+                    functionlist['SUPPORT_COMBINED_SSID_SETTING'] = '1';
+    
+                    functionlist['SUPPORT_WLAN5G'] = '1';
+    
+                    functionlist['SUPPORT_SCAN_RESULT_SHOW_TYPE'] = '1';
+    
+                    functionlist['SUPPORT_IMAGE_HEADER_CHECK'] = '1';
+    
+                    functionlist['SUPPORT_BANDSTEER_SELECT_LIST'] = '1';
+    
+                    functionlist['SUPPORT_MD5_PASSWORD'] = '1';
+    
+                    functionlist['SUPPORT_RSSI_THRESHOLD_MSG'] = '1';
+    
+                    functionlist['SUPPORT_IPERF_PORT_V6'] = '1';
+    
+                    functionlist['SUPPORT_GUEST_NETWORK_SETTING'] = '1';
+    
+                    functionlist['SUPPORT_DISPLAY_SERIAL_NUMBER'] = '1';
+    
+                    functionlist['SUPPORT_FAST_ROAMING_SETTING'] = '1';
+    
+                    functionlist['SUPPORT_HIDE_WIZARD'] = '1';
+    
+                    functionlist['SUPPORT_FULL_FW_VERSION'] = '1';
+    
+                    functionlist['SUPPORT_BRUTE_FORCE'] = '1';
+    
+                    functionlist['SUPPORT_FAST_ROAMING_PER_SSID'] = '1';
+    
+                    functionlist['SUPPORT_DUAL_FAST_HANDOVER'] = '1';
+    
+                    functionlist['SUPPORT_MANAGEMENT_SSID'] = '1';
+    
+                    functionlist['HWMODE_AX'] = '1';
+    
+                    functionlist['SUPPORT_IPV6_LINKLOCAL_COMMON'] = '1';
+    
+                    functionlist['SUPPORT_GREENMODE_SETTING'] = '1';
+    
+                    functionlist['SUPPORT_AUTORF_RADIO_BUTTON'] = '1';
+    
+                    functionlist['SUPPORT_SYSTIME'] = '1';
+    
+                    functionlist['SUPPORT_MULTI_TO_UNI_CONVERSION'] = '1';
+    
+                    functionlist['SUPPORT_MULTI_LANGUAGE'] = '1';
+    
+                    functionlist['SUPPORT_WLAN24G'] = '1';
+    
+                    functionlist['SUPPORT_WPA3'] = '1';
+    
+                    functionlist['SUPPORT_GUEST_NETWORK_BY_SSID'] = '1';
+    
+                    functionlist['SUPPORT_MODIFY_MGMT_SSID'] = '1';
+    
+                    functionlist['SUPPORT_NAS_IP_ADDR'] = '1';
+    
+                    functionlist['SUPPORT_LOGIN_WITHOUT_USERNAME'] = '1';
+    
+                    functionlist['SUPPORT_ALL_ENCRYPTION_HAS_RADIUS_SETTING'] = '1';
+    
+                    functionlist['SUPPORT_LED_MODULE_NAME'] = '1';
+    
+                    functionlist['SUPPORT_DAY0'] = '1';
+    
+                    functionlist['SUPPORT_WIRELESS_TRAFFIC_SHAPING'] = '1';
+    
+                    functionlist['SUPPORT_BUSINESS_SERIES'] = '1';
+    
+                    functionlist['SUPPORT_RENEW_STATISTICS_BY_BUTTON'] = '1';
+    
+                    functionlist['NOT_SUPPORT_HTTPS_SETTINGS_DISPLAY'] = '1';
+    
+                    functionlist['SUPPORT_COUNTRY_SETTING'] = '1';
+    
+                    functionlist['NOT_SUPPORT_DEVICE_DISCOVERY'] = '1';
+    
+    
+    var vendorlist = {};
+    
+                    vendorlist['TXPOWER_MAX_5G'] = '20';
+    
+                    vendorlist['TXPOWER_MIN_5G'] = '11';
+    
+                    vendorlist['WIFIJET_SUPPORT_RADIO'] = '0';
+    
+                    vendorlist['TXPOWER_MAX_24G'] = '20';
+    
+                    vendorlist['TXPOWER_MIN_24G'] = '11';
+    
+                    vendorlist['ManagementVLANID_MAX_VALUE'] = '4094';
+    
+                    vendorlist['WEB_GUI_VER'] = '2';
+    
+                    vendorlist['WDS_MAC_ADDR_NUM'] = '8';
+    
+                    vendorlist['WDSAP_WDS_WIFI_IFACE_NUM'] = '1';
+    
+                    vendorlist['PORTAL_LIMIT_NUM'] = '8';
+    
+                    vendorlist['WDSB_WIFI_IFACE_NUM'] = '1';
+    
+                    vendorlist['MANAGEMENT_SUPPORT_RADIO'] = '1';
+    
+                    vendorlist['WDSAP_AP_WIFI_IFACE_NUM'] = '4';
+    
+                    vendorlist['ManagementVLANID_MIN_VALUE'] = '1';
+    
+                    vendorlist['BURN_FIRMWARE_TIME'] = '600';
+    
+                    vendorlist['SUPPORT_RESET_FACTORY_SCRIPT'] = '/etc/reset_factory_default.sh';
+    
+                    vendorlist['AP_WIFI_IFACE_NUM'] = '4';
+    
+                    vendorlist['CONNECTION_LIMIT_NUM'] = '64';
+    
+                    vendorlist['DUT_REBOOT_TIME'] = '120';
+    
+                    vendorlist['STA_WIFI_IFACE_NUM'] = '1';
+    
+                    vendorlist['STA_AP_WIFI_IFACE_NUM'] = '0';
+    
+                    vendorlist['WDSSTA_WIFI_IFACE_NUM'] = '1';
+    
+    </script>
+    <html>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="style/cascade.css">
+    <link rel="stylesheet" href="style/cascade-custom.css">
+    <script src="script/jquery-1.12.4.min.js"></script>
+    <script src="script/common.js"></script>
+    <script type="text/javascript" src="script/cbi.js"></script>
+    <script type="text/javascript" src="script/xhr.js"></script>
+    <title>5GHz sitesurvey</title>
+    
+     <STYLE type="text/css">
+    * {
+        margin: 0;
+        padding: 0;
+    }
+    body {
+        font-family: helvetica,arial,verdana,sans-serif;
+    }
+    table {
+        border-collapse: collapse;
+        text-align: center;
+    }
+    input {
+        font-family: sans-serif;
+        font-size: 16px;
+        color : black;
+    }
+    input[type="button"] {
+        margin-left: 1px;
+        margin-right: 9px;
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+    input[type="submit"] {
+        margin-left: 1px;
+        margin-right: 9px;
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+    input[type="file"] {
+        background-color: #F0F0F0;
+        margin-left: 1px;
+        margin-right: 9px;
+        padding-right: 10px;
+    }
+    input[type="checkbox"] {
+        margin-left: 3px;
+        margin-right: 9px;
+    }
+    input[type="radio"] {
+        margin-right: 9px;
+    }
+    .radio_en {
+        margin-left: 3px;
+        margin-right: 3px;
+    }
+    .radio_en_label {
+        margin-right: 9px;
+    }
+    input[type="text"] {
+        border: 1px solid #D0D0D0;
+        margin-left: 2px;
+        margin-right: 6px;
+        padding: 2px;
+    }
+    
+    input[type="text"][readonly="readonly"] {
+        border: 0 none #D0D0D0;
+        font-size: 16px;
+        margin-right: 6px;
+    }
+    input[type="password"] {
+        border: 1px solid #D0D0D0;
+        margin-left: 2px;
+        margin-right: 6px;
+        padding: 2px;
+    }
+    textarea {
+        margin: 2px;
+        padding: 2px;
+    }
+    select {
+        border: 1px solid #D0D0D0;
+        font-size: 16px;
+        margin: 2px 6px 2px 2px;
+         color : black;
+    }
+    a {
+        outline: medium none;
+    }
+    li {
+        color: #000000;
+        font-size: 16px;
+        line-height: 24px;
+    }
+    .msg_type_mark {
+        color: red;
+        font-size: 16px;
+        font-weight: bold;
+        margin-right: 9px;
+    }
+    .outer-bg {
+        background-color: #F5F5F5;
+    }
+    .inner-bg {
+        background-color: #FFFFFF;
+    }
+    .banner .ban_logo {
+        width: 1202px;
+    }
+    .banner .ban_info {
+        width: 1202px;
+    }
+    .banner .banner_shadow {
+        width: 1202px;
+    }
+    .ban_logo {
+        background: url("image/banner_logo.png") repeat scroll 0 0 transparent;
+        height: 71px;
+    }
+    .ban_info {
+        background-color: #1B489C;
+        border-bottom-left-radius: 12px;
+        border-bottom-right-radius: 12px;
+        border-collapse: separate;
+        border-spacing: 0;
+        height: 41px;
+    }
+    .model {
+        background-color: #1B489C;
+        border-radius: 12px 12px 12px 12px;
+        color: #FFFFFF;
+        font-size: 20px;
+        text-align: center;
+        width: 181px;
+    }
+    .padding {
+        background-color: #1B489C;
+        width: 30px;
+    }
+    .description {
+        background-color: #1B489C;
+        color: #FFFFFF;
+        font-weight: bold;
+        text-align: left;
+        width: 750px;
+    }
+    .buttons {
+        background-color: #F1F1F1;
+        border-bottom: 1px solid #1B489C;
+        border-left: 1px none #1B489C;
+        border-right: 1px solid #1B489C;
+        border-style: none solid solid none;
+        color: #000000;
+        font-weight: bold;
+        padding: 10px;
+        width: 12%;
+    }
+    .buttons:nth-child(4) {
+        border-top-left-radius: 10px;
+    }
+    .buttons:last-child {
+        border-top-right-radius: 10px;
+    }
+    .buttons:nth-child(4) {
+        border-bottom-left-radius: 10px;
+    }
+    .buttons:last-child {
+        border-bottom-right-radius: 10px;
+    }
+    .buttons:nth-child(4) {
+        border-left-style: solid;
+    }
+    .buttons img {
+        cursor: pointer;
+    }
+    .buttons:hover {
+        background-color: #9FDCFF;
+        cursor: pointer;
+    }
+    .scan_result:hover{
+        background-color: #9FDCFF;
+        cursor: pointer;	
+    }
+    .banner_shadow {
+        background: url("image/banner_shadow.png") no-repeat scroll 0 0 transparent;
+        height: 20px;
+    }
+    .function .menu {
+        width: 1202px;
+    }
+    .function {
+        background-color: white;
+        border-color: #1B489C;
+        border-left: 1px solid #1B489C;
+        border-radius: 12px 12px 12px 12px;
+        border-right: 1px solid #1B489C;
+        border-style: solid;
+        border-top: 1px solid #1B489C;
+        width: 1202px;
+    }
+    .menu_blank {
+        height: 34px;
+        width: 195px;
+    }
+    .menu_bg {
+        height: 486px;
+        text-align: left;
+        vertical-align: top;
+    }
+    .menu_major {
+        background-color: #1B489C;
+        font-size: 16px;
+        font-weight: 600;
+        height: auto;
+        padding-bottom: 6px;
+        padding-left: 15px;
+        padding-top: 6px;
+    }
+    .menu_major_on {
+        color: #FFFFFF;
+    }
+    .menu_major_off {
+        color: #FFFFFF;
+    }
+    .menu_minor {
+        border-bottom: 1px solid #9FDCFF;
+        font-size: 16px;
+        padding-left: 45px;
+    }
+    .menu_minor:hover {
+        background-color: #9FDCFF;
+        cursor: pointer;
+    }
+    .datahighlight {
+        background-color: #9FDCFF;
+        cursor: pointer;
+    }
+    .menu_minor_on {
+        background-color: #9FDCFF;
+        color: #000000;
+        height: auto;
+        padding-bottom: 4px;
+        padding-top: 4px;
+    }
+    .menu_minor_off {
+        background-color: #FFFFFF;
+        color: #000000;
+        height: auto;
+        padding-bottom: 4px;
+        padding-top: 4px;
+    }
+    .ctx-container {
+        border-left: 1px solid #1B489C;
+        text-align: left;
+        vertical-align: top;
+    }
+    .ctx-iframe {
+        height: 540px;
+        overflow: auto;
+        width: 100%;
+    }
+    .ctx-merge-iframe {
+        height: 350px;
+        overflow: auto;
+        width: 100%;
+    }
+    .ctx-head-padding {
+        height: 20px;
+        width: 100%;
+    }
+    .ctx-head {
+        height: 12px;
+    }
+    .ctx-body {
+        padding-left: 40px;
+        padding-right: 38px;
+    }
+    .ctx-blank {
+        height: 45px;
+    }
+    .ctx-foot {
+        height: 20px;
+    }
+    .bottommargin {
+        margin-bottom: 20px;
+    }
+    .ecm-tbl {
+        width: 100%;
+    }
+    .ecm-tbl div {
+        display: inline;
+    }
+    .ecm-tbl th {
+        font-size: 18px;
+        font-weight: normal;
+        height: 40px;
+        padding-left: 10px;
+        text-align: left;
+    }
+    .ecm-tbl .onepx {
+        border-right: 1px solid #FFFFFF;
+    }
+    .ecm-tbl .tbl-name {
+        padding-left: 10px;
+        text-align: left;
+        padding-top:0px;
+        padding-bottom:0px;
+        vertical-align : middle;    
+    }
+    .ecm-tbl .tbl-value {
+        padding-left: 10px;
+        text-align: left;
+        padding-top:0px;
+        padding-bottom:0px;
+        vertical-align : middle;
+    }
+    .ecm-tbl .tbl-grey {
+        background-color: #EEEEEE;
+        padding-left: 6px;
+        vertical-align : middle;
+    }
+    .ecm-tbl .tbl-grey-15px {
+        background-color: #EEEEEE;
+        padding-left: 6px;
+    }
+    .ecm-tbl .tbl-middle {
+        padding-left: 6px;
+    }
+    .ecm-tbl .margin-indent {
+        margin-left: 1em;
+    }
+    .ecm-tbl .margin-indent:before {
+        content: "- ";
+    }
+    .ecm-tbl .margin-indent1_4 {
+        margin-left: 1.4em;
+    }
+    .ecm-tbl .margin-indent1_6 {
+        margin-left: 1.6em;
+    }
+    .ecm-tbl .margin-indent3 {
+        margin-left: 2.5em;
+    }
+    .ecm-tbl .margin-indent3:before {
+        content: "- ";
+    }
+    .ecm-tbl .float-align {
+        float: right;
+    }
+    .tbl-blank {
+        border-top: 1px solid #1B489C;
+        height: 0px;
+    }
+    .tbl-name {
+        border-bottom: 1px solid #EEEEEE;
+        color: #000000;
+        font-size: 16px;
+        height: 27px;
+    }
+    .tbl-value {
+        border-bottom: 1px solid #EEEEEE;
+        color: #000000;
+        font-size: 16px;
+        height: 27px;
+    }
+    .tbl-grey {
+        border-bottom: 1px solid #EEEEEE;
+        color: #000000;
+        font-size: 16px;
+        height: 27px;
+    }
+    .tbl-grey-15px {
+        border-bottom: 1px solid #EEEEEE;
+        color: #000000;
+        font-size: 15px;
+        height: 27px;
+        line-height: 19px;
+    }
+    .tbl-middle {
+        border-bottom: 1px solid #EEEEEE;
+        color: #000000;
+        font-size: 16px;
+        height: 27px;
+    }
+    .tbl-alighTop {
+        border-bottom: 1px solid #EEEEEE;
+        padding-left: 8px;
+        text-align: left;
+        vertical-align: top;
+    }
+    .striped {
+        background-color: #F0F0F0;
+    }
+    .caution_padding {
+        padding-left: 10px;
+    }
+    .button1 {
+        background: url("image/overlay.png") repeat-x scroll left center #00AFF0;
+        border: 1px solid #63CEF6;
+        border-radius: 4px 4px 4px 4px;
+        box-shadow: 0 0 0 rgba(22, 142, 199, 0.5) inset;
+        color: #FFFFFF;
+        cursor: pointer;
+        font: 16px tahoma,arial,sans-serif;
+        height: 30px;
+        margin: 10px 20px 20px 0;
+        min-width: 100px;
+        padding: 3px 8px 6px;
+        width: 100px;
+    }
+    .buttonPM {
+        background: url("image/overlay.png") repeat-x scroll left center #00AFF0;
+        border: 1px solid #63CEF6;
+        border-radius: 4px 4px 4px 4px;
+        box-shadow: 0 0 0 rgba(22, 142, 199, 0.5) inset;
+        color: #FFFFFF;
+        cursor: pointer;
+        font: 16px tahoma,arial,sans-serif;
+        height: 30px;
+        min-width: 100px;
+        padding: 3px 8px 6px;
+        width: 100px;
+    }
+    .button1:hover {
+        background: url("image/but_mouseover.png") repeat-x scroll center top #00AFF0;
+        border: 1px solid #3E97CE;
+        color: #FFFFFF;
+    }
+    .button1:active {
+        background: url("image/but_mouseover2.png") repeat-x scroll center top #00AFF0;
+        border: 1px solid #3E97CE;
+        color: #FFFFFF;
+        position: relative;
+        top: 0;
+    }
+    .button2 {
+        background: url("image/overlay.png") repeat-x scroll left center #00AFF0;
+        border: 1px solid #63CEF6;
+        border-radius: 4px 4px 4px 4px;
+        box-shadow: 0 0 0 rgba(22, 142, 199, 0.5) inset;
+        color: #FFFFFF;
+        cursor: pointer;
+        font: 16px tahoma,arial,sans-serif;
+        height: 30px;
+        margin: 10px 20px 20px 0;
+        min-width: 100px;
+        padding: 3px 8px 6px;
+        width: 200px;
+    }
+    .desc_style {
+        font-size: 12px;
+        text-align: center;
+        vertical-align: middle;
+    }
+    .div1 {
+        display: inline;
+    }
+    .quater_Smaller {
+        font-size: 80%;
+    }
+    .popbox {
+        background: none repeat scroll 0 0 #EEEFEB;
+        box-shadow: 0 0 5px 0 #A4A4A4;
+        color: #000000;
+        display: none;
+        margin: 0;
+        padding: 10px;
+        position: absolute;
+        width: 400px;
+        z-index: 99999;
+    }
+    .input-disabled{
+        background-color:black;
+        border:1px solid #ABADB3;
+        padding:2px 1px;
+    }
+    
+     select:disabled {
+        background-color : #CDCDCD;
+        color : gray;
+    }
+    
+     input:disabled {
+        background-color : #CDCDCD;
+        color : gray;
+    }
+    
+    #wifi_scan_result td {
+        font-size: 16px;
+    }
+     </STYLE>
+    <script>
+        function guess_wifi_signal(info)
+        {
+            var icon, scale;
+            scale = (100/((info.quality_max)?info.quality_max:100) * ((info.quality)?info.quality:0))
+    
+            if(info.bssid == "" && info.bssid == "00:00:00:00:00:00")
+            {
+                icon = "image/signal-none.png";
+            }
+            else if(scale < 15)
+            {
+                icon = "image/signal-0.png";
+            }
+            else if(scale < 35)
+            {
+                icon = "image/signal-0-25.png";
+            }
+            else if(scale < 55)
+            {
+                icon = "image/signal-25-50.png";
+            }
+            else if(scale < 75)
+            {
+                icon = "image/signal-50-75.png";
+            }
+            else
+            {
+                icon = "image/signal-75-100.png";
+            }
+            return icon;
+        }
+    
+        function percent_wifi_signal(info)
+        {
+            var qc = info.quality || 0;
+            var qm = info.quality_max || 0;
+            if(info.bssid != "" && qc > 0 && qm > 0)
+            {
+                return Math.floor((100/qm)*qc)
+            }
+            else
+            {
+                return 0;
+            }
+        }
+        function format_wifi_encryption(info)
+        {
+            var wpa_str;
+            if(info.wep)
+            {
+                return "WEP"
+            }
+            else if(info.wpa > 0 )
+            {
+                wpa_str = (info.wpa == 3)?String.format("mixed WPA/WPA2 - %s", info.auth_suites):(info.wpa == 2)?("WPA2 -"+info.auth_suites):("WPA -"+info.auth_suites);
+                switch(info.wpa){
+                    case 1:
+                        wpa_str = ("WPA -"+info.auth_suites);
+                        break;
+                    case 2:
+                        wpa_str = ("WPA2 -"+info.auth_suites);
+                        break;                    
+                    case 3:
+                        wpa_str = String.format("mixed WPA/WPA2 - %s", info.auth_suites);
+                        break;
+                    case 16:
+                        wpa_str = ("WPA3 -"+info.auth_suites);
+                        break;
+                    case 18:
+                        wpa_str = String.format("mixed WPA2/WPA3 - %s", info.auth_suites);
+                        break;
+                    case 4:
+                        wpa_str = "WPA";
+                        break;
+                    case 8:
+                        wpa_str = "WPA2";
+                        break;
+                    case 12:
+                        wpa_str = "WPA/WPA2";
+                        break;
+                    case 64:
+                        wpa_str = "WPA2-Enterprise";
+                        break;
+                    case 128:
+                        wpa_str = "WPA3-Enterprise";
+                        break;
+                    case 192:
+                        wpa_str = "WPA2/WPA3-Enterprise";
+                        break;
+                }
+                //return String.format("<abbr title='Pairwise: %s / Group: %s'>%s</abbr>",
+                //info.pair_ciphers, info.group_ciphers, wpa_str)
+                return String.format("<abbr>%s</abbr>",wpa_str)
+            }
+            else if(info.enabled)
+            {
+                return "unknown"
+            }
+            else
+            {
+                return "Open"
+            }
+        }
+        
+        $$(function()
+        {
+            netId="wifi1.network1"
+            data1 = {anticsrf: '<% generateToken("wifi_scan_5G") %>', submitType:"wifi_scan_5G", netId:netId};
+            
+            var scanTime = 18000;
+            var country = "<% cfg_get("wl_country") %>"
+            if (country == "840"){
+                scanTime = 40000;
+            }
+            ajax_normal({
+                async: false,
+                url: '<% action_url("apply.cgi", "wifi_join.htm") %>',
+                type: "post",
+                data:data1,
+                dataType:"json",
+                success:function(info){
+                    console.log("success");
+                }
+            })
+            setTimeout(function () {
+                data1 = {anticsrf: '<% generateToken("wifi_getScanRet_5G") %>', submitType:"wifi_getScanRet_5G", netId:netId};
+                
+                ajax_normal({
+                    async: false,
+                    type : "post",
+                    url: '<% action_url("apply.cgi", "wifi_join.htm") %>',
+                    data:data1,
+                    dataType:"json",
+                    error:function(){
+                        //console.log("ajax_checkChannel error");
+                    },
+                    success:function(info){
+                        //console.log("ajax_checkChannel success");
+                        if(info == "null" || info == "undefined")
+                        { 
+                            document.getElementById('wifi_scan_result').innerHTML="Please check your wireless interface : wifi0";
+                            return;
+                        }
+                        else
+                        {
+                            var s="", t, k;
+                            s += '<tr><td class="title" colspan="7">$site_survey</td></tr>';
+                        if (functionlist.SUPPORT_SCAN_RESULT_SHOW_TYPE == 1){
+                            s += '<tr"><td style="background:#EEEEEE">BSSID</td><td style="background:#EEEEEE">SSID</td><td style="background:#EEEEEE">$channel</td><td style="background:#EEEEEE">$signal_level</td><td style="background:#EEEEEE">$type</td><td style="background:#EEEEEE">$security</td><td style="background:#EEEEEE">$mode</td><td style="background:#EEEEEE"></td></tr>';
+
+                        }else{
+                            s += '<tr"><td style="background:#EEEEEE">BSSID</td><td style="background:#EEEEEE">SSID</td><td style="background:#EEEEEE">$channel</td><td style="background:#EEEEEE">$signal_level</td><td style="background:#EEEEEE">$security</td><td style="background:#EEEEEE">$mode</td><td style="background:#EEEEEE"></td></tr>';
+                        }
+
+
+                            for(var i=0;i<info.st.length;i++){
+                                t = info.st[i];
+                                s += '<tr>';
+                                if (functionlist.SUPPORT_SCAN_RESULT_SHOW_TYPE == 1){
+                                s += String.format('<td>%s</td><td>%s</td><td>%s</td><td>%s %s</td><td>%s</td><td>%s</td><td>%s</td>',
+                                        t.bssid,(htmlEncode(t.ssid)?htmlEncode(t.ssid):""),t.channel,t.signal,'%',t.wlmode,format_wifi_encryption(t.encryption),t.mode);
+                                }else{
+                                s += String.format('<td>%s</td><td>%s</td><td>%s</td><td>%s %s</td><td>%s</td><td>%s</td>',
+                                        t.bssid,(SpecHTML(t.ssid)?SpecHTML(t.ssid):""),t.channel,t.signal,'%',format_wifi_encryption(t.encryption),t.mode);    
+                                }
+                                // s += String.format('<td class="cbi-value-field" style="width:40px">' +
+                                //         '<form id='+(i+1)+' action="/cgi-bin/luci/;stok=1f0591de92e4bfcb6319fb70b11041fa/admin/network/wireless_join" method="post">' +
+                                //         '<input type="hidden" name="device" value="%s" />' +
+                                //         '<input type="hidden" name="join" value="%s" />' +
+                                //         '<input type="hidden" name="mode" value="%s" />' +
+                                //         '<input type="hidden" name="bssid" value="%s" />' +
+                                //         '<input type="hidden" name="channel" value="%s" />' +
+                                //         '<input type="hidden" name="wpa_version" value="%s" />' +
+                                //         '<input type="hidden" name="wep" value="%s" />' +
+                                //         '<input type="hidden" name="clbridge" value="%s" />'+
+                                //         '<input type="hidden" name="netid" value="%s" />'+
+                                //         '<input type="hidden" name="tmpOpmode" value="%s" />',
+                                //         'wifi0',(t.ssid).replace(/\"/g,"&quot;"),t.mode,t.bssid,t.channel,((t.encryption.wpa)?t.encryption.wpa:0),((t.encryption.wep)?t.encryption.wep:0), ((info.iw_type == "wl")?1:0),'wifi0.network1','ap');
+                                // for(k in t.encryption.auth_suites)
+                                // {
+                                //     s += '<input type="hidden" name="wpa_suites" value="'+t.encryption.auth_suites[k]+'" />';
+                                // }
+                                // for(k in t.encryption.group_ciphers)
+                                // {
+                                //     s += '<input type="hidden" name="wpa_group" value="'+t.encryption.group_ciphers[k]+'" />';
+                                // }
+                                // for(k in t.encryption.pair_ciphers)
+                                // {
+                                //     s += '<input type="hidden" name="wpa_pairwise" value="'+t.encryption.pair_ciphers[k]+'" />';
+                                // }
+                                // if(info.iw_mode == "Client")
+                                // {
+                                //		s += '<input class="cbi-button cbi-button-apply" type="submit" value="Join Network" />';
+                                // }
+                                s += '</form>';
+                                s += '</td>';
+                                s += '</tr>';
+                            }
+                            // if(info.iw_mode == "Client"){
+                                if('ap'.indexOf("sta")>-1){
+                                    $$(function() {
+                                            $$('#wifi_scan_result').delegate('tr', 'mouseenter', function() {
+                                            $$(this).addClass('datahighlight');
+                                        });
+
+                                        $$('#wifi_scan_result').delegate('tr', 'mouseleave', function() {
+                                            $$(this).removeClass('datahighlight');
+                                        });	
+                                        $$("#wifi_scan_result").delegate("tr", "click", function(event) {
+                                                var index = ($$("#wifi_scan_result tr").index($$(this)) - 1);
+                                                $$( "#"+index ).submit();
+                                        });      		
+                                        
+                                });							
+                            }
+                            //document.getElementById('wifi_scan_result').innerHTML=s;
+                            $$( "#wifi_scan_result" ).html(s);
+                        }
+
+                        $$('#repeat_scan').show();
+                    }
+                });
+            },scanTime)
+            
+
+
+        });
+        
+       
+    
+    </script>
+    
+    
+    <!--h2><a id="content" name="content">Join Network: Wireless Scan</a></h2-->
+    <div style="padding: 12px 38px 0 40px;">
+        <div class="cbi-map">
+            <fieldset class="cbi-section">
+                <table >
+                    <tbody id="wifi_scan_result">
+                    <tr>
+                        <td style="background: #FFFfff;"><img src="image/loading.gif" alt="Loading" style="vertical-align:middle" /> $scanning ...</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </fieldset>
+        </div>
+        <div class="cbi-page-actions left">
+            <form class="inline" action="" method="get">
+                <!-- <input type="hidden" name="device" value="wifi0" />
+                <input type="hidden" name="tmpOpmode" value="ap" />
+                <input type="hidden" name="netid" value="wifi0.network1" />
+                <input type="hidden" name="title" value="2.4GHz sitesurvey" /> -->
+    
+                <input id="repeat_scan" style="display:none; width: auto;" class="cbi-button cbi-button-save" type="submit" value="$repeat_scan" />
+            </form>
+        </div>
+    </div>
+    </html>
+    

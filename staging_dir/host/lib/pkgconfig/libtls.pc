@@ -1,0 +1,15 @@
+#libtls pkg-config source file
+
+prefix=/home2/caojingzhe/mtk7986_openwrt2/opt2102/staging_dir/host
+exec_prefix=/home2/caojingzhe/mtk7986_openwrt2/opt2102/staging_dir/host
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: LibreSSL-libtls
+Description: Secure communications using the TLS socket protocol.
+Version: 3.3.1
+Requires:
+Conflicts:
+Libs: -L${libdir} -ltls
+Libs.private: -lresolv -lpthread  
+Cflags: -I${includedir}

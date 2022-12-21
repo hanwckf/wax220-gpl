@@ -1,0 +1,2 @@
+config port_firewall 'config'
+	option servetype 'forwarding'

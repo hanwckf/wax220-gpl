@@ -1,0 +1,180 @@
+
+<html>
+     
+    <div class="cbi-map" id="cbi-wireless">
+        <h2><a id="content" name="content">5GHZ</a></h2>
+        
+        <fieldset class="cbi-section" id="cbi-wireless-wifi1">
+            
+            
+            
+            
+            <div class="cbi-section-node" id="cbi-wireless-wifi1">
+                
+    
+    
+        <div class="cbi-value" id="cbi-wireless-wifi1-obeyregpower"><label class="cbi-value-title" for="cbid.wireless.wifi1.obeyregpower">Green Mode</label>
+            <div class="cbi-value-field">
+    
+        <input type="hidden" value="1" name="cbi.cbe.wireless.wifi1.obeyregpower" />
+        <input class="cbi-input-checkbox" onclick="cbi_d_update(this.id)" onchange="cbi_d_update(this.id)" type="checkbox" id="cbid.wireless.wifi1.obeyregpower" name="cbid.wireless.wifi1.obeyregpower" value="1" checked="checked" />
+            </div></div>
+    
+    
+    
+    
+    <div class="cbi-value" id="cbi-wireless-wifi1-hwmode"><label class="cbi-value-title" for="cbid.wireless.wifi1.hwmode">Wireless Mode</label>
+            <div class="cbi-value-field">
+    
+    
+        <select class="cbi-input-select" onchange="cbi_d_update(this.id)" id="cbid.wireless.wifi1.hwmode" name="cbid.wireless.wifi1.hwmode" size="1">
+        <option id="cbi-wireless-wifi1-hwmode-11axa" value="11axa" selected="selected">802.11 ax/ac/n/a</option><option id="cbi-wireless-wifi1-hwmode-11ac" value="11ac">802.11 ac/n/a</option>
+        </select>
+    
+            </div></div>
+    
+    
+    
+    
+    <div class="cbi-value" id="cbi-wireless-wifi1-htmode"><label class="cbi-value-title" for="cbid.wireless.wifi1.htmode">Channel HT Mode</label>
+            <div class="cbi-value-field">
+    
+    
+        <select class="cbi-input-select" onchange="cbi_d_update(this.id)" id="cbid.wireless.wifi1.htmode" name="cbid.wireless.wifi1.htmode" size="1">
+	        <script>
+	            var ht160 = <% cfg_get("ht160_enable") %>;
+	            if (ht160) {
+	                var htmode = document.getElementById("cbid.wireless.wifi1.htmode");
+	                var ht160_option = new Option("160MHz", "HT160");
+	                ht160_option.id = 'cbi-wireless-wifi1-htmode-HT160';
+                    ht160_option.selected = true;
+	                htmode.options.add(ht160_option);
+	                var ht80_option = new Option("80MHz", "HT80");
+	                ht80_option.id = 'cbi-wireless-wifi1-htmode-HT80';
+	                htmode.options.add(ht80_option);
+	                var ht40_option = new Option("40MHz", "HT40");
+	                ht40_option.id = 'cbi-wireless-wifi1-htmode-HT40';
+	                htmode.options.add(ht40_option);
+	                var ht20_option = new Option("20MHz", "HT20");
+	                ht20_option.id = 'cbi-wireless-wifi1-htmode-HT20';
+	                htmode.options.add(ht20_option);
+	            }
+	            else
+	            {
+	                var htmode = document.getElementById("cbid.wireless.wifi1.htmode");
+	                var ht80_option = new Option("80MHz", "HT80");
+	                ht80_option.id = 'cbi-wireless-wifi1-htmode-HT80';
+                    ht80_option.selected = true;
+	                htmode.options.add(ht80_option);
+	                var ht40_option = new Option("40MHz", "HT40");
+	                ht40_option.id = 'cbi-wireless-wifi1-htmode-HT40';
+ 	                htmode.options.add(ht40_option);
+	                var ht20_option = new Option("20MHz", "HT20");
+	                ht20_option.id = 'cbi-wireless-wifi1-htmode-HT20';
+	                htmode.options.add(ht20_option);
+	            }
+	        </script>
+        </select>
+            </div></div>
+    
+    
+    <script type="text/javascript" id="cbip-wireless-wifi1-htmode">
+            cbi_d_add("cbi-wireless-wifi1-htmode-HT160", {"cbid.wireless.wifi1.hwmode":"11ac"}, "cbip-wireless-wifi1-htmode-HT160");cbi_d_add("cbi-wireless-wifi1-htmode-HT160", {"cbid.wireless.wifi1.hwmode":"11axa"}, "cbip-wireless-wifi1-htmode-HT160");cbi_d_add("cbi-wireless-wifi1-htmode-HT80", {"cbid.wireless.wifi1.hwmode":"11ac"}, "cbip-wireless-wifi1-htmode-HT80");cbi_d_add("cbi-wireless-wifi1-htmode-HT80", {"cbid.wireless.wifi1.hwmode":"11axa"}, "cbip-wireless-wifi1-htmode-HT80");cbi_d_add("cbi-wireless-wifi1-htmode-HT40", {"cbid.wireless.wifi1.hwmode":"11n"}, "cbip-wireless-wifi1-htmode-HT40");cbi_d_add("cbi-wireless-wifi1-htmode-HT40", {"cbid.wireless.wifi1.hwmode":"11na"}, "cbip-wireless-wifi1-htmode-HT40");cbi_d_add("cbi-wireless-wifi1-htmode-HT40", {"cbid.wireless.wifi1.hwmode":"11ac"}, "cbip-wireless-wifi1-htmode-HT40");cbi_d_add("cbi-wireless-wifi1-htmode-HT40", {"cbid.wireless.wifi1.hwmode":"11axa"}, "cbip-wireless-wifi1-htmode-HT40");cbi_d_add("cbi-wireless-wifi1-htmode-HT20", {"cbid.wireless.wifi1.hwmode":"11n"}, "cbip-wireless-wifi1-htmode-HT20");cbi_d_add("cbi-wireless-wifi1-htmode-HT20", {"cbid.wireless.wifi1.hwmode":"11na"}, "cbip-wireless-wifi1-htmode-HT20");cbi_d_add("cbi-wireless-wifi1-htmode-HT20", {"cbid.wireless.wifi1.hwmode":"11ac"}, "cbip-wireless-wifi1-htmode-HT20");cbi_d_add("cbi-wireless-wifi1-htmode-HT20", {"cbid.wireless.wifi1.hwmode":"11axa"}, "cbip-wireless-wifi1-htmode-HT20");
+            
+        </script>
+    
+    <div class="cbi-value" id="cbi-wireless-wifi1-channel"><label class="cbi-value-title" for="cbid.wireless.wifi1.channel">Channel</label>
+            <div class="cbi-value-field">
+    
+    
+        <select class="cbi-input-select" onchange="cbi_d_update(this.id)" id="cbid.wireless.wifi1.channel" name="cbid.wireless.wifi1.channel" size="1">
+        <option id="cbi-wireless-wifi1-channel-auto" value="auto">Auto</option><option id="cbi-wireless-wifi1-channel-36" value="36" selected="selected">Ch 36 : 5.18 GHz</option><option id="cbi-wireless-wifi1-channel-40" value="40">Ch 40 : 5.2 GHz</option><option id="cbi-wireless-wifi1-channel-44" value="44">Ch 44 : 5.22 GHz</option><option id="cbi-wireless-wifi1-channel-48" value="48">Ch 48 : 5.24 GHz</option><option id="cbi-wireless-wifi1-channel-149" value="149">Ch 149 : 5.745 GHz</option><option id="cbi-wireless-wifi1-channel-153" value="153">Ch 153 : 5.765 GHz</option><option id="cbi-wireless-wifi1-channel-157" value="157">Ch 157 : 5.785 GHz</option><option id="cbi-wireless-wifi1-channel-161" value="161">Ch 161 : 5.805 GHz</option><option id="cbi-wireless-wifi1-channel-165" value="165">Ch 165 : 5.825 GHz</option>
+        </select>
+    
+            </div></div>
+    
+    
+    <script type="text/javascript" id="cbip-wireless-wifi1-channel">
+            cbi_d_add("cbi-wireless-wifi1-channel-auto", {"cbid.wireless.wifi1.opmode":"ap"}, "cbip-wireless-wifi1-channel-auto");cbi_d_add("cbi-wireless-wifi1-channel-auto", {"cbid.wireless.wifi1.opmode":"wds_ap"}, "cbip-wireless-wifi1-channel-auto");
+            
+        </script>
+    
+    <div class="cbi-value" id="cbi-wireless-wifi1-txpower"><label class="cbi-value-title" for="cbid.wireless.wifi1.txpower">Transmit Power</label>
+            <div class="cbi-value-field">
+    
+    
+        <select class="cbi-input-select" onchange="cbi_d_update(this.id)" id="cbid.wireless.wifi1.txpower" name="cbid.wireless.wifi1.txpower" size="1">
+            <option id="cbi-wireless-wifi1-txpower-0" value="100" selected="selected">Full</option><option id="cbi-wireless-wifi1-txpower-1" value="50">Half</option><option id="cbi-wireless-wifi1-txpower-2" value="25">Quarter</option>
+        </select>
+    
+            </div></div>
+    
+    
+    
+    
+    <div class="cbi-value" id="cbi-wireless-wifi1-rts"><label class="cbi-value-title" for="cbid.wireless.wifi1.rts">RTS/CTS Threshold(1-2346)</label>
+            <div class="cbi-value-field">
+    
+        <input type="text" class="cbi-input-text" onchange="cbi_d_update(this.id)" name="cbid.wireless.wifi1.rts" id="cbid.wireless.wifi1.rts" value="2346" maxlength="4" />
+        
+                </div></div>
+    
+    
+    
+    
+    <div class="cbi-value" id="cbi-wireless-wifi1-clientlimits_enable"><label class="cbi-value-title" for="cbid.wireless.wifi1.clientlimits_enable">Client Limits</label>
+            <div class="cbi-value-field">
+    
+    
+        <input class="cbi-input-radio" onclick="cbi_d_update(this.id)" onchange="cbi_d_update(this.id)" type="radio" id="cbid.wireless.wifi1.clientlimits_enable1" name="cbid.wireless.wifi1.clientlimits_enable" value="1" checked="checked" />
+        <label for="cbid.wireless.wifi1.clientlimits_enable1">$enable</label>
+        <img width="15px">&nbsp;&nbsp;
+    
+        <input class="cbi-input-radio" onclick="cbi_d_update(this.id)" onchange="cbi_d_update(this.id)" type="radio" id="cbid.wireless.wifi1.clientlimits_enable1" name="cbid.wireless.wifi1.clientlimits_enable" value="0" />
+        <label for="cbid.wireless.wifi1.clientlimits_enable1">$disable</label>
+    
+    
+            </div></div>
+    
+    
+    
+    
+    <div class="cbi-value" id="cbi-wireless-wifi1-clientlimits_number"><label class="cbi-value-title" for="cbid.wireless.wifi1.clientlimits_number"> </label>
+            <div class="cbi-value-field">
+    
+        <input type="text" class="cbi-input-text" onchange="cbi_d_update(this.id)" name="cbid.wireless.wifi1.clientlimits_number" id="cbid.wireless.wifi1.clientlimits_number" value="64" maxlength="3" />
+        
+                </div></div>
+    
+    
+    
+    
+    <div class="cbi-value cbi-value-last" id="cbi-wireless-wifi1-opmode"><label class="cbi-value-title" for="cbid.wireless.wifi1.opmode">Operation Mode</label>
+            <div class="cbi-value-field">
+    
+    
+        <select class="cbi-input-select" onchange="cbi_d_update(this.id)" id="cbid.wireless.wifi1.opmode" name="cbid.wireless.wifi1.opmode" size="1">
+        <option id="cbi-wireless-wifi1-opmode-ap" value="ap" selected="selected">Access Point</option>
+        </select>
+    
+            </div></div>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+            </div>
+            <br />
+        </fieldset>
+    
+    <!-- /nsection -->
+    
+        <br />
+    </div>       
+    </html>

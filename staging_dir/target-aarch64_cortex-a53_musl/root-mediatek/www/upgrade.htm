@@ -1,0 +1,38 @@
+<% http_header("style/cascade2.css", "style/cascade-custom.css", "script/jquery-1.12.4.min.js", "script/cbi.js", "script/common.js", "script/upgrade.js") %>
+<body onLoad="please_wait(false);">
+	<fieldset class="cbi-section">
+		<form method="post" id="fw_up">
+			<table>
+			    <td class="title" colspan="2">$flash_firmware - $verify</td>
+				<tr class="title-option">
+                    <td style="width: 35%;" colspan="2"><br/>$upgrade_note17 $upgrade_note18<br/></td>
+					<tr class="title-option">
+						<td>$checksum</td>
+						<td id="current_version" td colspan="2">
+						    <script>
+					   	        var imageMd5 = "<% cat_file("/tmp/image_md5") %>"
+					   	        document.write(imageMd5);
+						    </script>
+						</td>
+					</tr>
+					<tr class="title-option">
+						<td>$size</td>
+						<td id="new_version" td colspan="2">
+						    <script>
+					   	        var imageSize = "<% cat_file("/tmp/image_size") %>"
+					   	        document.write(imageSize);
+						    </script>
+						</td>
+					</tr>
+				</tr>
+				<td nowrap colspan=2 align=center>
+					<script>
+						document.write('<input style="width:100px;" class="cbi-button" type="button" myid="system_fw_cancel" value="'+"$cancel"+'" onclick="cancel_image();">&nbsp&nbsp&nbsp&nbsp&nbsp;');
+						document.write('<input style="width:100px;" class="cbi-button" type="button" myid="system_fw_proceed" value="'+"$proceed"+'" onclick="upgrade_image();">');
+					</script>
+				</td>
+			</table>
+		</form>
+		<br/>
+	</fieldset>
+</body>

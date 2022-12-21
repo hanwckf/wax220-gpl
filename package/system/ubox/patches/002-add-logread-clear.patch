@@ -1,0 +1,148 @@
+--- a/log/syslog.h	2020-12-10 16:00:44.822900762 +0800
++++ b/log/syslog.h	2020-12-10 16:17:20.114710334 +0800
+@@ -39,6 +39,7 @@
+ struct log_head* log_list(int count, struct log_head *h);
+ int log_buffer_init(int size);
+ void log_add(char *buf, int size, int source);
++void log_clear(int source);
+ void ubus_notify_log(struct log_head *l);
+ 
+ #endif
+--- a/log/syslog.c	2020-12-10 16:00:42.114922027 +0800
++++ b/log/syslog.c	2020-12-10 17:59:56.008798282 +0800
+@@ -137,6 +137,12 @@
+ 	newest = next;
+ }
+ 
++void
++log_clear(int source)
++{
++	oldest = newest = log;
++}
++
+ static void
+ syslog_handle_fd(struct uloop_fd *fd, unsigned int events)
+ {
+--- a/log/logd.c	2020-12-10 15:55:57.383157431 +0800
++++ b/log/logd.c	2020-12-10 16:16:03.749686346 +0800
+@@ -47,6 +47,9 @@
+ static const struct blobmsg_policy write_policy =
+ 	{ .name = "event", .type = BLOBMSG_TYPE_STRING };
+ 
++static const struct blobmsg_policy clear_policy =
++	{ .name = "source", .type = BLOBMSG_TYPE_INT32 };
++
+ struct client {
+ 	struct list_head list;
+ 
+@@ -185,9 +188,29 @@
+ 	return 0;
+ }
+ 
++static int
++clear_log(struct ubus_context *ctx, struct ubus_object *obj,
++		struct ubus_request_data *req, const char *method,
++		struct blob_attr *msg)
++{
++	struct blob_attr *tb;
++	int source;
++
++	if (msg) {
++		blobmsg_parse(&clear_policy, 1, &tb, blob_data(msg), blob_len(msg));
++		if (tb) {
++			source = blobmsg_get_u32(tb);
++			log_clear(source);
++		}
++	}
++
++	return 0;
++}
++
+ static const struct ubus_method log_methods[] = {
+ 	UBUS_METHOD("read", read_log, read_policy),
+-	{ .name = "write", .handler = write_log, .policy = &write_policy, .n_policy = 1 },
++	UBUS_METHOD("write", write_log, &write_policy),
++	UBUS_METHOD("clear", clear_log, &clear_policy),
+ };
+ 
+ static struct ubus_object_type log_object_type =
+--- a/log/logread.c	2020-12-10 15:56:19.743981881 +0800
++++ b/log/logread.c	2020-12-10 16:59:37.581735793 +0800
+@@ -70,6 +70,7 @@
+ static int facility_exclude;
+ static int priority_include;
+ static int priority_exclude;
++static int clear_source;
+ 
+ /* check for facility filter; return 0 if message shall be dropped */
+ static int check_facility_filter(int f)
+@@ -249,6 +250,7 @@
+ 		"    -u			Use UDP as the protocol\n"
+ 		"    -t			Add an extra timestamp\n"
+ 		"    -0			Use \\0 instead of \\n as trailer when using TCP\n"
++		"    -c	<source>	Clear messages with given source (0-3), 0:klog/1:syslog/2:internal/3:any\n"
+ 		"\n", prog);
+ 	return 1;
+ }
+@@ -324,7 +326,7 @@
+ 
+ 	signal(SIGPIPE, SIG_IGN);
+ 
+-	while ((ch = getopt(argc, argv, "u0fcs:l:z:Z:v:V:r:F:p:S:P:h:e:t")) != -1) {
++	while ((ch = getopt(argc, argv, "u0fc:s:l:z:Z:v:V:r:F:p:S:P:h:e:t")) != -1) {
+ 		switch (ch) {
+ 		case 'u':
+ 			log_udp = 1;
+@@ -380,13 +382,16 @@
+ 			hostname = optarg;
+ 			break;
+ 		case 'e':
+-			if (!regcomp(&regexp_preg, optarg, REG_NOSUB)) {
++			if (!regcomp(&regexp_preg, optarg, REG_NOSUB | REG_EXTENDED)) {
+ 				regexp_pattern = optarg;
+ 			}
+ 			break;
+ 		case 't':
+ 			log_timestamp = 1;
+ 			break;
++		case 'c':
++			clear_source = atoi(optarg);
++			break;
+ 		default:
+ 			return usage(*argv);
+ 		}
+@@ -409,12 +414,16 @@
+ 	}
+ 
+ 	blob_buf_init(&b, 0);
+-	blobmsg_add_u8(&b, "stream", 1);
+-	blobmsg_add_u8(&b, "oneshot", !log_follow);
+-	if (lines)
+-		blobmsg_add_u32(&b, "lines", lines);
+-	else if (log_follow)
+-		blobmsg_add_u32(&b, "lines", 0);
++	if (clear_source) {
++		blobmsg_add_u32(&b, "source", clear_source);
++	} else {
++		blobmsg_add_u8(&b, "stream", 1);
++		blobmsg_add_u8(&b, "oneshot", !log_follow);
++		if (lines)
++			blobmsg_add_u32(&b, "lines", lines);
++		else if (log_follow)
++			blobmsg_add_u32(&b, "lines", 0);
++	}
+ 
+ 	/* ugly ugly ugly ... we need a real reconnect logic */
+ 	do {
+@@ -429,6 +438,11 @@
+ 		logd_conn_tries = 0;
+ 		logread_setup_output();
+ 
++		if (clear_source) {
++			ubus_invoke(ctx, id, "clear", b.head, NULL, 0, 3000);
++			break;
++		}
++
+ 		ubus_invoke_async(ctx, id, "read", b.head, &req);
+ 		req.fd_cb = logread_fd_cb;
+ 		ubus_complete_request_async(ctx, &req);

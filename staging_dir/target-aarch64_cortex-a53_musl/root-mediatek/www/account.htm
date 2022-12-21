@@ -1,0 +1,43 @@
+<% http_header("style/cascade2.css", "style/cascade-custom.css", "script/jquery-1.12.4.min.js", "script/jquery.base64.js", "script/cbi.js", "script/common.js", "script/account.js") %>
+<body onLoad="please_wait(false);" bgcolor="#ffffff">
+<div id="password_info" class="popbox">
+    <p>$account_note1!@#$$%^&()*</p>
+</div>
+<form name="form" method="post">
+<fieldset class="cbi-section">
+<table>
+	<tr>
+		<td colspan="2" class="title">$account_settings<img class="popper" data-popbox="password_info" src="image/icon_info_blue.png"></td>
+	</tr>
+	<tr class="title-option" id="usrname">
+		<td>$administrator_username</td>
+		<td><input type="text"  maxlength="12" name="usr_name" id="usr_name" style="width:170px;" value="$olduser" disabled>
+		</td>
+	</tr>
+		<tr class="title-option">
+		<td style="width:50%;">$current_password</td>
+		<td><input type="password" maxlength="32" name="cur_pw" id="cur_pw" autocomplete="off" style="width:170px;">
+		<img src="image/eye-slash.svg" id="cur_eye" style="vertical-align:middle" title="<%:Reveal/hide password%>" onclick="changeInputType('cur_pw', 'cur_eye')" />
+		</td>
+	</tr>
+	<tr class="title-option">
+		<td style="width:50%;">$new_password</td>
+		<td><input type="password" maxlength="32" name="pw1" id="pw1" autocomplete="off" style="width:170px;">
+		<img src="image/eye-slash.svg" id="pw1_eye" style="vertical-align:middle" title="<%:Reveal/hide password%>" onclick="changeInputType('pw1', 'pw1_eye')" />
+		</td>
+	</tr>
+	<tr class="title-option">
+		<td style="width:50%;">$verify_password</td>
+		<td><input type="password" maxlength="32" name="pw2" id="pw2" autocomplete="off" style="width:170px;">
+		<img src="image/eye-slash.svg" id="pw2_eye" style="vertical-align:middle" title="<%:Reveal/hide password%>" onclick="changeInputType('pw2', 'pw2_eye')" />
+		</td>
+	</tr>
+</table>
+</fieldset>
+<br>
+<div class="cbi-page-actions">
+	<input type="hidden" id="submitType" value="1" name="submitType"/>
+	<input class="cbi-button cbi-button-apply" onclick="return savechanges()" myid="button_save" type="submit" value="$apply">
+</div>
+</form>
+</body>

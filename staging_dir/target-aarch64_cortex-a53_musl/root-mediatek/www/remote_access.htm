@@ -1,0 +1,322 @@
+<%
+local uci = require "luci.model.uci".cursor()
+local ntm = require "luci.model.network"
+local firmwareVersion_sha = luci.util.trim(luci.util.exec("cat /etc/version | grep build"))
+local firmwareVersion = luci.util.trim(luci.util.exec("cat /etc/version | grep Firmware |awk '{printf $4}'"))
+local ICON_LOGO = uci:get('functionlist','vendorlist','ICON_LOGO') or "/Netgear_logo.png"
+local BANNER_LOGO = uci:get('functionlist','vendorlist','BANNER_LOGO') or "/banner_logo.png"
+local PRODUCT_LOGO = "/product_logo.png"
+local modelname = uci:get("sysProductInfo","model","modelName")
+local description = uci:get("sysProductInfo","model","description")
+local port = luci.util.trim(luci.util.exec("remote_access -p"))
+local comment = luci.util.trim(luci.util.exec("cat /overlay/insight/support/comment.txt"))
+local remoteIsRunning = luci.util.exec("ps -w | grep \"remote_access\" | grep -v \"grep\" | awk \'\{printf $1\}\'")
+%>
+<style>
+	@font-face {
+<% if uci:get('functionlist','functionlist','SUPPORT_BUSINESS_SERIES') == '1' then %>
+	  font-family: 'AvenirNextLTPro-Regular';
+	  src: url('/luci-static/web_NTGR/font/AvenirNextLTPro-Regular.ttf');
+<% else %>
+	  font-family: 'Source Sans Pro';
+	  src: url('/luci-static/web_NTGR/font/SourceSansPro-Regular.ttf');
+<% end %>
+	  font-style: normal;
+	}
+	input:focus {
+		outline: 0;
+	}
+	input[type="button"]
+	{
+		background-color: #1AA0D9 !important;
+		border-radius: 0px !important;
+		padding: 4px 25px !important;
+		font-size: 15px;
+		color: white;
+		border-color: transparent;
+		-webkit-appearance: none;
+		outline: none !important;
+		transition: all 0.1s;
+<% if uci:get('functionlist','functionlist','SUPPORT_BUSINESS_SERIES') == '1' then %>
+		font-family: 'AvenirNextLTPro-Regular';
+<% else %>
+		font-family: 'Source Sans Pro';
+<% end %>
+	}
+	body{
+		margin: 0;
+		padding: 0;
+		border: 0;
+		background-position: center center;
+	}
+	span{
+		font-size: 16px;
+		color: #ffffff;
+		margin-right: 15px;
+	}
+	td,div,span{
+<% if uci:get('functionlist','functionlist','SUPPORT_BUSINESS_SERIES') == '1' then %>
+		font-family: 'AvenirNextLTPro-Regular' !important;
+<% else %>
+		font-family: 'Source Sans Pro' !important;
+<% end %>
+		font-size: 14px;
+		padding: 0;
+	}
+	.title-section td{
+		height: 8px;
+		font-size: 16px;
+		color: #000000;
+		vertical-align: middle;
+		font-weight: bold;
+	}
+
+	.title-option td{
+		height: 8px;
+		font-size: 14px;
+		color: #000000;
+		vertical-align: middle;
+		font-weight: bold;
+		padding-top: 10px;
+	}
+	.img-log{
+		margin-left: 28%;
+		margin-top: 15.5px;
+		margin-bottom: 14px;
+		width: 60%
+	}
+	.product-logo{
+		width: 58%;
+		height: auto;
+	}
+	.popbox {
+    display: none;
+    position: absolute;
+    z-index: 99999;
+    width: 400px;
+    padding: 10px;
+    background: #EEEFEB;
+    color: #000000;
+    /*border: 1px solid #4D4F53;*/
+    margin: 0px;
+    -webkit-box-shadow: 0px 0px 5px 0px rgba(164, 164, 164, 1);
+    box-shadow: 0px 0px 5px 0px rgba(164, 164, 164, 1);
+	}
+	.cbi-button {
+	cursor: pointer;
+	display: inline-block;
+	background-color: #ffffff;
+	background-repeat: no-repeat;
+	filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffffff', endColorstr='#e6e6e6', GradientType=0);
+	padding: 5px 14px 6px;
+	color: #333;
+	font-size: 14px;
+	line-height: normal;
+	border: 1px solid #ccc;
+	border-bottom-color: #bbb;
+	-webkit-border-radius: 4px;
+	-moz-border-radius: 4px;
+	border-radius: 4px;
+	-webkit-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+	-moz-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+.cbi-page-actions .cbi-button-save {
+	color: #ffffff;
+	background-color: #1aa0d9 !important;
+	border-radius: 0px !important;
+	padding: 4px 25px !important;
+	font-size: 14px;
+	border-color: transparent;
+	-webkit-appearance: none;
+	outline: none !important;
+	transition: all 0.1s;
+	background-image: -webkit-linear-gradient(top, #1aa0d9, #1aa0d9);
+}
+select,
+option,
+textarea {
+	font-size: 100%;
+	margin: 0;
+	-webkit-box-sizing: border-box;
+	-moz-box-sizing: border-box;
+	box-sizing: border-box;
+	vertical-align: baseline;
+	*vertical-align: middle;
+}
+select,
+textarea {
+<% if uci:get('functionlist','functionlist','SUPPORT_BUSINESS_SERIES') == '1' then %>
+	font-family: "AvenirNextLTPro-Regular", sans-serif;
+<% else %>
+	font-family: "Source Sans Pro", sans-serif;
+<% end %>
+	font-size: 14px;
+	font-weight: normal;
+	line-height: normal;
+}
+select,
+.uneditable-input {
+	display: inline-block;
+	width: 100%;
+	height: 34px;
+	padding: 4px;
+	font-size: 14px;
+	line-height: 18px;
+	border: 1px solid #ccc;
+	-webkit-border-radius: 3px;
+	-moz-border-radius: 3px;
+	border-radius: 3px;
+}
+</style>
+<html>
+<head>
+<script src="<%=media%>/jquery-1.12.4.min.js"></script>
+<script src="<%=resource%>/cbi.js"></script>
+<script src="<%=media%>/common.js"></script>
+<script src="<%=resource%>/xhr.js"></script>
+<script>
+function saveChanges()
+{   
+	if($('input[name$="remote_checkbox"]').is(":checked"))
+	{
+		$('input[name$="remote_enable"]').val(1);
+	}
+	else
+	{
+		$('input[name$="remote_enable"]').val(0);
+	}
+	$('#submitType').val(1);
+}
+function init()
+{
+	document.getElementsByName("remote_checkbox")[0].checked=('<%=remoteIsRunning%>')?true:false;
+	if($('input[name$="remote_checkbox"]').is(":checked"))
+	{
+		$('input[name$="comment"]').attr("disabled", false);
+	}
+	else
+	{
+		$('input[name$="comment"]').attr("disabled", true);
+	}
+	$('input[name$="port_number"]').attr("disabled", true);
+}
+$(function()
+{
+	init();
+	$('input[name$="remote_checkbox"]').click(function(){
+		if($('input[name$="remote_checkbox"]').is(":checked"))
+		{
+			$('input[name$="comment"]').attr("disabled", false);
+			$('#Secure_Diagnostic_window').show();
+			$('input[name$="cbi.apply"]').attr("disabled", true);
+		}
+		else
+		{
+			$('input[name$="comment"]').attr("disabled", true);
+		}
+	});
+})
+function pop_out_window(option){
+	if(option == 1){
+		$('input[name$="cbi.apply"]').attr("disabled", false);
+	}
+	else if(option == 0){
+		document.getElementsByName("remote_checkbox")[0].checked=false;
+	}
+	$('#Secure_Diagnostic_window').hide();
+}
+</script> 
+</head>
+<body >
+<FORM method="post" name="formname" action="<%=REQUEST_URI%>">
+<table height="53px" width="100%" style="background-color: #3F3E3F">
+<TR>
+	<TD width="220px" height="50px" style="margin-left: 15px">
+		<IMG class="img-log" width="58%";alt="" src="<%=media%><%=ICON_LOGO%>">
+	</TD>
+	<TD width="auto" align="right">
+		<span><%=modelname%> - <%=description%></span>
+	</TD>
+</TR>
+</table>
+<table width="80%" align="center" >
+<TR>
+	<br><br>
+	<TD width="50%"; align="center" valign="top">
+	<label><%:Firmware Version : %>V<%=firmwareVersion%></label>
+	<IMG class="product-logo" src="<%=media%><%=PRODUCT_LOGO%>"></TD>
+	<TD height="90%" width="50%" valign="top" align="right" >
+		<div class="cbi-page-actions" style="padding-top:60px" >
+			<table width="80%">
+				<tr class="title-option">
+					<td style="width:40%;"><%:Support%></td>
+					<td>
+						<input type="checkbox" name="remote_checkbox" id="remote_checkbox"><label>&nbsp;&nbsp;<%:Secure Diagnostic Mode%></label>
+					</td>
+				</tr>
+<% if remoteIsRunning ~= nill and remoteIsRunning ~= "" then %>
+				<tr class="title-option">
+					<td class="subtitle">-&nbsp;<%:Port%></td>
+					<td><input type="text" name="port_number" id="port_number" value="<%=port%>" style="height:27px;"></td>
+				</tr>
+<% else %>
+				<tr class="title-option">
+					<td class="subtitle">-&nbsp;<%:Port%></td>
+					<td><input type="text" name="port_number" id="port_number" value="" style="height:27px;"></td>
+				</tr>
+<% end %>
+				<tr class="title-option">
+					<td class="subtitle">-&nbsp;<%:Comment%></td>
+					<td><input type="text" name="comment" id="comment" value="<%=comment%>" style="height:27px;"></td>
+				</tr>
+				<tr class="title-option">
+					<td></td>
+					<td>
+						<input type="hidden" id="submitType" name="submitType"/>
+						<input type="hidden" id="remote_enable" name="remote_enable"/>
+						<input class="cbi-button cbi-button-apply" onclick="return saveChanges()" type="submit" name="cbi.apply" myid="button_save" value="<%:Apply%>">
+					</td>
+				</tr>
+			</table>
+		</div>
+		<div id="Secure_Diagnostic_window" style="position:fixed; bottom:40%; right:40%; left:40%; width:450px; height:300px; border-style: solid;border-color: #ddd;background: #EEECE2; display:none;">
+			<table>
+				<tr>
+					<td colspan="2" style="padding-top:10px; padding-left:15px; padding-right:15px;">
+						<font style="color: black; font-size:125%;"><%:Secure Diagnostic Mode%></font>
+					</td>
+				</tr>	
+				<tr><td>&nbsp;</td></tr>
+				<tr>
+					<td colspan="2" style="padding-top:10px; padding-left:15px; padding-right:15px;">
+						<font style="color: black; font-size:125%;"><%:Enabling Support Diagnostic Mode connects your business router system to NETGEAR's diagnostic server, allowing support personnel to remotely diagnose your system.%></font>
+					</td>
+				</tr>
+				<tr>
+					<td colspan="2" style="padding-top:10px; padding-left:15px; padding-right:15px;">
+						<font style="color: black; font-size:125%;"><%:By enabling Support Diagnostic mode, you agree to the terms of the %></font>
+						<a href="http://kb.netgear.com/app/answers/detail/a_id/20932/~/netgear-remote-access-policy">NETGEAR Remote Access Policy</a>.
+					</td>
+				</tr>
+				<tr><td>&nbsp;</td></tr>
+				<tr>
+					<td>
+						<div class="cbi-page-actions" align="center" style="margin-bottom: 0px;">
+							<input class="cbi-button cbi-button-save" myid="enjet_mangement_pw_apply" onclick='pop_out_window(1)' style="background-color:#21a9f3; color:#ffffff" type="button" value="<%:Yes%>" />
+						</div>
+					</td>
+					<td align="right">
+						<div class="cbi-page-actions" align="center" style="margin-bottom: 0px;">
+							<input class="cbi-button cbi-button-save" style="background-color:#21a9f3; color:#ffffff" type="button" onclick="pop_out_window(0);" value="<%:No%>" />
+						</div>
+					</td>
+				</tr>
+			</table>
+		</div>
+	</TD>
+</TR>
+</TABLE>
+</FORM>
+</body>
+</html> 

@@ -1,0 +1,155 @@
+diff -Naru 1_old/ap_cfg.c 1_new/ap_cfg.c
+--- a/mt_wifi/embedded/ap/ap_cfg.c
++++ b/mt_wifi/embedded/ap/ap_cfg.c
+@@ -25031,6 +25031,10 @@
+ 	case CMD_RTPRIV_IOCTL_GET_MAC_TABLE:
+ 		RTMPIoctlGetMacTable(pAd, wrq);
+ 		break;
++
++	case CMD_RTPRIV_IOCTL_GET_DEV_COUNT_INFO:
++		RTMPIoctlGetDevCountInfo(pAd, wrq);
++		break;
+ #if defined(AP_SCAN_SUPPORT) || defined(CONFIG_STA_SUPPORT)
+ 
+ 	case CMD_RTPRIV_IOCTL_GSITESURVEY:
+diff -Naru 1_old/ap_cfg.h 1_new/ap_cfg.h
+--- a/mt_wifi/embedded/include/ap_cfg.h
++++ b/mt_wifi/embedded/include/ap_cfg.h
+@@ -183,6 +183,10 @@
+ #endif /* RADIUS_MAC_ACL_SUPPORT */
+ #endif /* DOT1X_SUPPORT */
+ 
++VOID RTMPIoctlGetDevCountInfo(
++	IN PRTMP_ADAPTER pAd,
++	IN RTMP_IOCTL_INPUT_STRUCT *wrq);
++
+ INT Set_AP_Daemon_Status(
+ 	IN PRTMP_ADAPTER pAd,
+ 	IN UINT8 WorkSpaceID,
+diff -Naru 1_old/ap_ioctl.c 1_new/ap_ioctl.c
+--- a/mt_wifi/os/linux/ap_ioctl.c
++++ b/mt_wifi/os/linux/ap_ioctl.c
+@@ -926,6 +926,10 @@
+ 		break;
+ 		/* end of modification */
+ 
++    case RTPRIV_IOCTL_GET_DEV_COUNT_INFO:
++        RTMP_AP_IoctlHandle(pAd, wrq, CMD_RTPRIV_IOCTL_GET_DEV_COUNT_INFO, 0, NULL, 0);
++        break;
++
+ 	case RTPRIV_IOCTL_GET_DRIVER_INFO:
+ 		RTMP_AP_IoctlHandle(pAd, wrq, CMD_RTPRIV_IOCTL_GET_DRIVER_INFO, 0, NULL, 0);
+ 		break;
+diff -Naru 1_old/cmm_info.c 1_new/cmm_info.c
+--- a/mt_wifi/embedded/common/cmm_info.c
++++ b/mt_wifi/embedded/common/cmm_info.c
+@@ -6935,6 +6935,51 @@
+ 		os_free_mem(pMacTab);
+ }
+ 
++
++VOID RTMPIoctlGetDevCountInfo(IN PRTMP_ADAPTER pAd, IN RTMP_IOCTL_INPUT_STRUCT *wrq)
++{
++	INT i;
++	RT_802_11_COUNT_INFO *pMacTab = NULL;
++	PRT_802_11_COUNT_INFO_ENTRY pDst;
++	MAC_TABLE_ENTRY *pEntry;
++
++	os_alloc_mem(NULL, (UCHAR **)&pMacTab, sizeof(RT_802_11_COUNT_INFO));
++
++	if (pMacTab == NULL) {
++		MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR, ("%s: Allocate memory fail!!!\n", __func__));
++		return;
++	}
++
++	NdisZeroMemory(pMacTab, sizeof(RT_802_11_COUNT_INFO));
++
++	for (i = 0; VALID_UCAST_ENTRY_WCID(pAd, i); i++)
++	{
++		pEntry = &(pAd->MacTab.Content[i]);
++
++		if (((IS_ENTRY_CLIENT(pEntry) || IS_ENTRY_PEER_AP(pEntry) || IS_ENTRY_REPEATER(pEntry)) 	&& (pEntry->Sst == SST_ASSOC)) || IS_ENTRY_WDS(pEntry))
++		{
++			pDst = &pMacTab->Entry[pMacTab->Num];
++			pDst->ApIdx = pEntry->func_tb_idx;
++			COPY_MAC_ADDR(pDst->Addr, &pEntry->Addr);
++			pDst->Aid = (UCHAR)pEntry->Aid;
++			pDst->TxPackets = (UINT64)pEntry->TxPackets.QuadPart;
++			pDst->RxPackets = (UINT64)pEntry->RxPackets.QuadPart;
++			pDst->TxBytes = (UINT64)pEntry->TxBytes;
++			pDst->RxBytes = (UINT64)pEntry->RxBytes;
++			pMacTab->Num += 1;
++		}
++	}
++
++	wrq->u.data.length = sizeof(RT_802_11_COUNT_INFO);
++
++	if (copy_to_user(wrq->u.data.pointer, pMacTab, wrq->u.data.length))
++		MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("%s: copy_to_user() fail\n", __func__));
++
++	if (pMacTab != NULL)
++		os_free_mem(pMacTab);
++}
++
++
+ VOID RTMPIoctlGetDriverInfo(
+ 	IN PRTMP_ADAPTER pAd,
+ 	IN RTMP_IOCTL_INPUT_STRUCT * wrq)
+diff -Naru 1_old/oid.h 1_new/oid.h
+--- a/mt_wifi/embedded/include/oid.h
++++ b/mt_wifi/embedded/include/oid.h
+@@ -1387,6 +1387,22 @@
+ 	RT_802_11_MAC_ENTRY Entry[MAX_LEN_OF_MAC_TABLE];
+ } RT_802_11_MAC_TABLE, *PRT_802_11_MAC_TABLE;
+ 
++#define MAX_NUMBER_OF_MAC 544
++typedef struct _RT_802_11_COUNT_INFO_ENTRY{
++	UCHAR ApIdx;
++	UCHAR Addr[MAC_ADDR_LEN];
++	UINT16 Aid;
++	UINT64 TxBytes;
++	UINT64 RxBytes;
++	UINT64 TxPackets;
++	UINT64 RxPackets;
++}RT_802_11_COUNT_INFO_ENTRY, *PRT_802_11_COUNT_INFO_ENTRY;
++
++typedef struct _RT_802_11_COUNT_INFO { 
++	ULONG Num;
++	RT_802_11_COUNT_INFO_ENTRY Entry[MAX_NUMBER_OF_MAC];
++} RT_802_11_COUNT_INFO, *PRT_802_11_COUNT_INFO;
++
+ #ifdef DOT11_N_SUPPORT
+ #ifdef TXBF_SUPPORT
+ typedef
+diff -Naru 1_old/rtmp_cmd.h 1_new/rtmp_cmd.h
+--- a/mt_wifi/embedded/include/rtmp_cmd.h
++++ b/mt_wifi/embedded/include/rtmp_cmd.h
+@@ -163,6 +163,8 @@
+ 
+ 	/* Phy State commands */
+ 	CMD_RTPRIV_IOCTL_PHY_STATE,
++
++	CMD_RTPRIV_IOCTL_GET_DEV_COUNT_INFO,
+ #ifdef CONFIG_CPE_SUPPORT
+     CMD_RTPRIV_IOCTL_LOW_POWER,
+ #endif
+diff -Naru 1_old/rt_os.h 1_new/rt_os.h
+--- a/mt_wifi/include/os/rt_os.h
++++ b/mt_wifi/include/os/rt_os.h
+@@ -131,6 +131,8 @@
+ #endif
+ #endif /* CONFIG_AP_SUPPORT */
+ 
++#define RTPRIV_IOCTL_GET_DEV_COUNT_INFO              (SIOCIWFIRSTPRIV + 0x06)
++
+ #ifdef WIFI_DIAG
+ #define RTPRIV_IOCTL_GET_PROCESS_INFO				(SIOCIWFIRSTPRIV + 0x20)
+ #endif
+@@ -171,6 +173,7 @@
+ 	RTPRIV_IOCTL_SET_WSCOOB,
+ 	RTPRIV_IOCTL_STA_SHOW,
+ 	RTPRIV_IOCTL_SUBCMD_SHOW,
++	RTPRIV_IOCTL_GET_DEV_COUNT_INFO,
+ #ifdef CONFIG_CPE_SUPPORT
+ 	RTPRIV_IOCTL_LOW_POWER
+ #endif

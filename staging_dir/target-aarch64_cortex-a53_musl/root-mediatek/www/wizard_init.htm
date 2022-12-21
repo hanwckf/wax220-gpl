@@ -1,0 +1,250 @@
+<%+header%>
+<%
+local uci = require("luci.model.uci").cursor()
+local disp = require "luci.dispatcher"
+local CREATE_OR_EXTEND_MESH = uci:get('functionlist', 'functionlist', 'SUPPORT_CREATE_OR_EXTEND_MESH') or "0"
+%>
+<script>
+document.getElementById('menu_right_style').style.display = "none";
+$("#maincontent").removeClass();
+$("#maincontent").css('margin','auto');
+$("#maincontent").css('padding-top','30px');
+$("#maincontent").css('padding-bottom','50px');
+$("#maincontent").css('width','80%');
+
+var search = "<%=search%>";
+var newMesh = 0;
+
+function live()
+{
+	location.href="<%=disp.build_url('admin/ipcam/Live')%>";
+}
+
+function gotoinit_2()
+{
+	document.getElementById('init_1').style.display = "none";
+	document.getElementById('init_2').style.display = "";
+}
+
+function gotosetup_1()
+{
+	document.getElementById('initiation').style.display = "none";
+	document.getElementById('setup_1').style.display = "";
+}
+
+function gotosetup_2()
+{
+	document.getElementById('setup_1').style.display = "none";
+	if(document.wizard_init.newMesh.value==0)
+		document.getElementById('setup_2').style.display = "";
+	else
+		document.getElementById('setup_2_1').style.display = "";
+}
+
+function gotomeshsetting()
+{
+	location.href="<%=disp.build_url('admin/network/wireless_mesh')%>";
+}
+
+function gobacktosetup_1()
+{
+	document.getElementById('setup_2').style.display = "none";
+	document.getElementById('setup_2_1').style.display = "none";
+	document.getElementById('setup_1').style.display = "";
+	search = 0;
+}
+
+function copyto()
+{
+	document.getElementsByName("newMesh")["<%=CREATE_OR_EXTEND_MESH%>"].checked = true;
+
+	if(search==1 || search==2)
+	{
+		document.getElementById('initiation').style.display = "none";
+		if("<%=CREATE_OR_EXTEND_MESH%>"=="1")
+		{
+			if(search ==2)
+			{
+				document.getElementById('setup_2').style.display = "";
+				document.getElementById('step2').style.display = "none";
+				document.getElementById('step2_1').style.display = "";
+			}
+			else
+			{
+				document.getElementById('setup_2_1').style.display = "";
+			}
+		}
+		else
+		{
+			document.getElementById('setup_2').style.display = "";
+		}
+	}
+}
+</script>
+
+<body onLoad="copyto();">
+<form name="wizard_init" action="<%=luci.dispatcher.build_url("admin/network/wizard_init")%>" method="post">
+<div id="start_wizard" style="padding-left:20px;padding-right:20px">
+	<div id="initiation" style="display: '';">
+		<table>
+			<tr ><td>&nbsp;</td></tr>
+			<tr style="height: 8px;font-size: 16px;color: #000000;vertical-align: middle;background-color:#ffffff" >
+				<td width="100%">
+					This wizard will guide you through a step-by-step process to configure your new EnGenius device.
+				</td>
+			</tr>
+		</table>
+		<div id="init_1" style="display: '';">
+			<table>
+				<tr ><td>&nbsp;</td></tr>
+				<tr style="height: 8px;font-size: 16px;color: #000000;vertical-align: middle;background-color:#ffffff">
+					<td width="50%">
+						<div style="border:1px solid; border-radius: 14px;">
+							<br>
+							&nbsp;&nbsp;&nbsp;Step 1 : Mesh Network setting<br><br>
+							&nbsp;&nbsp;&nbsp;Step 2 : Discovery and Mesh connection<br><br>
+							&nbsp;&nbsp;&nbsp;Step 3 : Wireless setting<br><br>
+							<div class="cbi-page-actions">
+								&nbsp;&nbsp;&nbsp;<input class="cbi-button cbi-button-save" type="button" myid="button_start" onclick="gotoinit_2();" value="Start"/>
+							</div>
+						</div>
+					</td>
+					<td width="50%" style="border-radius: 14px;">
+						<div style="border:1px solid; border-radius: 14px;">
+							<br>
+							&nbsp;&nbsp;&nbsp;Go to Live View and Advanced Settings<br><br><br><br><br><br>
+							<div class="cbi-page-actions">
+								&nbsp;&nbsp;&nbsp;<input class="cbi-button cbi-button-save" type="button" myid="button_go" name="button_go" onclick="live();" value="Go"/>
+							</div>
+						</div>
+					</td>
+				</tr>
+			</table>
+		</div>
+		<div id="init_2" style="display: none;">
+			<table>
+				<tr ><td>&nbsp;</td></tr>
+				<tr style="height: 8px;font-size: 16px;color: #000000;vertical-align: middle;background-color:#ffffff">
+					<td>
+						<br>
+						&nbsp;&nbsp;&nbsp;Step 1: Set up Mesh Network<br><br>
+						&nbsp;&nbsp;&nbsp;Step 2: Build Mesh Network Connection<br><br>
+						&nbsp;&nbsp;&nbsp;Step 3: Set up Wireless Security Settings<br><br>
+						<div class="cbi-page-actions">
+							&nbsp;&nbsp;&nbsp;<input class="cbi-button cbi-button-save" type="button" myid="" onclick="gotosetup_1();" value="Start"/>
+						</div>
+					</td>
+				</tr>
+			</table>
+		</div>
+	</div>
+	<div id="setup_1" style="display: none;">
+		<table>
+			<tr ><td>&nbsp;</td></tr>
+			<tr style="height: 8px;font-size: 16px;color: #000000;vertical-align: middle;background-color:#ffffff" >
+				<td width="100%">
+					<font size="5">Step 1: Set up Mesh Network</font>
+				</td>
+			</tr>
+		</table>
+		<table>
+			<tr><td>&nbsp;</td></tr>
+			<tr style="height: 8px;font-size: 16px;color: #000000;vertical-align: middle;background-color:#ffffff">
+				<td width="50%">
+					<input type="radio" name="newMesh" id="newMesh" value="0">
+					<font size="5">Create a new Mesh Network</font><br><br>
+					- Search Mesh devices and establish connection<br>
+					- Set up the Wireless Security Settings
+				</td>
+				<td width="50%" style="border-radius: 14px;">
+					<input type="radio" name="newMesh" id="newMesh" value="1"> 
+					<font size="5">Extend your Mesh Network</font><br><br>
+					- Add a new device to existing Mesh network
+				</td>
+			</tr>
+			<tr><td>&nbsp;</td></tr>
+		</table>
+		<table>
+			<tr>
+				<div class="cbi-page-actions">
+					&nbsp;&nbsp;&nbsp;<input class="cbi-button cbi-button-save" type="button" myid="" onclick="gotomeshsetting();" value="Cancel"/>
+					&nbsp;&nbsp;&nbsp;<input class="cbi-button cbi-button-save" type="button" myid="" onclick="gotosetup_2();" value="Next"/>
+				</div>
+			</tr>
+		</table>
+	</div>
+	<div id="setup_2" style="display: none;">
+		<table>
+			<tr ><td>&nbsp;</td></tr>
+			<tr style="height: 8px;font-size: 16px;color: #000000;vertical-align: middle;background-color:#ffffff" >
+				<td width="100%">
+					<div id="step2"><font size="5">Step 2: Build Mesh Network Connection</font></div>
+					<div id="step2_1" style="display: none;"><font size="5">Step 2: Connect to existing Mesh Network</font></div>
+				</td>
+			</tr>
+		</table>
+		<table>
+			<tr><td>&nbsp;</td></tr>
+			<tr style="height: 8px;font-size: 16px;color: #000000;vertical-align: middle;background-color:#ffffff">
+				<td>
+					&nbsp;&nbsp;&nbsp;Put the Managed EWS1025CAM by other Mesh Devices.<br><br>
+					<script>
+						if(search ==2)
+							dw('&nbsp;&nbsp;&nbsp;Re-Power on or push device reset button, waiting for powered up of other mesh devices, then click “Search” button to send IE packet.<br>');
+						else
+							dw('&nbsp;&nbsp;&nbsp;Power on and wait until the Blue LED Indicator start blinking in 0.5 second intervals.<br>');
+					</script>
+					<img src="<%=media%>/pictures/mesh_indicator.png" style="margin-left: 25%;" height="300">
+				</td>
+			</tr>
+			<tr><td>&nbsp;</td></tr>
+		</table>
+		<table>
+			<tr>
+				&nbsp;&nbsp;&nbsp;<font size="3">Click on “Search” to build connection</font><br><br>
+				<div class="cbi-page-actions">
+					&nbsp;&nbsp;&nbsp;<input class="cbi-button cbi-button-save" type="button" myid="" onclick="gobacktosetup_1();" value="Prev"/>
+					&nbsp;&nbsp;&nbsp;<input class="cbi-button cbi-button-apply" type="submit" name="submitType" value="Search">
+				</div>
+			</tr>
+		</table>
+	</div>
+	<div id="setup_2_1" style="display: none;">
+		<table>
+			<tr ><td>&nbsp;</td></tr>
+			<tr style="height: 8px;font-size: 16px;color: #000000;vertical-align: middle;background-color:#ffffff" >
+				<td width="100%">
+					<font size="5">Step 2: Connect to existing Mesh Network</font>
+				</td>
+			</tr>
+		</table>
+		<table>
+			<tr><td>&nbsp;</td></tr>
+			<tr style="height: 8px;font-size: 16px;color: #000000;vertical-align: middle;background-color:#ffffff">
+				<td>
+					&nbsp;&nbsp;&nbsp;Put the Managed AP Camera by any of connected Mesh Devices.<br><br>
+					<script>
+						if(search ==2)
+							dw('&nbsp;&nbsp;&nbsp;Re-Power on or push device reset button, waiting for powered up of other mesh devices, then click “Search” button to send IE packet.<br>');
+						else
+							dw('&nbsp;&nbsp;&nbsp;Power on and wait until the Blue LED Indicator start blinking in 0.5 second intervals.<br>');
+					</script>
+					<img src="<%=media%>/pictures/mesh_indicator.png" style="margin-left: 25%;" height="300">
+				</td>
+			</tr>
+			<tr><td>&nbsp;</td></tr>
+		</table>
+		<table>
+			<tr>
+				&nbsp;&nbsp;&nbsp;<font size="3">Click on “Connect” to build connection</font><br><br>
+				<div class="cbi-page-actions">
+					&nbsp;&nbsp;&nbsp;<input class="cbi-button cbi-button-save" type="button" myid="" onclick="gobacktosetup_1();" value="Prev"/>
+					&nbsp;&nbsp;&nbsp;<input class="cbi-button cbi-button-apply" type="submit" name="submitType" value="Connect">
+				</div>
+			</tr>
+		</table>
+	</div>
+</div>
+</form>
+</body>
+<%+footer%>

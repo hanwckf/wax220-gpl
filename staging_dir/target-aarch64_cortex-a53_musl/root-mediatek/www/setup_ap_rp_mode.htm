@@ -1,0 +1,75 @@
+<%
+	local uci = require "luci.model.uci".cursor()
+-%>
+
+<%+header%>
+
+<script type="text/javascript">//<![CDATA[
+document.getElementById('menu_right_style').style.display = "none";
+$( document ).ready(function() {
+    var opmode = '<%=uci:get("wireless","wifi0","opmode")%>';
+    document.getElementsByName("opmode")[(opmode=="sta_ap")?0:1].checked=true; 
+});
+
+function opmode_submit(){
+	var opmode_check=$('input[name="opmode"][value="ap"]').is(":checked")?"ap":"sta_ap";
+	$("input[name='selectOpmode']").val(opmode_check);
+	$('form').submit();
+}
+
+//]]></script>
+
+<style>
+.block {
+	border: 1px solid #1B489C;
+	border-radius: 5px;
+	margin-top: 10px;
+	padding: 10px 15px;
+}
+
+.bg-white {
+	background-color:white;
+}
+
+
+h5{
+	display:inline;
+	border-bottom:3px solid #e67300;
+}
+
+</style>
+
+<table id="setup_opmode">
+<tr>
+	<th><input type="radio" name="opmode" value="sta_ap">&nbsp;Repeater Mode</th>
+	<th><input type="radio" name="opmode" value="ap">&nbsp;AP Mode</th>
+</tr>
+<tr>
+	<td class="bg-white">
+	<div class="block">
+	<h5>Repeater Mode</h5>
+	<br/><img alt="" src="<%=media%>/pictures/rp_mode.png" width="350" height="150">
+	</div>
+	</td>
+	
+	<td class="bg-white">
+	<div class="block">
+	<h5>AP Mode</h5>
+	<br/><img alt="" src="<%=media%>/pictures/ap_mode.png" width="350" height="150">
+	</div>
+	</td>
+</tr>
+</table>
+
+<br/>
+
+
+<form method="post" name="cbi"  action="<%=REQUEST_URI%>">
+	<input type="hidden" name="selectOpmode">
+	<div class="cbi-page-actions" id="setup_opmode">
+		<input class="cbi-button cbi-button-save" type="button" onclick='opmode_submit();' value="<%:Save%>"/>&nbsp;<span class="btn_desc"><%:Save current setting(s)%></span>
+	</div>
+</form>
+
+
+<%+footer%>

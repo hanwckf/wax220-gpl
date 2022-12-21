@@ -1,0 +1,228 @@
+<% http_header("script/jquery-1.12.4.min.js","style/cascade2.css", "style/cascade.css", "style/cascade-custom.css", "script/cbi.js","script/common.js", "style/form.css", "script/xhr.js") %>
+<script>
+var stxhr = new XHR();
+var debug_log_info_chage_csrftoken='<% generateToken("set_debug_log_info") %>';
+var start_capture_csrftoken='<% generateToken("collect_log") %>';
+var save_log_csrftoken='<% generateToken("save_debug_log") %>';
+var get_voslog_config_crsftoken='<% generateToken("get_voslog_config") %>';
+var set_voslog_config_crsftoken='<% generateToken("set_voslog_config") %>';
+
+function loadvalue()
+{
+	if("<% cfg_get("debug_boot_up") %>" == "1")
+	{
+        document.getElementById("log_capture_st").checked = true;
+	}
+	else
+	{
+		document.getElementById("log_capture_st").checked = false;
+	}
+
+	if("<% cat_file("/tmp/wanlan_capture") %>" == "1")
+	{
+		document.getElementById("wanlan_capture_en").checked = true;
+	}
+	else
+	{
+		document.getElementById("wanlan_capture_en").checked = false;
+	}
+}
+
+function debugLogInfo_change()
+{
+    var setDebugLogInfoData = null;
+    var disableLogCapture = document.getElementById("log_capture_st").checked ? 1 : 0;
+    var disableWanlanCapture = document.getElementById("wanlan_capture_en").checked ? 1 : 0;
+
+    setDebugLogInfoData = {anticsrf:debug_log_info_chage_csrftoken, submitType:'set_debug_log_info', "hid_boot_up":disableLogCapture, "hid_wanlan_capture":disableWanlanCapture};
+    ajax_normal({
+        async: false,
+        type : "POST",
+        url: '<% action_url("debug.cgi", "debug.htm") %>',
+        data: setDebugLogInfoData,
+        //dataType: "json",
+        error:function(){
+            console.log("set error");
+        },
+        success:function(result){
+        }
+    });
+}
+
+function start_capture()
+{
+	var startCaptureData = null;
+
+    startCaptureData = {anticsrf:start_capture_csrftoken, submitType:'collect_log'};
+    ajax_normal({
+        async: false,
+        type : "POST",
+        url: '<% action_url("debug.cgi", "debug.htm") %>',
+        data: startCaptureData,
+        //dataType: "json",
+        error:function(){
+            console.log("set error");
+        },
+        success:function(result){
+        }
+    });
+}
+
+function save_log()
+{
+    $$('<form action=\'<% action_url("debug.cgi", "debug.htm") %>\' method="post">'+
+            '<input type="hidden" name="submitType" value="save_debug_log"/>'+
+            '<input type="hidden" name="anticsrf" value=\'<% generateToken("save_debug_log") %>\'>'+
+        '</form>')
+        .appendTo('body').submit().remove();
+}
+
+function updateLogDestAndLevel(process)
+{
+    var getVoslogConfigData = null;
+    var level, dest;
+
+    getVoslogConfigData = {anticsrf:get_voslog_config_crsftoken, submitType:'get_voslog_config', "process":process};
+    ajax_normal({
+        async: false,
+        type : "POST",
+        url: '<% action_url("debug.cgi", "debug.htm") %>',
+        data: getVoslogConfigData,
+        //dataType: "json",
+        error:function(){
+            console.log("set error");
+        },
+        success:function(result){
+            level = result['voslogLevel'];
+            dest = result['voslogDest'];
+			$$('#select_log_level').val(level);
+            $$('#select_log_dest').val(dest);
+
+        }
+    });
+}
+
+function selectProcess()
+{
+    var supportProcess;
+    var arrayLen;
+    var s = "";
+    var i;
+
+    supportProcess = "<% cfg_get("voslog_support_process") %>";
+    process_array = supportProcess.split(",");
+    arrayLen = process_array.length;
+    for (i = 1; i <= arrayLen; i++)
+    {
+        s += '<option value="' + process_array[i-1] + '">' + process_array[i-1] + '</option>';
+    }
+    document.write(s);
+    document.close();
+}
+
+function selectLogDest()
+{
+    document.write("<option value=\"1\">CONSOLE</option> \
+                    <option value=\"2\">STDERR</option> \
+                    <option value=\"3\">SYSLOG</option> \
+                    <option value=\"4\">TELNET</option> \
+                    <option value=\"5\">LOGCAT</option> \
+                    <option value=\"6\">LOGFILE</option>");
+    document.close();
+}
+
+function selectLogLevel()
+{
+    document.write("<option value=\"1\">SILENT</option> \
+                    <option value=\"2\">PRINT</option> \
+                    <option value=\"3\">ERR</option> \
+                    <option value=\"4\">WARNING</option> \
+                    <option value=\"5\">NOTICE</option> \
+                    <option value=\"6\">INFO</option> \
+                    <option value=\"7\">DEBUG</option>");
+    document.close();
+
+    processChange();
+}
+
+function processChange()
+{
+    var process;
+    process = document.getElementById("select_process").value;
+    updateLogDestAndLevel(process);
+}
+
+function save_config()
+{
+    var process, level, dest;
+    process = document.getElementById("select_process").value;
+    level = document.getElementById("select_log_level").value;
+    dest = document.getElementById("select_log_dest").value;
+
+    var setVoslogConfigData = null;
+    var level, dest;
+
+    setVoslogConfigData = {anticsrf:set_voslog_config_crsftoken, submitType:'set_voslog_config', "process":process, "level":level, "dest":dest};
+    ajax_normal({
+        async: false,
+        type : "POST",
+        url: '<% action_url("debug.cgi", "debug.htm") %>',
+        data: setVoslogConfigData,
+        //dataType: "json",
+        error:function(){
+            console.log("set error");
+        },
+        success:function(result){
+        }
+    });
+}
+
+</script>
+
+<body onLoad="loadvalue();" bgcolor=#ffffff class="debug_body">
+<div id="top" class='standalone-top'>
+<div id="logo"> </div>
+<div id="firm_version" name="firm_version">$$router_firmware_version <br /><% cat_file("/firmware_version") %></div>
+</div>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<div style="margin-left:5px">
+<b>Debug Log Capture</b>
+<div style="margin-left:50px">
+<input type="checkbox" name="log_capture" onclick="debugLogInfo_change();" id="log_capture_st"><label for="log_capture_st"><b>Start Debug Log Capture when boot up</b></label>
+<br/>
+<input type="checkbox" name="wanlan_capture" onchange="debugLogInfo_change();" id="wanlan_capture_en"><label for="wanlan_capture_en"><b>Enable LAN/WAN Packet Capture</b></label>
+<br/>
+<div id="start_button"><input type="button" name="Start" id="start_capture" class="common_bt" value="Start Capture" onclick="start_capture();"></div>
+<br/>
+<input type="submit" name="Save" id="save_log" class="common_bt" value="Save Debug Log" onclick="setTimeout('save_log()',5000);return true;"/>
+</div>
+<br/>
+</div>
+<br/>
+<div style="margin-left:5px">
+<b>Log config</b>
+<div style="margin-left:50px">
+<select name="process" id="select_process" onclick="processChange();">
+  <script>selectProcess()</script>
+</select>
+<br/>
+<select name="logdest" id="select_log_dest">
+  <script>selectLogDest()</script>
+</select>
+<br/>
+<select name="loglevel" id="select_log_level">
+  <script>selectLogLevel()</script>
+</select>
+<br/>
+<div id="start_button"><input type="button" name="Save" id="save_config" class="common_bt" value="Save Config" onclick="save_config();"></div>
+</div>
+<br/>
+</div>
+</body>
+</html>

@@ -1,0 +1,69 @@
+#
+# Copyright (C) 2009 OpenWrt.org
+#
+
+. /lib/mediatek.sh
+
+preinit_wifi_init() {
+
+	local region=$(envctl factory get region 2> /dev/null)
+	echo "region is $region"
+
+	mkdir -p /tmp/.firmware
+	chmod 0700 /tmp/.firmware
+	cp -rfp /etc/wifi_rom/*.bin /tmp/.firmware
+
+	mkdir -p /tmp/mtk/wifi
+
+	if [ ! -e /tmp/.restore ]; then
+		if [ "$region" = "US" -o "$region" = "NA" ]; then
+			local channelist=$(uci -q get wireless.5g.channelist 2> /dev/null)
+			if [ "x$channelist" = "x" ]; then
+				uci -q set "wireless.5g.skipChList=169;173;177;"
+				datconf -f /etc/wireless/mediatek/mt7986-ax4200.dbdc.b1.dat set AutoChannelSkipList "169;173;177;"
+			fi
+		fi
+	fi
+
+	if [ "$region" = "US" -o "$region" = "NA" ]; then
+		ln -s /etc/wifi_rom/mt7615e-sku_FCC.dat /tmp/mtk/wifi/mt7615e-sku.dat
+		ln -s /etc/wifi_rom/mt7615e-sku-bf_FCC.dat /tmp/mtk/wifi/mt7615e-sku-bf.dat
+	elif [ "$region" = "AU" -o "$region" = "NZ" ]; then
+		ln -s /etc/wifi_rom/mt7615e-sku_AU.dat /tmp/mtk/wifi/mt7615e-sku.dat
+		ln -s /etc/wifi_rom/mt7615e-sku-bf_AU.dat /tmp/mtk/wifi/mt7615e-sku-bf.dat
+	elif [ "$region" = "CA" ]; then
+		ln -s /etc/wifi_rom/mt7615e-sku_IC.dat /tmp/mtk/wifi/mt7615e-sku.dat
+		ln -s /etc/wifi_rom/mt7615e-sku-bf_IC.dat /tmp/mtk/wifi/mt7615e-sku-bf.dat
+	elif [ "$region" = "WW" -o "$region" = "EU" ]; then
+		ln -s /etc/wifi_rom/mt7615e-sku_CE.dat /tmp/mtk/wifi/mt7615e-sku.dat
+		ln -s /etc/wifi_rom/mt7615e-sku-bf_CE.dat /tmp/mtk/wifi/mt7615e-sku-bf.dat
+	elif [ "$region" = "JP" ]; then
+		#debug for test
+		ln -s /etc/wifi_rom/mt7615e-sku_JP.dat /tmp/mtk/wifi/mt7615e-sku.dat
+		ln -s /etc/wifi_rom/mt7615e-sku-bf_JP.dat /tmp/mtk/wifi/mt7615e-sku-bf.dat
+	else
+		echo "Does not found sku table"
+		ln -s /etc/wifi_rom/mt7615e-sku_FCC.dat /tmp/mtk/wifi/mt7615e-sku.dat
+		ln -s /etc/wifi_rom/mt7615e-sku-bf_FCC.dat /tmp/mtk/wifi/mt7615e-sku-bf.dat
+	fi
+
+	#sleep 50 && iwpriv ra0 set probeReqCnt=11 &
+	#sleep 50 && iwpriv rax0 set probeReqCnt=11 &
+
+	#if [ "$model" = "EX6470" ]; then
+		#sleep 50 && iwpriv ra0 set tpc_duty=100:080:065:050 &
+		#sleep 50 && iwpriv ra0 set tpc=1:1:1:118:113:123:0060:1 &
+		
+		#sleep 50 && iwpriv rax0 set tpc_duty=100:080:065:050 &
+		#sleep 50 && iwpriv rax0 set tpc=1:1:1:119:114:123:0060:1 &
+	#else
+		#sleep 50 && iwpriv ra0 set tpc_duty=100:080:065:050 &
+		#sleep 50 && iwpriv ra0 set tpc=1:1:1:114:109:123:0060:1 &
+		
+		#sleep 50 && iwpriv rax0 set tpc_duty=100:080:065:050 &
+		#sleep 50 && iwpriv rax0 set tpc=1:1:1:113:108:123:0060:1 &
+	#fi
+
+}
+
+boot_hook_add preinit_main preinit_wifi_init

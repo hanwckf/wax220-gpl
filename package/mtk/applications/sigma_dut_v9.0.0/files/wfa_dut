@@ -1,0 +1,23 @@
+#!/bin/sh /etc/rc.common
+
+START=90
+
+DAEMON=wfa_dut
+DAT_PATH=/etc/wireless/l1profile.dat
+
+start() {
+
+	echo "run sigama-daemon wfa_dut......"
+	wifi1_ifname=`cat $DAT_PATH | grep -r INDEX0_main_ifname | awk -F = '{printf $2}'`
+	wifi2_ifname=`cat $DAT_PATH | grep -r INDEX1_main_ifname | awk -F = '{printf $2}'`
+
+	service_start /sbin/$DAEMON $wifi1_ifname 8000 &
+	service_start /sbin/$DAEMON $wifi2_ifname 8080 &
+
+	#disable process 92
+	/etc/init.d/sigma disable
+}
+
+stop() {
+	service_stop /sbin/$DAEMON
+}

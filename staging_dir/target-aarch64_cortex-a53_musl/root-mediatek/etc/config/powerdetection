@@ -1,0 +1,4 @@
+# powerdetection uci configuration
+
+config powerdetection 'power'
+	option power_type '0'	#供电类型

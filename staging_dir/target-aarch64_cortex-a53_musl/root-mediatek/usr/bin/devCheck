@@ -1,0 +1,19 @@
+#!/bin/sh
+
+ip_addr=$1
+mac_addr=$2
+if_name=$3
+
+
+cmd_args="-f -D -c 2 -w 2 -I $if_name -D $ip_addr"
+logger -t devProbe -p 6 "$0> arping $cmd_args"
+arping $cmd_args | grep -i $mac_addr > /dev/null
+
+result=$?
+
+if [ $result -ne 0 ]
+then
+	cmd_args="{\"mac_addr\": \"$mac_addr\", \"link_state\": \"checkoffline\", \"if_index\": \"0\"}"
+	logger -t devProbe -p 6 "$0> ubus send dev_probe_link '$cmd_args'"
+	ubus send dev_probe_link "$cmd_args" 
+fi

@@ -1,0 +1,8 @@
+./
+./host
+./usr
+./usr/include
+./usr/include/libpkt_redirect
+./usr/include/libpkt_redirect/pkt_redirect_user.h
+./usr/lib
+./usr/lib/libpkt_redirect.so

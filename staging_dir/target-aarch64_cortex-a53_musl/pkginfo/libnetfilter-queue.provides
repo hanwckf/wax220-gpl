@@ -1,0 +1,8 @@
+libc.so
+libgcc_s.so.1
+libmnl.so.0
+libmnl.so.0.2.0
+libnetfilter_queue.so.1
+libnetfilter_queue.so.1.5.0
+libnfnetlink.so.0
+libnfnetlink.so.0.2.0

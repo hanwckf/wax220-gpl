@@ -1,0 +1,25 @@
+From 5bc4900ad3a9169ac713a8fa5b3a6f1cc0b1949f Mon Sep 17 00:00:00 2001
+From: caojingzhe <caojingzhe@twsh.com>
+Date: Tue, 5 Jul 2022 17:37:18 +0800
+Subject: [PATCH] 2
+
+---
+ .../target-aarch64_cortex-a53_musl/Makefile   | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Makefile b/Makefile
+index 02176ec7b..4c2a18cd4 100644
+--- a/Makefile
++++ b/Makefile
+@@ -2,7 +2,7 @@
+ PREFIX ?= /usr
+ CRDA_PATH ?= $(PREFIX)/lib/crda
+ CRDA_KEY_PATH ?= $(CRDA_PATH)/pubkeys
+-FIRMWARE_PATH ?= /lib/firmware
++FIRMWARE_PATH ?= /etc/wifi_rom
+ 
+ MANDIR ?= $(PREFIX)/share/man/
+ 
+-- 
+2.13.1
+

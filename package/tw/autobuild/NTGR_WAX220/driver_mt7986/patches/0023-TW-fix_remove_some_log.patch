@@ -1,0 +1,34 @@
+From 01146311be870be09806eec847d5268624908506 Mon Sep 17 00:00:00 2001
+From: caojingzhe <caojingzhe@twsh.com>
+Date: Wed, 28 Sep 2022 14:21:15 +0800
+Subject: [PATCH] 2
+
+---
+ .../linux-mediatek_mt7986/mt_wifi/mt_wifi/os/linux/ap_ioctl.c         | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/mt_wifi/os/linux/ap_ioctl.c b/mt_wifi/os/linux/ap_ioctl.c
+index bd5988330..6ea42f180 100755
+--- a/mt_wifi/os/linux/ap_ioctl.c
++++ b/mt_wifi/os/linux/ap_ioctl.c
+@@ -836,7 +836,7 @@ INT rt28xx_ap_ioctl(void *net_dev_obj, void *data_obj, int cmd) /* snowpin for a
+ 
+ 		if ((wdev != NULL) && (wdev->if_up_down_state == FALSE)) {
+ 			if (wdev_down_exec_ioctl(wrq, subcmd) == FALSE) {
+-				MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
++				MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_DEBUG,
+ 					"interface is down, cmd [%x] return!!!\n", cmd);
+ 				return -ENETDOWN;
+ 			}
+@@ -869,7 +869,7 @@ INT rt28xx_ap_ioctl(void *net_dev_obj, void *data_obj, int cmd) /* snowpin for a
+ 		wdev = pIoctlConfig->wdev;
+ 
+ 		if ((wdev != NULL) && (wdev->if_up_down_state == FALSE)) {
+-			MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
++			MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_DEBUG,
+ 				"interface is down, cmd [%x] return!!!\n", cmd);
+ 			return -ENETDOWN;
+ 		}
+-- 
+2.13.1
+

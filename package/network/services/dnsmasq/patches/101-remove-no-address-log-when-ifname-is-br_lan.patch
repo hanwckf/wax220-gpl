@@ -1,0 +1,32 @@
+From f5e3acc16880fb663950f21649be4e8772fd935b Mon Sep 17 00:00:00 2001
+From: caojingzhe <caojingzhe@twsh.com>
+Date: Wed, 28 Sep 2022 10:21:37 +0800
+Subject: [PATCH] 2
+
+---
+ .../dnsmasq-nodhcpv6/dnsmasq-2.85/src/rfc2131.c                  | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/src/rfc2131.c b/src/rfc2131.c
+index 3f5075507..fe64d3e90 100644
+--- a/src/rfc2131.c
++++ b/src/rfc2131.c
+@@ -372,9 +372,12 @@ size_t dhcp_reply(struct dhcp_context *context, char *iface_name, int int_index,
+   
+   if (!context)
+     {
+-      my_syslog(MS_DHCP | LOG_WARNING, _("no address range available for DHCP request %s %s"), 
+-		subnet_addr.s_addr ? _("with subnet selector") : _("via"),
+-		subnet_addr.s_addr ? inet_ntoa(subnet_addr) : (mess->giaddr.s_addr ? inet_ntoa(mess->giaddr) : iface_name));
++        if (strcmp(iface_name, "br-lan"))
++        {
++            my_syslog(MS_DHCP | LOG_WARNING, _("no address range available for DHCP request %s %s"), 
++		    subnet_addr.s_addr ? _("with subnet selector") : _("via"),
++		    subnet_addr.s_addr ? inet_ntoa(subnet_addr) : (mess->giaddr.s_addr ? inet_ntoa(mess->giaddr) : iface_name));
++        }
+       return 0;
+     }
+ 
+-- 
+2.13.1
+

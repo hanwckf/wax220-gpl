@@ -1,0 +1,11 @@
+{
+  "installed": [
+    {"type": "pdb", "file": "usr/bin/cm_testEXE"},
+    {"type": "exe", "file": "usr/bin/cm_testEXE"},
+    {"type": "pdb", "file": "usr/bin/cm_testEXE2"},
+    {"type": "exe", "file": "usr/bin/cm_testEXE2"}
+  ],
+  "tools": {
+    "cmake": ">=3.11"
+  }
+}

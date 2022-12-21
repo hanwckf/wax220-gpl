@@ -1,0 +1,161 @@
+<% http_header("style/cascade.css", "style/cascade2.css", "style/cascade-custom.css", "script/jquery-1.12.4.min.js", "script/cbi.js", "script/common.js", "script/flashops.js") %>
+<body onLoad="please_wait(false);" bgcolor="#ffffff">
+
+<style>
+/* The Modal (background) */
+.modal {
+	display: none; /* Hidden by default */
+	position: fixed; /* Stay in place */
+	z-index: 1; /* Sit on top */
+	padding-top: 100px; /* Location of the box */
+	left: 0;
+	top: 0;
+	width: 100%; /* Full width */
+	height: 100%; /* Full height */
+	overflow: auto; /* Enable scroll if needed */
+	background-color: rgb(0,0,0); /* Fallback color */
+	background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+/* Modal Content */
+.modal-content {
+	color: #ffffff;
+	margin: auto;
+	padding: 15%;
+	width: 80%;
+}
+
+/* The Close Button */
+.close {
+  color: #aaaaaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+  color: #000;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.form_table {
+	margin-bottom: 0px;
+}
+</style>
+
+<div id="Firmware_info" class="popbox">
+	<p>$upgrade_note1</p>
+</div>
+<div id="myModal" class="modal">
+  <div class="modal-content">
+    <p id="modalInfo" style="font-size: 36px; font-weight:bold; text-align:center; white-space:nowrap; padding-right: 17%">$upgrade_note12</p>
+  </div>
+</div>
+<div id="uploadModal" class="modal">
+  <div class="modal-content">
+    <p id="modalInfo" style="font-size: 36px; font-weight:bold; text-align:center; white-space:nowrap; padding-right: 17%">$upgrade_note19</p>
+  </div>
+</div>
+<fieldset class="cbi-section">
+	<fieldset>
+		<form name="form" method="post">
+			<table>
+				<tr>
+					<td colspan="3" class="title">$automatic_firmware_upgrade_check</td>
+				</tr>
+				<tr class="title-option">
+					<td style="width:30%;"><label for="autoFWEnable_enable">$status</label></td>
+					<td style="width:30%;">
+						<input type="radio" name="autoFWEnable" value="1" id="autoFWEnable_enable">
+						<label for="autoFWEnable_enable">$enable</label>&nbsp;&nbsp;
+						<input type="radio" name="autoFWEnable" value="0" id="autoFWEnable_disable">
+						<label for="autoFWEnable_disable">$disable</label>
+					</td>
+					<td style="width:40%;"><input class="cbi-button" onclick="return saveAutoFW()" myid="button_save" type="submit" value="$apply"></td>
+				</tr>
+				<tbody id="autoFWInfo" style="display: ">
+				<tr class="title-option">
+					<td>$last_firmware_availability_check</td>
+					<td id="last_check" td colspan="2"><% cfg_get("check_time") %></td>
+				</tr>
+				<tr class="title-option">
+					<td>$new_firmware_version</td>
+					<td id="new_ver" td colspan="2">
+					    <script>
+				   	        var newVersion = "<% cat_file("/tmp/auto_version") %>"
+				   	        newVersion = newVersion.substring(newVersion.lastIndexOf("V")+1, newVersion.length);
+				   	        document.write((newVersion == "?")?"?":newVersion);
+					    </script>
+					</td>
+				</tr>
+				<tr class="title-option">
+					<td>$release_date</td>
+					<td id="release_date" td colspan="2">
+					    <script>
+				   	        var releaseDate = "<% cat_file("/tmp/release_date") %>"
+				   	        document.write(releaseDate);
+					    </script>
+					</td>
+				</tr>
+				<tr class="title-option">
+					<td colspan="3">
+					<input class="cbi-button" name="checkFW" type="button" onclick="check_new_fw_version();" value="$check_for_new_firmware"> &nbsp;&nbsp;
+					<input class="cbi-button" name="upgradeAction" type="button" onclick="check_download_firmware();" value="$upgrade_firmware" style="display: none" id="upgradeAction">
+					</td>
+				</tr>
+				</tbody>
+			</table>
+		</form>
+	</fieldset>
+
+		<form method="post" id="fw_up" enctype="multipart/form-data">
+		<table>
+			<tr>
+				<td class="title">$local_firmware_upgrade<img class="popper" data-popbox="Firmware_info" src="image/icon_info_blue.png"></td>
+			</tr>
+			<tr class="title-option">
+			   <td>$current_firmware_version:
+			   <script>
+				   	var fwVersion = "<% cat_file("/firmware_version") %>"
+				   	document.write((fwVersion == "?")?"?":fwVersion.substring(0));
+			   </script></td>
+			</tr>
+			<tr class="title-option">
+				<td>$device_version: <script>
+				function get_hardware_version(){
+					if (hardware_version.slice(0, 1)=="v" && isNaN(hardware_version.slice(-1))==false){
+						return hardware_version.slice(-1)+'.0';
+					}
+					else{
+						return "V1.0";
+					}
+				}
+				document.write(get_hardware_version());
+				</script></td>
+			</tr>
+			<tr class="title-option">
+				<td style="width: 35%; padding-left: 30px;" colspan="2">- <span class="caution">$note:</span>&nbsp;$upgrade_note2
+				</td>
+			</tr>
+			<tr class="title-option">
+				<td>$select_firmware</td>
+			</tr>
+			<tr class="title-option">
+				<td><input type="file" name="image" id="image" myid="system_fw_file" style="background:#F0F0F0;"/>&nbsp;&nbsp;
+					<input type="button" onclick="upgrade_check_mem();" myid="system_fw_upload" class="cbi-button" value="$upload" />
+				</td>
+				<tr class="title-option" style="display:none" id="invalid_firmware">
+					<td colspan="2" style="padding-left: 30px;"><span style="color:#FF0000;">$upgrade_note3</span></td>
+				</tr>
+			</tr>
+			<tr class="title-option" id="reboot_invalid" style="display:none">
+			</tr>
+		</table>
+		</form>
+		<br/>
+	</fieldset>
+</fieldset>
+
+</body>

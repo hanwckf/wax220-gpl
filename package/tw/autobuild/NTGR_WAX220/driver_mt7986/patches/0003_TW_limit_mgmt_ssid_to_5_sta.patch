@@ -1,0 +1,46 @@
+--- a/mt_wifi/embedded/mgmt/mgmt_entrytb.c	2022-05-07 15:15:07.302715048 +0800
++++ b/mt_wifi/embedded/mgmt/mgmt_entrytb.c	2022-05-07 15:14:37.080077823 +0800
+@@ -1239,17 +1239,35 @@
+ 					return NULL;
+ 				}
+ 
+-				if ((pEntry->func_tb_idx < pAd->ApCfg.BssidNum) &&
++                if (pEntry->func_tb_idx == 4 || pEntry->func_tb_idx==9)
++                {
++                    if ((pEntry->func_tb_idx < pAd->ApCfg.BssidNum) &&
++					(VALID_MBSS(pAd, pEntry->func_tb_idx)) &&
++					(pAd->ApCfg.MBSSID[4].MaxStaNum != 0) &&
++					((pAd->ApCfg.MBSSID[4].StaCount+pAd->ApCfg.MBSSID[9].StaCount) >= pAd->ApCfg.MBSSID[4].MaxStaNum)) {
++    					MTWF_DBG(pAd, DBG_CAT_MLME, CATMLME_WTBL, DBG_LVL_ERROR," The connection table is full in ra%d.\n", pEntry->func_tb_idx);
++    					HcReleaseUcastWcid(pAd, wdev, pEntry->wcid);
++    					aid_clear(&pAd->MacTab.aid_info, pEntry->Aid);
++    					MacTableResetEntry(pAd, pEntry, CleanAll);
++    					NdisReleaseSpinLock(&pAd->MacTabLock);
++    					return NULL;
++    				}
++                }
++                else
++                {
++                    if ((pEntry->func_tb_idx < pAd->ApCfg.BssidNum) &&
+ 					(VALID_MBSS(pAd, pEntry->func_tb_idx)) &&
+ 					(pAd->ApCfg.MBSSID[pEntry->func_tb_idx].MaxStaNum != 0) &&
+ 					(pAd->ApCfg.MBSSID[pEntry->func_tb_idx].StaCount >= pAd->ApCfg.MBSSID[pEntry->func_tb_idx].MaxStaNum)) {
+-					MTWF_DBG(pAd, DBG_CAT_MLME, CATMLME_WTBL, DBG_LVL_ERROR," The connection table is full in ra%d.\n", pEntry->func_tb_idx);
+-					HcReleaseUcastWcid(pAd, wdev, pEntry->wcid);
+-					aid_clear(&pAd->MacTab.aid_info, pEntry->Aid);
+-					MacTableResetEntry(pAd, pEntry, CleanAll);
+-					NdisReleaseSpinLock(&pAd->MacTabLock);
+-					return NULL;
+-				}
++						MTWF_DBG(pAd, DBG_CAT_MLME, CATMLME_WTBL, DBG_LVL_ERROR," The connection table is full in ra%d.\n", pEntry->func_tb_idx);
++    					HcReleaseUcastWcid(pAd, wdev, pEntry->wcid);
++    					aid_clear(&pAd->MacTab.aid_info, pEntry->Aid);
++    					MacTableResetEntry(pAd, pEntry, CleanAll);
++    					NdisReleaseSpinLock(&pAd->MacTabLock);
++    					return NULL;
++    				}
++                }
++				
+ 
+ 				if (!VALID_MBSS(pAd, pEntry->func_tb_idx)) {
+ 					MTWF_DBG(pAd, DBG_CAT_MLME, CATMLME_WTBL, DBG_LVL_ERROR,

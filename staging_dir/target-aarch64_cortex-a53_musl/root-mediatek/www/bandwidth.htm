@@ -1,0 +1,270 @@
+<% http_header( "script/jquery-1.12.4.min.js", "style/cascade2.css", "style/cascade.css", "style/cascade-custom.css", "script/cbi.js", "script/common.js", "script/bandwidth.js") %>
+<body onLoad="please_wait(false);" bgcolor="#ffffff">
+<div id="maincontent" class="container">
+
+	<ul class="tabs">
+		
+			<li class="tabmenu-item-load">
+			    <a href="/load.htm">$load</a>
+			</li>
+		
+			<li class="tabmenu-item-bandwidth active">
+			    <a href="/bandwidth.htm">$traffic</a>
+			</li>
+		
+	</ul>
+<div id="Realtime_Traffic_info" class="popbox">
+    <p>$connection_info_2</p>
+</div>
+<h2><a id="content" name="content">$realtime_traffic (<span id="bandwidth">KB/s</span>)</a><img class="popper" data-popbox="Realtime_Traffic_info" src="/image/icon_info_blue.png"></h2>
+
+<ul class="cbi-tabmenu">
+<!-- 	<%
+	function qreplace(s)
+		local v=s -->
+<!-- if uci:get('functionlist','functionlist','SUPPORT_DUAL_LAN_PORT') == '1' then -----#### SUPPORT_DUAL_LAN_PORT START ###
+	if s == "eth0" then
+		v = translate(uci:get("functionlist","vendorlist","GUI_ETH0_NAME") or "LAN1")
+	end
+	if s == "eth1" then
+		v = translate(uci:get("functionlist","vendorlist","GUI_ETH1_NAME") or "LAN2")
+	end		
+else -----#### SUPPORT_DUAL_LAN_PORT ELSE ### -->
+<!-- 		if s == "eth0" or s == "eth1" then
+			v = translate("LAN")
+		end -->
+<!-- end -----#### SUPPORT_DUAL_LAN_PORT END ### -->
+<!-- 
+		if ntm:get_wifinet(s) then
+			v = ntm:get_wifinet(s)["iwdata"].ssid
+			if s == "ath35" then
+				v = translate("MESH_5G")
+			end
+			if s == "ath32" then
+				v = translate("MESH_24G")
+			end
+		end
+		return luci.util.repSpec(v)
+	end
+	%>
+	<% for _, dev in ipairs(devices) do
+		if  dev ~= "br-lan" and not string.find(dev, "br-") and not string.find(dev, "eth0.") and not string.find(dev, "eth1.") and (string.find(dev, "ath") or string.find(dev, "eth")) and ( uci:get('functionlist','functionlist','SUPPORT_IPCAM') ~= "1" or dev ~= "eth1" ) then
+			if ntm:get_wifinet(pcdata(dev)) and filterRadio and ntm:get_wifinet(pcdata(dev))["iwdata"].device==filterRadio  then
+			else
+				local show="1" -->
+<!-- if uci:get('functionlist','functionlist','SUPPORT_REPEATER_MODULE') == '1' then -----#### SUPPORT_REPEATER_MODULE START ###
+				local opmode_24G = uci:get("wireless","wifi0","opmode")
+				local opmode_5G  = uci:get("wireless","wifi1","opmode")
+				local if_24G = {"ath0","ath01","ath02","ath03","ath04","ath05","ath06","ath7"}
+				local if_5G = {"ath1","ath11","ath12","ath13","ath14","ath15","ath16","ath17"}
+
+				for i=1,#if_24G do
+					if if_24G[i] == dev and opmode_24G == "sta_ap" then
+						show = "0"
+					end
+				end
+
+				for i=1,#if_5G do
+					if if_5G[i] == dev and opmode_5G == "sta_ap" then
+						show = "0"
+					end
+				end
+end -----#### SUPPORT_REPEATER_MODULE END ### -->
+<!-- 				if dev ~= "ath32" and dev ~= "ath35" and dev ~= "ath29" and dev ~= "ath59" and dev ~= "ath49" and show == "1" then
+	%> -->
+
+			<!-- <li class="cbi-tab<%= dev == curdev and "" or "-disabled" %>"><a href="<%=pcdata(dev)%>"><script>document.write(repSpecHTML("<%=qreplace(pcdata(dev))%>"));</script></a></li> -->
+
+<!-- 	<%
+				end
+			end
+		end
+	end %> -->
+	<li id="ssid1" class="cbi-tab-disabled"><a href="/bandwidth.htm" onclick="show1()">
+	<script>
+	var ssid1='<% cfg_get_ssid_value("wl_ssid") %>';
+	var wl_radio = '<% cfg_get("wl_radio") %>';
+	var wla_radio = '<% cfg_get("wla_radio") %>';
+	if (ssid1.length == 0) {
+		ssid1 = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+	}
+	document.write(ssid1);
+	if (wl_radio != "1" && wla_radio != "1")
+		document.getElementById("ssid1").style.display="none";
+	</script></a></li>
+	<li id="ssid2" class="cbi-tab-disabled"><a href="/bandwidth.htm" onclick="show2()">
+	<script>
+	var ssid2='<% cfg_get_ssid_value("wlg1_ssid") %>';
+	var wl1_radio = '<% cfg_get("wl1_radio") %>';
+	var wla1_radio = '<% cfg_get("wla1_radio") %>';
+	if (ssid2.length == 0) {
+		ssid2 = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+	}
+	document.write(ssid2);
+	if (wl1_radio != "1" && wla1_radio != "1")
+		document.getElementById("ssid2").style.display="none";
+	</script></a></li>
+	<li id="ssid3" class="cbi-tab-disabled"><a href="/bandwidth.htm" onclick="show3()">
+	<script>
+	var ssid3='<% cfg_get_ssid_value("wlg2_ssid") %>';
+	var wl2_radio = '<% cfg_get("wl2_radio") %>';
+	var wla2_radio = '<% cfg_get("wla2_radio") %>';
+	if (ssid3.length == 0) {
+		ssid3 = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+	}
+	document.write(ssid3);
+	if (wl2_radio != "1" && wla2_radio != "1")
+		document.getElementById("ssid3").style.display="none";
+	</script></a></li>
+	<li id="ssid4" class="cbi-tab-disabled"><a href="/bandwidth.htm" onclick="show4()">
+	<script>
+	var ssid4='<% cfg_get_ssid_value("wlg3_ssid") %>';
+	var wl3_radio = '<% cfg_get("wl3_radio") %>';
+	var wla3_radio = '<% cfg_get("wla3_radio") %>';
+	if (ssid4.length == 0) {
+		ssid4 = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+	}
+	document.write(ssid4);
+	if (wl3_radio != "1" && wla3_radio != "1")
+		document.getElementById("ssid4").style.display="none";
+	</script></a></li>
+	<li id="lan" class="cbi-tab-disabled"><a href="/bandwidth.htm" onclick="show5()">LAN</a></li>
+</ul>
+
+<div id ="graph_24g">
+<div><table><tr style="font-size: 16px;"><td>2.4G:</td></tr></table></div>
+<div class="realtime_chart">
+<div id="label_25" class="label_75"></div>
+<div id="label_50" class="label_50"></div>
+<div id="label_75" class="label_25"></div>
+<embed id="bwsvg" style="width:97%; height:300px; border:1px solid #000000; background-color:#FFFFFF" src="/image/bandwidth.svg" />
+</div>
+<div style="text-align:right"><small id="scale">-</small></div>
+<br />
+<table style="width:100%; table-layout:fixed" cellspacing="5">
+
+	<tr>
+		<td style="text-align:right; vertical-align:top"><strong style="border-bottom:2px solid blue">$inbound</strong></td>
+		<td style="text-indent:0.3em; line-height:14px" id="rx_bw_cur">(0 $kb_s)</td>
+
+		<td style="text-align:right; vertical-align:top"><strong>$average</strong></td>
+		<td style="text-indent:0.3em; line-height:14px" id="rx_bw_avg">(0 $kb_s)</td>
+
+		<td style="text-align:right; vertical-align:top"><strong>$peak</strong></td>
+		<td style="text-indent:0.3em; line-height:14px" id="rx_bw_peak">(0 $kb_s)</td>
+	</tr>
+	<tr>
+		<td style="text-align:right; vertical-align:top"><strong style="border-bottom:2px solid green">$outbound</strong></td>
+		<td style="text-indent:0.3em; line-height:14px" id="tx_bw_cur">(0 $kb_s)</td>
+
+		<td style="text-align:right; vertical-align:top"><strong>$average</strong></td>
+		<td style="text-indent:0.3em; line-height:14px" id="tx_bw_avg">(0 $kb_s)</td>
+
+		<td style="text-align:right; vertical-align:top"><strong>$peak</strong></td>
+		<td style="text-indent:0.3em; line-height:14px" id="tx_bw_peak">(0 $kb_s)</td>
+	</tr>
+</table>
+</div>
+
+<div id ="graph_5g">
+<div><table><tr style="font-size: 16px;"><td>5G:</td></tr></table></div>
+<div class="realtime_chart">
+<div id="label_25_5g" class="label_75"></div>
+<div id="label_50_5g" class="label_50"></div>
+<div id="label_75_5g" class="label_25"></div>
+<embed id="bwsvg_5g" style="width:97%; height:300px; border:1px solid #000000; background-color:#FFFFFF" src="/image/bandwidth.svg" />
+</div>
+<div style="text-align:right"><small id="scale_5g">-</small></div>
+<br />
+<table style="width:100%; table-layout:fixed" cellspacing="5">
+	<tr>
+		<td style="text-align:right; vertical-align:top"><strong style="border-bottom:2px solid blue">$inbound</strong></td>
+		<td style="text-indent:0.3em; line-height:14px" id="rx_bw_cur_5g">(0 $kb_s)</td>
+
+		<td style="text-align:right; vertical-align:top"><strong>$average</strong></td>
+		<td style="text-indent:0.3em; line-height:14px" id="rx_bw_avg_5g">(0 $kb_s)</td>
+
+		<td style="text-align:right; vertical-align:top"><strong>$peak</strong></td>
+		<td style="text-indent:0.3em; line-height:14px" id="rx_bw_peak_5g">(0 $kb_s)</td>
+	</tr>
+	<tr>
+		<td style="text-align:right; vertical-align:top"><strong style="border-bottom:2px solid green">$outbound</strong></td>
+		<td style="text-indent:0.3em; line-height:14px" id="tx_bw_cur_5g">(0 $kb_s)</td>
+
+		<td style="text-align:right; vertical-align:top"><strong>$average</strong></td>
+		<td style="text-indent:0.3em; line-height:14px" id="tx_bw_avg_5g">(0 $kb_s)</td>
+
+		<td style="text-align:right; vertical-align:top"><strong>$peak</strong></td>
+		<td style="text-indent:0.3em; line-height:14px" id="tx_bw_peak_5g">(0 $kb_s)</td>
+	</tr>
+</table>
+</div>
+
+<div id ="graph_5g_2">
+<div><table><tr style="font-size: 16px;"><td>5G_2:</td></tr></table></div>
+<div class="realtime_chart">
+<div id="label_25_5g_2" class="label_75"></div>
+<div id="label_50_5g_2" class="label_50"></div>
+<div id="label_75_5g_2" class="label_25"></div>
+<embed id="bwsvg_5g_2" style="width:97%; height:300px; border:1px solid #000000; background-color:#FFFFFF" src="/image/bandwidth.svg" />
+</div>
+<div style="text-align:right"><small id="scale_5g_2">-</small></div>
+<br />
+<table style="width:100%; table-layout:fixed" cellspacing="5">
+	<tr>
+		<td style="text-align:right; vertical-align:top"><strong style="border-bottom:2px solid blue">$inbound</strong></td>
+		<td style="text-indent:0.3em; line-height:14px" id="rx_bw_cur_5g_2">(0 $kb_s)</td>
+
+		<td style="text-align:right; vertical-align:top"><strong>$average</strong></td>
+		<td style="text-indent:0.3em; line-height:14px" id="rx_bw_avg_5g_2">(0 $kb_s)</td>
+
+		<td style="text-align:right; vertical-align:top"><strong>$peak</strong></td>
+		<td style="text-indent:0.3em; line-height:14px" id="rx_bw_peak_5g_2">(0 $kb_s)</td>
+	</tr>
+	<tr>
+		<td style="text-align:right; vertical-align:top"><strong style="border-bottom:2px solid green">$outbound</strong></td>
+		<td style="text-indent:0.3em; line-height:14px" id="tx_bw_cur_5g_2">(0 $kb_s)</td>
+
+		<td style="text-align:right; vertical-align:top"><strong>$average</strong></td>
+		<td style="text-indent:0.3em; line-height:14px" id="tx_bw_avg_5g_2">(0 $kb_s)</td>
+
+		<td style="text-align:right; vertical-align:top"><strong>$peak</strong></td>
+		<td style="text-indent:0.3em; line-height:14px" id="tx_bw_peak_5g_2">(0 $kb_s)</td>
+	</tr>
+</table>
+</div>
+
+<div id ="graph_lan">
+<div class="realtime_chart">
+<div id="label_25_lan" class="label_75"></div>
+<div id="label_50_lan" class="label_50"></div>
+<div id="label_75_lan" class="label_25"></div>
+<embed id="bwsvg_lan" style="width:97%; height:300px; border:1px solid #000000; background-color:#FFFFFF" src="/image/bandwidth.svg" />
+</div>
+<div style="text-align:right"><small id="scale_lan">-</small></div>
+<br />
+<table style="width:100%; table-layout:fixed" cellspacing="5">
+	<tr>
+		<td style="text-align:right; vertical-align:top"><strong style="border-bottom:2px solid blue">$inbound</strong></td>
+		<td style="text-indent:0.3em; line-height:14px" id="rx_bw_cur_lan">(0 $kb_s)</td>
+
+		<td style="text-align:right; vertical-align:top"><strong>$average</strong></td>
+		<td style="text-indent:0.3em; line-height:14px" id="rx_bw_avg_lan">(0 $kb_s)</td>
+
+		<td style="text-align:right; vertical-align:top"><strong>$peak</strong></td>
+		<td style="text-indent:0.3em; line-height:14px" id="rx_bw_peak_lan">(0 $kb_s)</td>
+	</tr>
+	<tr>
+		<td style="text-align:right; vertical-align:top"><strong style="border-bottom:2px solid green">$outbound</strong></td>
+		<td style="text-indent:0.3em; line-height:14px" id="tx_bw_cur_lan">(0 $kb_s)</td>
+
+		<td style="text-align:right; vertical-align:top"><strong>$average</strong></td>
+		<td style="text-indent:0.3em; line-height:14px" id="tx_bw_avg_lan">(0 $kb_s)</td>
+
+		<td style="text-align:right; vertical-align:top"><strong>$peak</strong></td>
+		<td style="text-indent:0.3em; line-height:14px" id="tx_bw_peak_lan">(0 $kb_s)</td>
+	</tr>
+</table>
+</div>
+</div>
+</body>

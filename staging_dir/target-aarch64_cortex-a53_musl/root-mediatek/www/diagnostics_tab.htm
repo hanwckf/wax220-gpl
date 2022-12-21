@@ -1,0 +1,25 @@
+<%+cbi/valueheader%>
+<%
+local tabs = {"ping", "traceroute", "nslookup", "iperf", "led", "locator"}
+local tabs_i18n = {}
+local curtab = luci.http.formvalue("tab")
+
+tabs_i18n[tabs[1]] = translate("Ping")
+tabs_i18n[tabs[2]] = translate("Traceroute")
+tabs_i18n[tabs[3]] = translate("Nslookup")
+tabs_i18n[tabs[4]] = translate("Speed Test Parameters")
+tabs_i18n[tabs[5]] = translate("LED")
+tabs_i18n[tabs[6]] = translate("Locator")
+%>
+<ul class="cbi-tabmenu">
+	<%for k,v in ipairs(tabs) do%>
+		<%if v== "led" then%>
+		<li class="cbi-tab<%if curtab ~= v then print("-disable") end%>"><a href="<%=luci.dispatcher.build_url('admin', 'system', 'leds')%>?tab=<%=v%>"><%=tabs_i18n[v]%></a></li>
+		<%elseif v== "iperf" then%>
+		<li class="cbi-tab<%if curtab ~= v then print("-disable") end%>"><a href="<%=luci.dispatcher.build_url('admin', 'system', 'iperf')%>?tab=<%=v%>"><%=tabs_i18n[v]%></a></li>
+		<%else%>
+		<li class="cbi-tab<%if curtab ~= v then print("-disable") end%>"><a href="<%=luci.dispatcher.build_url('admin', 'network', 'diagnostics')%>?tab=<%=v%>"><%=tabs_i18n[v]%></a></li>
+		<%end%>
+	<%end%>
+</ul>
+<%+cbi/valuefooter%>

@@ -1,0 +1,72 @@
+config system
+	option hostname 'WAX220'
+	option timezone 'UTC'
+	option ttylogin '1'
+	option log_size '64'
+	option urandom_seed '0'
+	option username 'admin'
+	option password '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8'
+	option softVersion 'V1.0.0.0'
+	option disableTelnet '0'
+	option hijackConfigStatus '99'
+
+config timeserver 'ntp'
+	option enabled '1'
+	option enable_server '0'
+	option period 30
+	list server '0.lede.pool.ntp.org'
+	list server '1.lede.pool.ntp.org'
+	list server '2.lede.pool.ntp.org'
+
+config led
+	option name 'power'
+	option board 'wax220'
+	option colour 'mixed'
+	option power_ctl '2'
+
+config led
+	option name 'net'
+	option board 'wax220'
+	option colour 'mixed'
+	option power_ctl '2'
+
+config led
+	option name 'wifin'
+	option board 'wax220'
+	option colour 'mixed'
+	option power_ctl '2'
+
+config led
+	option name 'wifia'
+	option board 'wax220'
+	option colour 'mixed'
+	option power_ctl '2'
+
+config led
+	option name 'lan1'
+	option board 'wax220'
+	option colour 'red'
+	option power_ctl '2'
+
+config led
+	option name 'lan2'
+	option board 'wax220'
+	option colour 'red'
+	option power_ctl '2'
+
+config led
+	option name 'lan3'
+	option board 'wax220'
+	option colour 'red'
+	option power_ctl '2'
+
+config netgear 'logs'
+	option log_site_allowed '1'
+	option log_site_block '1'
+	option log_login_web '1'
+	option log_router_op '1'
+	option log_dos '1'
+	option log_port '1'
+	option log_wire_conn '1'
+	option log_wire_sche '1'
+	option log_vpn '1'

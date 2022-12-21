@@ -1,0 +1,24 @@
+<% http_header("style/cascade2.css", "style/cascade-custom.css", "script/cbi.js", "script/jquery-1.12.4.min.js", "script/common.js") %>
+
+<body onLoad="please_wait(false);">
+	<fieldset class="cbi-section">
+		<form method="post" id="fw_up">
+			<table>
+				<tr>
+					<td class="title">$firm_update</td>
+				</tr>
+				<tr class="title-option">
+					<td style="width: 35%; text-align:center" colspan="2"><br/>$upgrade_str_1 3 $upgrade_str_2<br/><br/>
+					</td>
+				</tr>
+				<script>
+					function nextPage(){
+						getTop(window).location.href="sysauth.htm";
+					}
+					setTimeout("nextPage()", 180*1000);
+				</script>
+			</table>
+		</form>
+		<br/>
+	</fieldset>
+</body>

@@ -1,0 +1,28 @@
+From 823fcb523730e4f2fc70588a71dc36a7cd0e580c Mon Sep 17 00:00:00 2001
+From: caojingzhe <caojingzhe@twsh.com>
+Date: Fri, 19 Aug 2022 16:05:43 +0800
+Subject: [PATCH] 2
+
+---
+ .../linux-mediatek_mt7986/mt_wifi/mt_wifi/os/linux/ap_ioctl.c           | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+ mode change 100644 => 100755 opt2102/build_dir/target-aarch64_cortex-a53_musl/linux-mediatek_mt7986/mt_wifi/mt_wifi/os/linux/ap_ioctl.c
+
+diff --git a/mt_wifi/os/linux/ap_ioctl.c b/mt_wifi/os/linux/ap_ioctl.c
+old mode 100644
+new mode 100755
+index 9d01db539..ebf0e4590
+--- a/mt_wifi/os/linux/ap_ioctl.c
++++ b/mt_wifi/os/linux/ap_ioctl.c
+@@ -718,7 +718,7 @@ INT rt28xx_ap_ioctl(void *net_dev_obj, void *data_obj, int cmd) /* snowpin for a
+ 		pIoctlSSID->apidx = apidx;
+ 		RTMP_AP_IoctlHandle(pAd, wrq, CMD_RTPRIV_IOCTL_AP_SIOCGIWESSID, 0, pIoctlSSID, 0);
+ 		pSsidStr = (PCHAR)pIoctlSSID->pSsidStr;
+-		erq->length = pIoctlSSID->length;
++		erq->length = pIoctlSSID->length + 1;
+ 
+ 		if ((erq->pointer) && (pSsidStr != NULL)) {
+ 			/*if(copy_to_user(erq->pointer, pAd->ApCfg.MBSSID[pObj->ioctl_if].Ssid, erq->length)) */
+-- 
+2.13.1
+

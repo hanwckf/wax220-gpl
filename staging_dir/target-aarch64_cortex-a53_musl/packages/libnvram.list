@@ -1,0 +1,15 @@
+./
+./host
+./usr
+./usr/include
+./usr/include/flash_api.h
+./usr/include/linux_socket.h
+./usr/include/nvram.h
+./usr/include/nvram_env.h
+./usr/include/nvram_sock.h
+./usr/include/sys_debug.h
+./usr/lib
+./usr/lib/libnvram.a
+./usr/lib/libnvram.so
+./usr/lib/libnvram.so.0
+./usr/lib/libnvram.so.0.9.28

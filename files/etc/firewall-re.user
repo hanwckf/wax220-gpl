@@ -1,0 +1,30 @@
+
+ifget() {
+    opt=$1
+    ifname=$2
+
+    if [ -z "`ifconfig $ifname 2>/dev/null`" ]; then
+        return
+    fi
+
+    case "$opt" in
+        ip)
+            ifconfig $ifname | awk '/inet addr/ {print substr($2,6)}' 2>/dev/null
+            ;;
+    esac
+}
+
+brLanIp=$(ifget ip br-lan)
+if [ -n "$brLanIp" ]; then
+    iptables -t nat -A zone_lan_prerouting -i br-lan -p tcp --sport 1024:65535 -d $brLanIp --dport 80 -j DNAT --to-destination $brLanIp:8480
+    iptables -t nat -A zone_lan_prerouting -i br-lan -p tcp --sport 1024:65535 -d $brLanIp --dport 443 -j DNAT --to-destination $brLanIp:8443
+
+    iptables -t nat -A zone_mgmt_prerouting -i br-mgmt -p tcp --sport 1024:65535 -d $brLanIp --dport 80 -j DNAT --to-destination $brLanIp:8480
+    iptables -t nat -A zone_mgmt_prerouting -i br-mgmt -p tcp --sport 1024:65535 -d $brLanIp --dport 443 -j DNAT --to-destination $brLanIp:8443
+fi
+
+brMgmtIp=$(ifget ip br-mgmt)
+if [ -n "$brMgmtIp" ]; then
+    iptables -t nat -A zone_mgmt_prerouting -i br-mgmt -p tcp --sport 1024:65535 ! -d $brMgmtIp --dport 80 -j DNAT --to-destination $brMgmtIp:80
+    iptables -t nat -A zone_mgmt_prerouting -i br-mgmt -p tcp --sport 1024:65535 ! -d $brMgmtIp --dport 443 -j DNAT --to-destination $brMgmtIp:443
+fi

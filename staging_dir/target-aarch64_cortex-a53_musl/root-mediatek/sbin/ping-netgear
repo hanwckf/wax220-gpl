@@ -1,0 +1,113 @@
+#!/bin/sh
+
+echo "****************Start of ping-netgear********************" > /dev/console
+INTERVAL=10
+ping_previous_status=$(/usr/bin/redis-cli -s /tmp/.redis.sock hget network_status internet_connecting_status 2> /dev/null)
+ping_previous_status=${ping_previous_status:-"Invalid"}
+internet_status=0
+wan_ipaddr=""
+old_route_status="Invalid"
+route_status=""
+wait_time="0"
+
+# init the internet_connecting_status to disconnect
+if [ "$ping_previous_status" = "Invalid" ];then
+    /usr/bin/redis-cli -s /tmp/.redis.sock hset network_status internet_connecting_status 1 > /dev/null
+fi
+
+net_detect ()
+{
+    if [ "$wait_time" != "30" -a "$ping_previous_status" = "0" ];then
+        [ "$route_status" = "$old_route_status" ] && return
+    fi
+
+    ping -c 2 www.netgear.com > /tmp/ping_netgear_result 2> /dev/null
+    result=`cat /tmp/ping_netgear_result | grep "ttl="`
+    internet_status=0
+    if [ "x$result" = "x" ];then
+        internet_status=1
+    fi
+}
+
+while true
+do
+    wan_pptp=`/sbin/uci get network.vpn.proto` 2> /dev/null
+    wanproto_status=`/sbin/uci get network.wan.proto` 2> /dev/null
+    wanproto_status=${wan_pptp:-$wanproto_status}
+
+    wandemand_vpn=`/sbin/uci get network.vpn.demand` 2> /dev/null
+    wandemand_wan=`/sbin/uci get network.wan.demand` 2> /dev/null
+    wandemand_wan=${wandemand_vpn:-$wandemand_wan}
+
+    wandod_vpn=`/sbin/uci get network.vpn.pppdod=` 2> /dev/null
+    wandod_wan=`/sbin/uci get network.wan.pppdod` 2> /dev/null
+    wandod_wan=${wandod_wan:-$wandod_wan}
+    wanport_status=`tw_vty -c "show port status 0" 2> /dev/null | grep "Port 0" | cut -d ' ' -f 4`
+    model_mode=`/sbin/uci get system.@system[0].netmode` 2> /dev/null
+    route_status=`route -n |grep UG`
+
+    if [ "$model_mode" = "ap" ];then
+        apmode_status=1
+    else
+        apmode_status=0
+    fi
+    if [ "$model_mode" = "wds" ];then
+        brmode_status=1
+    else
+        brmode_status=0
+    fi
+
+    if [ "$wanport_status" != "1" ];then
+        if [ "$apmode_status" != "1" -a "$brmode_status" != "1" ];then
+            internet_status=1
+        else
+            net_detect
+        fi
+    else
+        net_detect
+    fi
+
+    if [ "$ping_previous_status" != "$internet_status" ];then
+        /usr/bin/redis-cli -s /tmp/.redis.sock hset network_status internet_connecting_status $internet_status > /dev/null
+        ping_previous_status=$internet_status
+        if [ "$ping_previous_status" = "0" ];then
+            ubus send internet_status_up
+        else
+            ubus send internet_status_down
+        fi
+        route_op=$(uci get system.logs.log_router_op)
+        if [ $route_op -eq 1 ];then
+            if [ $internet_status -eq 0 ];then
+                if [ "$apmode_status" = "0" -a "$brmode_status" = "0" ];then
+                    if [ "$wanproto_status" = "pppoe" -o "$wanproto_status" = "pptp" -o "$wanproto_status" = "l2tp" ];then
+                        wan_ipaddr=`/usr/bin/redis-cli -s /tmp/.redis.sock hget wan_ppp ipaddr`
+                    elif [ "$wanproto_status" = "dhcp" ];then
+                        wan_ipaddr=`/usr/bin/redis-cli -s /tmp/.redis.sock hget wan_dhcp ipaddr`
+                    else
+                        wan_ipaddr=$(uci get network.wan.ipaddr)
+                    fi
+                else
+                    wan_ipaddr=$(ifconfig br-lan | grep "inet addr" | awk -F' ' '{print $2}' | awk -F':' '{print $2}')
+                fi
+                if [ -f /tmp/ntp_sync_ok ];then
+                    /usr/bin/redis-cli -s /tmp/.redis.sock LPUSH logs "[Internet connected] IP address: $wan_ipaddr, $(date +"%A, %B %d, %Y %H:%M:%S")"
+                else
+                    /usr/bin/redis-cli -s /tmp/.redis.sock LPUSH logs "[Internet connected] IP address: $wan_ipaddr, TIME::$(cat /proc/uptime | awk -F'.' '{print $1}')"
+                fi
+                /usr/bin/redis-cli -s /tmp/.redis.sock LTRIM logs 0 1023
+            else
+                if [ -f /tmp/ntp_sync_ok ];then
+                    /usr/bin/redis-cli -s /tmp/.redis.sock LPUSH logs "[Internet disconnected] $(date +"%A, %B %d, %Y %H:%M:%S")"
+                else
+                    /usr/bin/redis-cli -s /tmp/.redis.sock LPUSH logs "[Internet disconnected] TIME::$(cat /proc/uptime | awk -F'.' '{print $1}')"
+                fi
+                /usr/bin/redis-cli -s /tmp/.redis.sock LTRIM logs 0 1023
+            fi
+        fi
+    fi
+    sleep $INTERVAL
+    wait_time=$(( $wait_time + 1 ))
+    [ "$wait_time" -gt "30" ] && wait_time=0
+    old_route_status="$route_status"
+done
+echo "****************Stop of ping-netgear********************" > /dev/console

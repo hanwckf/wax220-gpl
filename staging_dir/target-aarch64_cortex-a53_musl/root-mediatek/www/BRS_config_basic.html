@@ -1,0 +1,399 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+
+<head>
+	<% new_hijack_flow_head() %>
+</head>
+
+<style>
+	.popbox {
+		display: none;
+		position: absolute;
+		font-size: 18px;
+		z-index: 99999;
+		width: 400px;
+		padding: 10px;
+		background: #EEEFEB;
+		color: #000000;
+		/*border: 1px solid #4D4F53;*/
+		margin: 0px;
+		-webkit-box-shadow: 0px 0px 5px 0px rgba(164, 164, 164, 1);
+		box-shadow: 0px 0px 5px 0px rgba(164, 164, 164, 1);
+	}
+
+	body input[type="password"]:not(.browser-default):focus:not([readonly]),
+	body input[type="text"]:not(.browser-default):focus:not([readonly]) {
+		border: 2px solid #aaa;
+	}
+
+	body input[type="password"]:not(.browser-default),
+	body input[type="text"]:not(.browser-default) {
+		max-width: 680px;
+	}
+
+	input[type=text]:not(.browser-default),
+	input[type=password]:not(.browser-default) {
+		border: 2px solid #aaa;
+		border-radius: 5px;
+		padding: 6px 20px;
+		height: 40px;
+		font-size: 18px;
+		margin: 0px 0px 20px 38px;
+	}
+
+	body .content {
+		margin: 20px auto;
+		width: 800px;
+		text-align: left;
+		vertical-align: middle;
+	}
+
+	[type="checkbox"]:not(:checked),
+	[type="checkbox"]:checked {
+		position: relative;
+		opacity: 1;
+		pointer-events: all;
+		width: 18px;
+		height: 18px;
+		vertical-align: middle;
+		margin: 3px;
+	}
+
+	body select {
+		max-width: 724px;
+		border: 2px solid #aaa;
+		border-radius: 5px;
+		padding: 6px 12px;
+		height: 56px;
+		font-size: 18px;
+		margin: 0px 0px 20px 38px;
+		display: inline-block;
+	}
+
+	body select>option {
+		color: rgb(67 67 67 / 100%);
+	}
+
+	a {
+		text-decoration: underline;
+	}
+
+	.btn:disabled {
+		color: #FFFFFF !important;
+		background-color: #3a3a3a !important;
+		opacity: .8;
+	}
+
+	body font {
+		color: #FF0000;
+		font-size: 20px;
+		vertical-align: text-top;
+	}
+
+	.text_margin {
+		margin: 0px 38px !important;
+	}
+</style>
+<script>
+	$$(function() {
+		var moveLeft = 0;
+		var moveDown = 0;
+		$$(".popper").hover(function(e) {
+			var target = '#' + ($$(this).attr('data-popbox'));
+			
+			$$(target).show();
+			moveLeft = $$(this).outerWidth();
+			moveDown = ($$(target).outerHeight() / 2);
+		}, function() {
+			var target = '#' + ($$(this).attr('data-popbox'));
+			$$(target).hide();
+		});
+	
+		$$(".popper").mousemove(function(e) {
+			var target = '#' + ($$(this).attr('data-popbox'));
+			
+			leftD = e.pageX + parseInt(moveLeft);
+			maxRight = leftD + $$(target).outerWidth();
+			windowLeft = $$(window).width() - 40;
+			windowRight = 0;
+			maxLeft = e.pageX - (parseInt(moveLeft) + $$(target).outerWidth() + 20);
+			
+			if (maxRight > windowLeft && maxLeft > windowRight)
+			{
+				leftD = maxLeft;
+			}
+		
+			topD = e.pageY - parseInt(moveDown);
+			maxBottom = parseInt(e.pageY + parseInt(moveDown) + 20);
+			windowBottom = parseInt(parseInt($$(document).scrollTop()) + parseInt($$(window).height()));
+			maxTop = topD;
+			windowTop = parseInt($$(document).scrollTop());
+			if (maxBottom > windowBottom)
+			{
+				topD = windowBottom - $$(target).outerHeight() - 20;
+			} else if (maxTop < windowTop){
+				topD = windowTop + 20;
+			}
+		
+			$$(target).css('top', topD).css('left', leftD);
+		});
+	})
+	$$(function() {
+		login_display();
+	})
+</script>
+<body>
+	<% cfg_set("hijack_config_status", "2") %>
+	<script>
+		function login_display()
+		{
+			if (document.getElementById("passwd").value.length > 0 &&
+				document.getElementById("conf_passwd").value.length > 0 &&
+				document.getElementById("ssid").value.length > 0 &&
+				document.getElementById("ssid").value.length > 0 &&
+				document.getElementById("line_passphrase").value.length > 0 &&
+				document.getElementById("cbid.wireless.wifi0.country").value != '00' &&
+				document.getElementById("agree_info").checked)
+			{
+				document.getElementById("apply_btn").disabled = false;
+				agree = true;
+			}
+			else
+			{
+				document.getElementById("apply_btn").disabled = true;
+				agree = false;
+			}
+		}
+	
+		function showCountryList()
+		{
+			var s = "", v, k;
+			var wl_flag = '<% cfg_get("wl_flag") %>';
+			var j = $$.parseJSON('{ "356": "India", "392": "Japan", "233": "Estonia", "276": "Germany", "372": "Ireland", "616": "Poland", "250": "France", "578": "Norway", "752": "Sweden", "410": "South Korea", "756": "Switzerland", "246": "Finland", "40": "Austria", "36": "Australia", "56": "Belgium", "442": "Luxembourg", "703": "Slovakia", "554": "New Zealand", "208": "Denmark", "380": "Italy", "826": "United Kingdom", "724": "Spain", "705": "Slovenia", "440": "Lithuania", "352": "Iceland", "203": "Czech Republic", "191": "Croatia", "642": "Romania", "348": "Hungary", "300": "Greece", "620": "Portugal", "100": "Bulgaria", "528": "Netherlands", "428": "Latvia" }');
+			var country_list = [];
+			var name_value = {};
+	
+			if (wl_flag == 'US' || wl_flag == 'NA') {
+				j =  $$.parseJSON('{ "840": "United States"}');
+			}
+			else if (wl_flag == 'AP' || wl_flag == 'JP') {
+				j =  $$.parseJSON('{ "392": "Japan"}');
+			}
+	
+			for (var i in j) {
+				country_list.push(j[i]);
+				name_value[j[i]] = i;
+			}
+			country_list.sort();
+	
+			for(k in country_list)
+			{
+				country_name = country_list[k];
+				s += '<option id="cbi-wireless-wifi0-country-'+name_value[country_name]+'" value="'+name_value[country_name]+'">'+country_name+'</option>';
+			}
+	
+			document.write(s);
+			document.close();
+			document.getElementById('cbid.wireless.wifi0.country').value = '<% cfg_get("wl_country") %>';
+		}
+
+		function hasNumber(str) {
+			var result = str.match(/^.*[0-9]+.*$$/);
+			if (result==null) return false;
+			return true;
+		}
+
+		// Has upper character
+		function hasCapital(str) {
+			var result = str.match(/^.*[A-Z]+.*$$/);
+			if (result==null) return false;
+			return true;
+		}
+
+		// Has lower character
+		function hasLowercase(str) {
+			var result = str.match(/^.*[a-z]+.*$$/);
+			if (result==null) return false;
+			return true;
+		}
+
+		function hasValidSpecialChar(str) {
+			var result = str.match(/[^a-zA-Z0-9!@#$$%^&*()]/);
+			if (result!=null) return false;
+			return true;
+		}
+
+		function checkPW1PW2(pw1, pw2, szRet) {
+			var iRet = 0;
+			if ("" == szRet)
+			{
+				if(pw2 != pw1)
+				{
+					alert("$account_note6");
+					iRet = 1;
+				}
+			}
+			return iRet;
+		}
+
+		function validatePW2(pw) {
+			var msg="$account_note9" +' !@#$$%^&()*';
+			var iRet = 0;
+
+			if (pw.length < 8 || pw.length > 32)
+			{
+				alert(msg);	
+
+				iRet = 1;
+			}
+
+			if (iRet == 0)
+			{
+				if (!hasNumber(pw) || !hasCapital(pw) || !hasLowercase(pw) || !hasValidSpecialChar(pw))
+				{
+					alert(msg);	
+					iRet = 1;
+				}
+			}
+
+			return iRet;
+		}
+
+		function isprotecting(){
+			$$('form').submit(function() {
+				var formdata = $$(this).serialize()+"19930408\n";
+				var reg = /cbi\.apply\=Apply|submitType\=Save|&|\=|-*/g;
+				formdata = formdata.replace(reg,"");
+			});
+		}
+
+		function saveChanges() {
+			var szRet = "";
+			var line_passwd = document.getElementsByName("line_passwd")[0].value;
+			var line_conf_passwd = document.getElementsByName("line_conf_passwd")[0].value;
+			var line_ssid = document.getElementsByName("line_ssid")[0].value;
+			var line_passphrase = document.getElementsByName("line_passphrase")[0].value;
+			var reg = /^([0-9a-fA-F]{64})$$|^([\x00-\x7F]{8,63})$$/ ;
+
+			if ((validatePW2(line_passwd)) ||(checkPW1PW2(line_passwd, line_conf_passwd, szRet))) {
+				return false;
+			}
+
+			if(line_ssid.length < 1 || line_ssid.length > 32) {
+				alert("$wireless_info11");
+				return false;
+			}
+
+			if (reg.test(line_passphrase) == false) {
+				alert("$wireless_info35");
+				return false;
+			}
+
+			if (document.getElementById("agree_info").checked == true)
+			{
+				document.formname.agree.value=1;
+			}
+
+			if (document.getElementById('cbid.wireless.wifi0.country')) {
+				if (document.getElementById('cbid.wireless.wifi0.country').value == '<% cfg_get("wl_country") %>') {
+					document.formname.reboot.value = "0";
+				} else {
+					document.formname.reboot.value = "1";
+				}
+			}
+
+			isprotecting();
+			return true;
+		}
+
+		function goclick(meh) {
+			var x = screen.width/2 - 800/2;
+			var y = screen.height/2 - 800/2;
+			window.open(meh.href, 'full_conditions', 'height=800,width=800,left='+x+',top='+y);
+		}
+	</script>
+
+	<div id="password_info" class="popbox">
+		<p><script>document.write("$account_note9 " + "!@#$$%^&#38;*()");</script></p>
+	</div>
+	<div id="ssid_info" class="popbox">
+		<p>$ssid_info1</p>
+	</div>
+	<div id="passphrase_info" class="popbox">
+		<p>$wireless_info35</p>
+	</div>
+
+	<form method="post" name="formname" action='<% action_url("apply.cgi", "BRS_config_basic.html") %>'>
+		<input type="hidden" id="submitType" value="config_wizard" name="submitType"/>
+		<input type="hidden" name="anticsrf" value='<% generateToken("config_wizard") %>'>
+		<input type="hidden" name="username" value="">
+		<input type="hidden" name="password" value="">
+		<input type="hidden" name="agree" value="">
+		<input type="hidden" name="reboot" value="0">
+
+		<div id="container">
+			<div class="dialog-content">
+				<div id="card-welcome" class="install-card clearfix" style="width:100%; min-width: 750px;">
+					<div class="logos">
+						<div><img class="netgear-logo" src="image/netgear_business.png"></div>
+						<% hijack_logo_title() %>
+					</div>
+					<div class="content">
+						<div>
+							<input name="line_passwd" id="passwd" oninput="login_display()" placeholder="$ap_login_password_new" myid="passwd" type="password" maxlength="32"/>
+							<font color="red">*</font>
+							<img class="popper" data-popbox="password_info" src="image/info-circle.svg">
+						</div>
+						<div>
+							<input name="line_conf_passwd" id="conf_passwd" oninput="login_display()" placeholder="$ap_login_password_confirm" myid="conf_passwd" type="password" maxlength="64"/>
+							<font color="red">*</font>
+						</div>
+						<div>
+							<input name="line_ssid" id="ssid" oninput="login_display()" placeholder="$enter_ssid_name" myid="ssid" type="text" maxlength="32"/>
+							<font color="red">*</font>
+							<img class="popper" data-popbox="ssid_info" src="image/info-circle.svg">
+						</div>
+						<div>
+							<input name="line_passphrase" id="line_passphrase" oninput="login_display()" placeholder="$enter_passphrase" myid="passphrase" type="password" maxlength="64"/>
+							<font color="red">*</font>
+							<img class="popper" data-popbox="passphrase_info" src="image/info-circle.svg">
+						</div>
+						<div>
+							<div class="desc-text w3-large text_margin" style="padding-bottom:0px;">$country_region</div>
+							<select size="1" name="cbid.wireless.wifi0.country" id="cbid.wireless.wifi0.country" onchange="login_display();">
+								<script> showCountryList(); </script>
+							</select>
+							<font color="red">*</font>
+						</div>
+						<div class="desc-text w3-large text_margin"></div>
+						<div class="desc-text w3-large text_margin">
+							<span>$terms_use</span>
+						</div>
+						<div class="desc-text w3-large text_margin">
+							<span>$terms_use_info</span>
+						</div>
+						<div class="desc-text w3-large text_margin" style="display: flex;flex-direction: row;">
+							<input type="checkbox" name="agree_info" id="agree_info" onclick="login_display()">
+							<span style="width: fit-content;" hidden>
+								By checking this box, I accept <a style="color:#3A3A3A" href="https://www.netgear.com/about/terms-and-conditions/" target="_blank">NETGEAR's Terms and Conditions</a> and acknowledge that I have read the <a style="color:#3A3A3A" href="https://www.netgear.com/about/privacy-policy/" target="_blank">Privacy Notice</a>
+							</span>
+							<span style="width: fit-content;">
+								By checking this box, I accept <a style="color:#3A3A3A" href="/BRS_full_conditions.html" target="_blank" onclick="goclick(this); return false;">NETGEAR's Terms and Conditions</a> and acknowledge that I have read the Privacy Notice
+							</span>
+						</div>
+					</div>
+					<div class="buttons">
+						<button id="back_btn" class="btn-flat button-nav-skip" type="button" onclick="location.href='BRS_orbi_welcome.html';">
+							<span><script>document.write("$orbi_back_mark");</script></span>
+						</button>
+						<button id="apply_btn" class="btn button-nav" type="submit" onclick="return saveChanges();">
+							<span><script>document.write("$orbi_apply_mark");</script></span>
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</form>
+</body>
+
+</html>

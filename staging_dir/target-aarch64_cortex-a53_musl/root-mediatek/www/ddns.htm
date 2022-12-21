@@ -1,0 +1,363 @@
+<%+header%>
+<script type="text/javascript">
+<%local uci = luci.model.uci.cursor()%>
+var JSONDATA_DDNS=<%=JSONDATA_DDNS%>;
+var JSONDATA_EG_DDNS=<%=JSONDATA_EG_DDNS%>;
+var g_fromApply, g_check_or_submit;
+
+var ENGENIUS_DOMAIN_NAME_REGX =new RegExp("^[a-zA-Z0-9]{1,64}$");
+
+function ProtectButton(enable)
+{
+	if(enable)
+	{	
+		$('input[name^="DDNSEnable"]').removeAttr('disabled');
+		$('input[name^="EnGeniusDDNS"]').removeAttr('disabled');
+		$('select[name^="eg_"]').removeAttr('disabled');
+		$('input[name^="eg_"]').removeAttr('disabled');
+		$('input[name^="ot_"]').removeAttr('disabled');
+		$('select[name^="ot_"]').removeAttr('disabled');
+	}
+	else
+	{
+		$('input[name^="DDNSEnable"]').attr('disabled', 'disabled');
+		$('input[name^="EnGeniusDDNS"]').attr('disabled', 'disabled');
+		$('select[name^="eg_"]').attr('disabled', 'disabled');
+		$('input[name^="eg_"]').attr('disabled', 'disabled');
+		$('input[name^="ot_"]').attr('disabled', 'disabled');
+		$('select[name^="ot_"]').attr('disabled', 'disabled');
+	}
+}
+
+function ddnsStatus()
+{
+	var ret = $('#DDNSEnable_enable').prop('checked');
+	if(ret)
+	{
+		$('input[name^="EnGeniusDDNS"]').removeAttr('disabled');
+		enDdnsStatus();
+	}
+	else
+	{
+		$('input[name^="EnGeniusDDNS"]').attr('disabled', 'disabled');
+		$('select[name^="eg_"]').attr('disabled', 'disabled');
+		$('input[name^="eg_"]').attr('disabled', 'disabled');
+		$('input[name^="ot_"]').attr('disabled', 'disabled');
+		$('select[name^="ot_"]').attr('disabled', 'disabled');
+	}
+}
+
+function enDdnsStatus()
+{
+	var ret = $('#EnGeniusDDNS_enable').prop('checked');
+	if(ret)
+	{
+		$('select[name^="eg_"]').removeAttr('disabled');
+		$('input[name^="eg_"]').removeAttr('disabled');
+		$('input[name^="ot_"]').attr('disabled', 'disabled');
+		$('select[name^="ot_"]').attr('disabled', 'disabled');
+	}
+	else
+	{
+		$('select[name^="eg_"]').attr('disabled', 'disabled');
+		$('input[name^="eg_"]').attr('disabled', 'disabled');
+		$('input[name^="ot_"]').removeAttr('disabled');
+		$('select[name^="ot_"]').removeAttr('disabled');
+	}
+}
+
+<% if uci:get('functionlist','functionlist','SUPPORT_ENGENIUS_DDNS') == '1' or uci:get('functionlist','functionlist','OMIT_ENGENIUS_DDNS') == '0' then --[[ #### SUPPORT ENGENIUSS DDNS or OMIT_ENGENIUS_DDNS ### --]] %>
+XHR.poll(1, '<%=luci.dispatcher.build_url("admin", "network", "getddns")%>', null, function(x, info)
+{
+	var ddnsEnable, enGeniusEnable;
+	if(x.responseText && info)
+	{
+		$('#uid_status').html(info.uidStatus);
+		$('#ddns_status').html(info.ddnsStatus);
+
+		if(g_check_or_submit==1 && info.ddnsStatus!="Checking")
+		{
+			ProtectButton(1);
+			g_check_or_submit = 0;
+			if(info.domainStatus=="OK")
+			{
+				if(g_fromApply==0)
+					alert("<%:The domain name is available.%>");
+				else
+					document.forms[document.forms.length-1].submit();
+				return true;
+			}
+			else if(info.domainStatus=="FAILED")
+			{
+				alert("<%:The domain name is taken.%>");
+				return false;
+			}
+			else
+			{
+				alert("<%:Error occurs in the server.%>");
+				return false;
+			}
+		}
+	}
+});
+<% end %>
+
+function checkDomainNameIsAvailable(fromApply)
+{
+	g_fromApply = fromApply;
+
+	if($('#EnGeniusDDNS_enable').prop('checked'))
+	{
+		if($('#eg_aliasDomainName').val().length != 0)
+		{
+			if(!(ENGENIUS_DOMAIN_NAME_REGX.test($('#eg_aliasDomainName').val())))
+			{
+				alert("<%:Domain name given is invalid%>");
+				$('#eg_aliasDomainName').focus();
+				return false;
+			}
+		}
+
+		if(fromApply==0)
+		{
+			if($('#eg_aliasDomainName').val().length == 0)
+			{
+				alert("<%:Domain name cannot be empty!%>");
+				$('#eg_aliasDomainName').focus();
+				return false; 
+			}
+		}
+		ProtectButton(0);
+		var domain;
+		domain = $('#eg_aliasDomainName').val();
+		ajax_normal(
+		{
+			url: '<%=luci.dispatcher.build_url("admin/network/checkddns_domain_status")%>',
+			type: 'POST',
+			dataType: 'json',
+			data: {domain:domain},
+			success: function()
+			{
+				g_check_or_submit=1;
+				//console.log("&&&&&& success");
+			},
+			error: function(){
+				//console.log("&&&&&& error");
+			}
+		});
+	}
+}
+
+function showRefreshTime()
+{
+	var i,str="";
+	var timeStr=["3HR","6HR","9HR","12HR","24HR"];
+	var timeVal=["3","6","9","12","24"];
+	
+	for(i=0;i<timeStr.length;i++)
+	{
+		str+='<option value="'+timeVal[i]+'">'+timeStr[i]+'</option>';
+	}
+	document.write(str);
+}
+
+function init()
+{
+	g_check_or_submit = 0;
+
+
+	if ("<%=uci:get("functionlist","functionlist","SUPPORT_ENGENIUS_DDNS")%>" == "1")
+	{
+		document.getElementsByName("DDNSEnable")[(JSONDATA_DDNS.myddns.enabled=="1" || JSONDATA_EG_DDNS.ddns.enable=="1")?0:1].checked=true;
+		document.getElementsByName("EnGeniusDDNS")[(JSONDATA_DDNS.myddns.enabled=="1")?1:0].checked=true;
+		$('#eg_refresh_time').val(JSONDATA_EG_DDNS.ddns.update_time);
+		$('#eg_aliasDomainName').val(JSONDATA_EG_DDNS.ddns.domain);
+	}
+	else if ("<%=uci:get("functionlist","functionlist","OMIT_ENGENIUS_DDNS")%>" == "1")
+	{
+		document.getElementsByName("DDNSEnable")[JSONDATA_DDNS.myddns.enabled=="1"?0:1].checked=true;
+		document.getElementsByName("EnGeniusDDNS")[0].checked=true;
+
+		$('#eg_refresh_time').val(JSONDATA_EG_DDNS.ddns.update_time);
+		$('#eg_aliasDomainName').val(JSONDATA_EG_DDNS.ddns.domain);
+	}
+	else
+	{
+		document.getElementsByName("DDNSEnable")[(JSONDATA_DDNS.myddns.enabled=="1")?0:1].checked=true;
+		document.getElementsByName("EnGeniusDDNS")[0].checked=true;
+	}
+	$('#ot_hostname').val(JSONDATA_DDNS.myddns.domain);
+	$('#ot_username').val(JSONDATA_DDNS.myddns.username);
+	$('#ot_password').val(JSONDATA_DDNS.myddns.password);
+	$('#ot_ddns_service').val(JSONDATA_DDNS.myddns.service_name);
+	ddnsStatus();
+}
+
+$(function() {
+	init();
+
+	//$('select[name$="ot_ddns_service"]').change(function() {
+	$('#ot_ddns_service').change(function() {
+		if($(this).val() == "-")
+		{
+    		$("#id_custom_url").show();
+    	}
+    	else
+    	{	
+    		$("#id_custom_url").hide();
+    	}
+	}).triggerHandler('change');
+});
+
+function savechanges(type) {
+
+	ajax_setCsrf();
+	var ret = $('#DDNSEnable_enable').prop('checked');
+	if(ret)
+	{
+		ret = $('#EnGeniusDDNS_enable').prop('checked');
+		if(ret)
+		{
+			if($('#eg_aliasDomainName').val().length != 0)
+			{
+				if(!checkDomainNameIsAvailable(1))
+					return false;
+			}
+		}
+	}
+
+	return true;
+}
+</script>
+<form action="<%=REQUEST_URI%>" method="post">
+<fieldset class="cbi-section">
+<table>
+	<tr>
+		<td colspan="2" class="title"><%:DDNS Settings%></td>
+	</tr>
+	<tr class="title-option">
+		<td style="width:40%;"><label for="DDNSEnable_enable"><%:Status%></label></td>
+		<td>
+			<input type="radio" name="DDNSEnable" value="1" id="DDNSEnable_enable"  onclick="ddnsStatus()">
+			<label for="DDNSEnable_enable"><%:Enable%></label>
+			<input type="radio" name="DDNSEnable" value="0" id="DDNSEnable_disable" onclick="ddnsStatus()">
+			<label for="DDNSEnable_disable"><%:Disable%></label>
+		</td>
+	</tr>
+<% if uci:get('functionlist','functionlist','SUPPORT_ENGENIUS_DDNS') == '1' or uci:get('functionlist','functionlist','OMIT_ENGENIUS_DDNS') == '0' then %>
+	<tr class="title-option">
+		<td colspan="2">
+			<input type="radio" name="EnGeniusDDNS" value="1" id="EnGeniusDDNS_enable" onclick="enDdnsStatus()">
+			<label for="EnGeniusDDNS_enable"><%:Using Default UID/EnGenius DDNS Services %></label>
+		</td>
+	</tr>
+	<tr class="title-option">
+		<td>-&nbsp;<%:Default UID%></td><td><%=uid_account%></td>
+	</tr>
+	<tr class="title-option">
+		<td>-&nbsp;<%:UID Status%></td><td id="uid_status">Loading...</td>
+	</tr>
+	<tr class="title-option">
+		<td>-&nbsp;<%:Default DDNS Name%></td><td><%=uid_account%>.<%=ddns_domain%></td>
+	</tr>
+	<tr class="title-option">
+		<td>-&nbsp;<%:Alias DDNS Name%></td>
+		<td>
+			<input type="text" name="eg_aliasDomainName" id="eg_aliasDomainName" size="16" maxlength="64">.<%=ddns_domain%>
+		</td>
+	</tr>
+	<tr class="title-option">
+		<td></td>
+		<td class="subtitle">
+			<input type="button" name="eg_clickavailible" id="eg_clickavailible" value="<%:Availability Check%>" class="cbi-button" onclick="checkDomainNameIsAvailable(0);">
+		</td>
+	</tr>	
+	<tr class="title-option">
+		<td>-&nbsp;<%:Refresh Time%></td>
+		<td><select name="eg_refresh_time" id="eg_refresh_time">
+			<script>
+				showRefreshTime();
+			</script>
+		</select>
+		</td>
+	</tr>
+	<tr class="title-option">
+		<td>-&nbsp;<%:DDNS Status%></td><td id="ddns_status">Loading...</td>
+	</tr>
+<% end --[[ #### SUPPORT_ENGENIUS_DDNS  or OMIT_ENGENIUS_DDNS END ### --]] %>
+	<tr class="title-option">
+		<td colspan="2">
+			<input type="radio" name="EnGeniusDDNS" value="0" id="EnGeniusDDNS_disable" onclick="enDdnsStatus()">
+			<label for="EnGeniusDDNS_disable"><%:Use Other DDNS services %></label>
+		</td>
+	</tr>
+
+	<tr class="title-option">
+		<td>-&nbsp;<%:Service%></td>
+		<td><select name="ot_ddns_service" id="ot_ddns_service">
+			<%
+				local services = { }
+				local fd = io.open("/usr/lib/ddns/services", "r")
+				if fd then
+					local ln
+					repeat
+						ln = fd:read("*l")
+						local s = ln and ln:match('^%s*"([^"]+)"')
+						if s then services[#services+1] = s end
+					until not ln
+					fd:close()
+				end
+
+				local v
+				for _, v in luci.util.vspairs(services) do
+					if (v == "no-ip.com" )or(v == "dyndns.org" )or(v == "zoneedit.com" )or(v == "3322.org" )or(v == "-" ) then
+						%>
+							<option value="<%=v%>"><%=v%></option>
+						<%
+					end
+				end
+			%>
+			<!--option value="-">-- custom --</option-->
+		</select>
+		</td>
+	</tr>
+	<tr class="title-option" id="id_custom_url">
+		<td>-&nbsp;<%:Custom update-URL%></td>
+		<td>
+			<input type="text" name="ot_custom_url" id="ot_custom_url" size="60" maxlength="60">
+		</td>
+	</tr>
+
+	<tr class="title-option">
+		<td>-&nbsp;<%:Hostname%></td>
+		<td>
+			<input type="text" name="ot_hostname" id="ot_hostname" size="30" maxlength="30">
+		</td>
+	</tr>
+
+	<tr class="title-option">
+		<td>-&nbsp;<%:Username%></td>
+		<td>
+			<input type="text" name="ot_username" id="ot_username" size="30" maxlength="30">
+		</td>
+	</tr>
+
+	<tr class="title-option">
+		<td>-&nbsp;<%:Password%></td>
+		<td>
+			<input type="text" name="ot_password" id="ot_password" size="30" maxlength="30">
+		</td>
+	</tr>
+</table>
+</fieldset>
+
+<div class="cbi-page-actions">
+	<input type="hidden" id="submitType" name="submitType"/>
+	<input type="hidden" id="setTime" name="setTime"/>
+	<input type="hidden" id="timeZone" name="timeZone"/>
+	<input type="hidden" id="zoneName" name="zoneName"/>
+	<input type="hidden" id="daylightStatus" name="daylightStatus"/>
+	<input class="cbi-button cbi-button-apply" onclick="return savechanges(1)" type="submit" name="cbi.apply" value="<%:Apply%>">&nbsp;<span class="btn_desc"><%:Apply saved settings to take effect %></span>
+</div>
+</form>
+<%+footer%>

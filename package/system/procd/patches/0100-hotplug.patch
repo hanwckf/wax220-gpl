@@ -1,0 +1,56 @@
+--- a/plug/hotplug.c	
++++ b/plug/hotplug.c	
+@@ -209,6 +209,44 @@
+ 	exit(-1);
+ }
+ 
++static void handler_button_helper(struct blob_attr *msg, struct blob_attr *data)
++{
++    struct stat st;
++    if (0 == stat("/var/.banButton", &st))
++    {
++        int rem;
++        struct blob_attr *cur;
++        FILE *fd;
++        fd = fopen("/dev/pts/0", "w");
++        char *button = NULL;
++        char *action = NULL;
++        blobmsg_for_each_attr(cur, msg, rem) {
++            if (strcmp((char*)blobmsg_name(cur), "BUTTON") == 0)
++            {
++                button = (char*)blobmsg_data(cur);
++            }
++            if (strcmp((char*)blobmsg_name(cur), "ACTION") == 0)
++            {
++                action = (char*)blobmsg_data(cur);
++            }
++        }
++        if (button != NULL && action != NULL)
++        {
++            printf("get event button:%s action:%s\n", button, action);
++            if (fd != NULL)
++            {
++                fprintf(fd, "get event button:%s action:%s\n", button, action);
++            }
++        }
++        if (fd != NULL)
++        {
++            fclose(fd);
++        }
++        return;
++    }
++    return handle_exec(msg, data);
++}
++
+ static void handle_button_start(struct blob_attr *msg, struct blob_attr *data)
+ {
+ 	char *button = hotplug_msg_find_var(msg, "BUTTON");
+@@ -328,7 +366,7 @@
+ 	},
+ 	[HANDLER_BUTTON] = {
+ 		.name = "button",
+-		.handler = handle_exec,
++		.handler = handler_button_helper,
+ 		.start = handle_button_start,
+ 		.complete = handle_button_complete,
+ 	},

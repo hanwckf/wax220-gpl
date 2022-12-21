@@ -1,0 +1,26 @@
+<!DOCTYPE html
+	PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+</head>
+
+<body onload="loadvalue()">
+	<% cfg_set("hijack_config_status", "99") %>
+	<script>
+		var ts = '<% hijack_get_timestamp("hijack_success") %>';
+		function loadvalue() {
+			var cf = document.forms[0];
+			cf.submitType.value = "hijack_success";
+			cf.action = "/apply.cgi?/index.htm timestamp=" + ts;
+			cf.submit();
+		}
+	</script>
+	<form method="POST">
+		<input type="hidden" name="submitType">
+		<input type="hidden" name="anticsrf" value='<% generateToken("hijack_success") %>'>
+	</form>
+</body>
+
+</html>

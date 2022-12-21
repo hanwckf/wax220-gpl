@@ -1,0 +1,67 @@
+<%#
+LuCI - Lua Configuration Interface
+Copyright 2008 Steven Barth <steven@midlink.org>
+Copyright 2008 Jo-Philipp Wich <xm@leipzig.freifunk.net>
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+	http://www.apache.org/licenses/LICENSE-2.0
+
+$Id: flashops.htm 7798 2011-10-26 23:43:04Z jow $
+
+-%>
+
+
+<%
+local firmwareVersion = luci.util.trim(luci.util.exec("cat /etc/version | grep Firmware | awk '{print $4}'"))
+%>
+<script>
+	var firmwareVersion = '<%=firmwareVersion or "?"%>';
+	var action = '<%=luci.http.formvalue("action") or ""%>';
+	$(function()
+	{
+		$(".cbi-section")[((action == "reset") ? "2" : "1")].style.display = "none";
+		$("input[name='reset']").on("click", function()
+		{
+			return confirm("<%=translate('The action will erase existing settings and reset all settings to factory default')%>");
+		});
+		$("input[name='user_restore']").on("click", function()
+		{
+			return confirm("<%=translate('The action will erase existing settings and reset all settings to user default.')%>");
+		});
+		$("input[name='reboot']").on("click", function()
+		{
+			return confirm("<%=translate('This will reboot the device and may take few seconds.')%>");
+		});
+	});
+</script>
+	<fieldset class="cbi-section">
+		<form method="post" action="<%=REQUEST_URI%>" enctype="multipart/form-data">
+		<table>
+			<tr>
+				<td class="title"><%:Firmware Upgrade%></td>
+			</tr>
+			<tr class="title-option">
+				<td><%:Current Firmware Version%>:<script>document.write((firmwareVersion == "?")?"?":firmwareVersion.substring(0, firmwareVersion.lastIndexOf('.')));</script></td>
+			</tr>
+			<tr class="title-option">
+				<td><%:Select the new firmware from your hard disk%>.</td>
+			</tr>
+			<!--tr class="title-option">
+				<td><div myid="title_system_fw_keep_settings"><%:Keep settings%>:</div>&nbsp;&nbsp;<input type="checkbox" name="keep" id="keep" myid="system_fw_keep_settings" checked="checked" /></td>
+			</tr-->
+			<tr class="title-option">
+				<td><input type="file" name="binary" id="binary" myid="system_fw_file" style="background:#F0F0F0;"/>&nbsp;&nbsp;<input type="submit" myid="system_fw_upload" class="cbi-button" value="<%:Upload%>" /></td>
+			</tr>
+			<% if image_invalid then %>
+			<tr class="title-option">
+				<td><span style="color:#FF0000;"><%:Firmware upgrade is failed for unexpected reasons. Please make sure your firmware is valid.%></span></td>
+			</tr>
+			<% end %>
+		</table>
+		</form>
+	</fieldset>
+
+

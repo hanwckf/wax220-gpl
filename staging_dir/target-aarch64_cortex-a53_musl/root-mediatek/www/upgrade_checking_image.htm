@@ -1,0 +1,64 @@
+<% http_header("style/cascade2.css", "style/cascade-custom.css", "script/cbi.js", "script/jquery-1.12.4.min.js", "script/common.js") %>
+
+<body onLoad="please_wait(false);">
+	<fieldset class="cbi-section">
+		<form method="post" id="fw_up">
+			<table>
+				<tr>
+					<td class="title"></td>
+				</tr>
+				<tr class="title-option">
+					<td style="width: 35%;" colspan="2"><br/>$wizard_pls_wait<br/><br/></td>
+				</tr>
+				<script>
+					function online_upgrade_image()
+					{
+					    var url, data;
+					    url = '<% action_url("func.cgi", "upgrade_checking_image.htm") %>';
+					    data = {anticsrf:'<% generateToken("write_image") %>', submitType:"write_image"};
+					    ajax_normal(
+					    {
+					        async: false,
+					        type : "POST",
+					        url  : url,
+					        data : data,
+					        dataType: "JSON",
+					        error:function(){},
+					        success:function(){}
+					    });
+					    document.location.href="upgrade_process.htm";
+					}
+					function online_check_image()
+					{
+					    var url, data;
+					    url = '<% action_url("apply.cgi", "upgrade_checking_image.htm") %>';
+					    data = {anticsrf:'<% generateToken("online_image_check") %>', submitType:"online_image_check"};
+					    ajax_normal(
+					    {
+					        async: false,
+					        type : "POST",
+					        url  : url,
+					        data : data,
+					        dataType: "JSON",
+					        error:function(){},
+					        success:function(result)
+					        {
+					            if ("0" == result.ret)
+					            {
+					                online_upgrade_image();
+					            }
+					            else
+					            {
+					                document.location.href="upgrade_image_invalid.htm";
+					            }
+					        }
+					    });
+					}
+					setTimeout("online_check_image()", 6000);
+				</script>
+			</table>
+		</form>
+		<br/>
+	</fieldset>
+</body>
+

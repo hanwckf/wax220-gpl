@@ -1,0 +1,22 @@
+Author: zhongwenjun <zhongwenjun@twsh.com>
+Date: Fri, 8 Jul 2022 18:06:51 +0800
+---
+ .../target-aarch64_cortex-a53_musl/lldpd-0.9.5/src/daemon/netlink.c   | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/src/daemon/netlink.c
++++ b/src/daemon/netlink.c
+@@ -256,8 +256,8 @@ netlink_parse_link(struct nlmsghdr *msg,
+ 		}
+ 	}
+ 	if (!iff->name || !iff->address) {
+-		log_info("netlink", "interface %d does not have a name or an address, skip",
+-		    iff->index);
++		//log_info("netlink", "interface %d does not have a name or an address, skip",
++		    //iff->index);
+ 		return -1;
+ 	}
+ 
+-- 
+2.13.1
+

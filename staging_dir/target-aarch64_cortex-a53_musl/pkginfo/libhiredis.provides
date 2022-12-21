@@ -1,0 +1,4 @@
+libc.so
+libgcc_s.so.1
+libhiredis.so
+libhiredis.so.1.0.0

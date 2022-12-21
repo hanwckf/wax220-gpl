@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mesh Topology</title>
+<style type="text/css">
+body { 
+font: 14px helvetica neue, helvetica, arial, sans-serif;
+position: absolute;
+width: 100%;
+height: 100%;
+left: 0;
+top: 0;
+margin: 0;
+padding: 0;
+}
+
+#cy {
+position: absolute;
+left: 0;
+top: 0;
+right: 0;
+bottom: 0;
+}
+</style>    
+    <script type="text/javascript">
+</script>
+<meta charset=utf-8 />
+<meta name="viewport" content="user-scalable=no, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, minimal-ui">
+<script src="<%=media%>/jquery.min.js"></script>    
+<script src="<%=media%>/cytoscape.min.js"></script>
+<script type="text/javascript">
+var deviceConnect=[];
+var topologylist='{ "GetMeshDeviceNeighborsResult": "OK","MeshDeviceNeighbors": [{ "MeshDeviceMAC": "8a:dc:96:42:9c:4f", "MeshLinkInformation": [ { "MAC": "02:22:44:66:66:ab", "TQ": 10 }, { "MAC": "02:aa:bb:cc:dd:13", "TQ": 20 } ] },{ "MeshDeviceMAC": "02:22:44:66:66:ab", "MeshLinkInformation": [ { "MAC": "8a:dc:96:42:9c:4f", "TQ": 30 }, { "MAC": "02:aa:bb:cc:dd:13", "TQ": 40 } ] },{ "MeshDeviceMAC": "02:aa:bb:cc:dd:13", "MeshLinkInformation": [ { "MAC": "8a:dc:96:42:9c:4f", "TQ": 50 }, { "MAC": "02:22:44:66:66:ab", "TQ": 60 } ] }] }';
+var Obj = JSON.parse(topologylist);
+var e = {
+  nodes: 
+  [
+  ],
+  edges: 
+  [
+
+    ]
+};
+function pushNode()
+{
+    var url , container ,data ;
+    var meshlist, maclist = "";
+    var mac, i, j,batctl_mac, strength;
+    var match = 0;
+    var obj_alfred, jsonlist, img;
+	var deviceConnectStruct=[];
+	var deviceConnectStruct2=[];
+	var fromId=0;
+	var toId=0;	
+	var tq=0;    
+    url = '<%=luci.dispatcher.build_url("admin/network/ajax_getMeshList")%>';
+
+    ajax_normal({
+		async: false,
+        type : "GET",
+        url:url,
+        dataType:"json",
+        error:function(){
+        },
+        success:function(result){
+        	if(result[0].meshData!="")
+        	{
+        		result[0].meshData=result[0].meshData.replace(/\\/g, '');
+				result[0].meshData=result[0].meshData.replace(/u0022/g, '"');
+				result[0].meshData=result[0].meshData.replace(/},{/g, '},\n{');
+				meshlist = result[0].meshData ;
+				maclist = result[0].macData ;
+			}
+        }
+    });
+
+	meshdata = meshlist.split("\n");
+	for(i=0;i<meshdata.length ;i++)
+	{
+		mac=meshdata[i].substring(3,20);
+		for (var j = 0; j < Obj.MeshDeviceNeighbors.length; j++)
+		{
+
+			if(mac == Obj.MeshDeviceNeighbors[j].MeshDeviceMAC)
+			{
+				jsonlist=meshdata[i].substring(24,meshdata[i].length-4);
+				obj_alfred = JSON.parse(jsonlist);
+
+			if( obj_alfred.DeviceType == "AP" )
+				img = "<%=media%>/pictures/icon_topology_ap.png";
+ 			else if ( obj_alfred.DeviceType == "Router" )
+ 				img = "<%=media%>/pictures/icon_topology_router.png";
+			else
+				img = "<%=media%>/pictures/icon_topology_camera.png";
+			e.nodes.push(
+		    {
+		      "data": {"id": j,"name": obj_alfred.DeviceName,"img": img}
+		    });
+
+		    deviceConnect.push({"id":j, "mac":Obj.MeshDeviceNeighbors[j].MeshDeviceMAC});
+			}
+		}
+	}
+
+	var flag=0;
+
+	for (var i = 0; i < Obj.MeshDeviceNeighbors.length; i++)
+	{
+		for(var j=0;j<Obj.MeshDeviceNeighbors[i].MeshLinkInformation.length;j++)
+		{
+			flag=0;
+			
+			for(var m=0;m<Obj.MeshDeviceNeighbors.length;m++)
+			{
+				if(Obj.MeshDeviceNeighbors[m].MeshDeviceMAC == Obj.MeshDeviceNeighbors[i].MeshLinkInformation[j].MAC)
+				{
+					flag=1
+				}
+			}
+			if((Obj.MeshDeviceNeighbors[i].MeshDeviceMAC != Obj.MeshDeviceNeighbors[i].MeshLinkInformation[j].MAC) && flag == 1)
+			{
+				for(var k=0;k<deviceConnect.length;k++)
+				{
+					if(Obj.MeshDeviceNeighbors[i].MeshDeviceMAC == deviceConnect[k].mac)
+					{
+						fromId=k;
+					}
+				}
+				for(var l=0;l<deviceConnect.length;l++)
+				{
+					if(Obj.MeshDeviceNeighbors[i].MeshLinkInformation[j].MAC == deviceConnect[l].mac)
+					{
+						toId=l;
+						tq=Obj.MeshDeviceNeighbors[i].MeshLinkInformation[j].TQ;
+					}
+				}
+				deviceConnectStruct.push({"from":fromId,"to":toId,"tq":tq});
+			}
+		}		
+	}
+
+
+	var idx = 0;
+	for(var i=0;i<deviceConnectStruct.length;i++)
+	{
+		for(var j=0;j<deviceConnectStruct.length;j++)
+		{
+			if((deviceConnectStruct[i].from == deviceConnectStruct[j].to) && (deviceConnectStruct[i].to == deviceConnectStruct[j].from))
+			{
+				if(deviceConnectStruct[i].tq > deviceConnectStruct[j].tq)
+				{
+					deviceConnectStruct2.push({"from":deviceConnectStruct[i].from,"to":deviceConnectStruct[i].to,"tq":deviceConnectStruct[i].tq});
+				}
+				idx = 1;
+			}
+		}
+		if(idx==0)
+			deviceConnectStruct2.push({"from":deviceConnectStruct[i].from,"to":deviceConnectStruct[i].to,"tq":deviceConnectStruct[i].tq});
+		idx = 0;
+	}
+
+	var color;
+
+	for(var i=0;i<deviceConnectStruct2.length;i++)
+	{
+			if(deviceConnectStruct2[i].tq <=30)
+			{
+				color="red"
+			}
+			else if(deviceConnectStruct2[i].tq <=60)
+			{
+				color="yellow"	
+			}
+			else
+			{
+				color="green"		
+			}
+			e.edges.push(
+		    {
+		      "data": 
+		      {
+				"id": deviceConnectStruct2[i].from+","+deviceConnectStruct2[i].to,
+				"source": deviceConnectStruct2[i].from,
+				"target": deviceConnectStruct2[i].to,
+				"faveColor": color,
+				"strength": 50
+			  }
+		    })
+	}
+
+}
+$(function(){
+
+if(Obj.MeshDeviceNeighbors.length <= 2)
+{
+	pushNode();
+
+
+  $('#cy').cytoscape({
+    layout: {
+        name: 'circle',
+        padding: 20,
+        startAngle: 1 * Math.PI
+    },
+
+    style: cytoscape.stylesheet()
+      .selector('node')
+        .css({
+          'shape': 'ellipse',
+          'width': 60,
+          'height': 50,          
+          'content': 'data(name)',
+          'background-image': 'data(img)',
+          'background-fit': 'contain',
+          'font-size': 14,
+          'text-valign': 'bottom',
+          'background-opacity': 0,
+          'color': '#262626'
+        })
+      .selector(':selected')
+        .css({
+          'border-width': 2,
+          'border-color': '#A1D602'
+        })
+      .selector('edge')
+        .css({
+          'curve-style': 'bezier',
+          'opacity': 0.666,
+          'width': 'mapData(strength, 0, 100, 0, 6)',
+          'line-color': 'data(faveColor)',
+        })
+      .selector('.faded')
+        .css({
+          'opacity': 0.25,
+          'text-opacity': 0
+        }),
+
+    elements:e,
+	  
+
+    minZoom: 0.8,
+    maxZoom: 1.5,
+    zoomingEnabled: false,
+    userZoomingEnabled: false,
+    userPanningEnabled: false,
+    selectionType: 'single',
+    autoungrabify: false,
+    hideLabelsOnViewport: false,
+
+    ready: function(){
+      window.cy = this;
+      // giddy up
+    }
+  });
+
+}
+else
+{
+	document.write("<div><%:Opps!For Mesh Link Quality, we suggest that do not depoly more than 6 devices in one Mesh Network%></div>");
+}
+
+
+}); // on dom ready
+
+
+
+</script>
+</head>
+<body>
+<div id="cy"></div>
+</body>
+</html>

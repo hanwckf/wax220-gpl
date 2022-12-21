@@ -1,0 +1,43 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+
+case "$ACTION" in
+pressed)
+	echo "RESET button pressed ..." > /dev/console
+	/etc/init.d/ledControl stop
+	/etc/reset_timer.sh &
+	led.sh off power mixed
+	led.sh default-on power amber
+
+	return 10
+;;
+timeout)
+	led.sh timer power amber 250 750
+	. /etc/diag.sh
+	set_state failsafe
+;;
+released)
+	echo "RESET button released ..." > /dev/console
+	if [ "$SEEN" -le 5 -a "$SEEN" -ge 1 ]
+	then
+		echo "REBOOT" > /dev/console
+		sync
+		reboot
+	elif [ "$SEEN" -gt 20 ]
+	then
+		echo "FACTORY RESET" > /dev/console
+		protest --restore
+	elif [ "$SEEN" -gt 10 ]
+	then
+		echo "RESET" > /dev/console
+		protest --restore
+	else
+		/etc/init.d/ledControl restart
+	fi
+	ps | grep reset_timer.sh | grep -v grep | awk '{print $1}' | grep -v $$ | xargs kill -9 > /dev/console
+;;
+esac
+
+return 0

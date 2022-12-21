@@ -1,0 +1,22 @@
+#!/bin/sh /etc/rc.common
+
+START=10
+STOP=10
+
+start_service() {
+#	fwdd -d1 -e eth0 5G -e lan0 5G -e lan1 5G -e lan2 5G -e lan3 5G&
+	fwdd -d1 -e eth0 5G&
+}
+
+stop_service() {
+	killall -15 fwdd
+}
+
+start() {
+        start_service $@
+}
+
+
+stop() {
+        stop_service $@
+}

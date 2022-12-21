@@ -1,0 +1,78 @@
+<html>
+<head>
+<meta http-equiv="content-type" content='text/html; charset=<% lang_charset() %>'>
+<style type="text/css">
+.wizard_words_div{ width:80%; padding:5% 10% 0px 10%; font-family:Arial; font-size:10pt; font-weight:normal; color:#404040; }
+.wizard_words_div h1 { font-family:Arial; font-size:12pt; font-weight:bold; color:#9D98FF; }
+.wait_main_content {text-align:center; position:relative;top:-26px}
+.bluebar_div {z-index:999; display:inline-block; width:258px; *display:inline; zoom:1}
+.bluebar_div .bluebar_left{width:10px; height:8px; float:left; background: url(../image/blue_bar.png) no-repeat 0 0;}
+.bluebar_div .bluebar_middle{ width:0px;height:8px; float:left; background: url(../image/blue_bar.png) no-repeat -10px 0;}
+.bluebar_div .bluebar_right{width:10px; height:8px; float:left; background: url(../image/blue_bar.png) no-repeat -248px 0;}
+</style>
+</head>
+<body bgcolor=#ffffff onLoad="loadvalue()">
+<script>
+var delay_time=parseInt('<% env_applyGetState("delayTime") %>')*1000;
+var pchar = "||"; // progress char
+var maxchars = 38; 
+var charcount = 0; 
+function makeStr(strSize, fillChar)
+{
+	var temp = "";
+	for (i=0; i < strSize ; i ++)
+		temp = temp + fillChar;
+	return temp;
+}
+
+var time_increment = delay_time/238;
+var middle_bar_length = 0;
+var wait_time_count = 238;
+function loadvalue()
+{
+    setTimeout("updateProgress()",time_increment);
+}
+function updateProgress()
+{
+var cf = document.forms[0];
+if(charcount < maxchars)
+{
+    charcount ++;
+    cf.progress.value = makeStr(charcount,pchar);
+    setTimeout("updateProgress()",time_increment*6);
+}
+else
+	this.location.href='<% env_applyGetState("redirectUrl") %>';
+}
+var isFinish=0;
+function getFinish()
+{
+var xmlhttp;
+if ( window.XMLHttpRequest)
+	xmlhttp = new XMLHttpRequest();
+else
+	xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+xmlhttp.onreadystatechange = function() {
+	if ( xmlhttp.readyState == 4 && xmlhttp.status == 200 ) {
+		var result = xmlhttp.responseText;
+		if ( result == 1 ) {
+			middle_bar_length = wait_time_count-1;
+			updateProgress();
+			location.href = '<% env_applyGetState("redirectUrl") %>';
+			isFinish=1;
+		}
+	}
+};
+xmlhttp.open("GET", 'finish.txt?mark=<% env_applyGetState("redirectMark") %>', true);
+xmlhttp.send();
+if(isFinish==0){
+	setTimeout("getFinish()", 1000);
+}
+}
+getFinish();
+</script>
+<form>
+<div align="center" class="waiting"><BR><BR><B>Please wait a moment...</B></BR></BR></div>
+<div align="center"><input type="text" size="70" name="progress" id="loading" class="prgbar" value="" /></div><br />
+</form>
+</body></html>

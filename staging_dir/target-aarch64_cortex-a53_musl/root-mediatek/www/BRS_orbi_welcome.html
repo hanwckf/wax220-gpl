@@ -1,0 +1,33 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+
+<head>
+<% new_hijack_flow_head() %>
+</head>
+
+<body>
+	<% cfg_set("hijack_config_status", "1") %>
+	<div id="container">
+		<div class="dialog-content">
+		<!-- Welcome -->
+			<div id="card-welcome" class="install-card clearfix" style="width:100%; min-width: 750px;">
+				<div class="logos">
+					<div><img class="netgear-logo" src="image/netgear_business.png"></div>
+					<% hijack_logo_title() %>
+				</div>
+				<img class="card-image" src="<% product_img_path() %>" onerror="this.onerror=null; this.src='image/robot.png'">
+				<div class="content">
+					<div class="desc-text w3-xlarge"><script>document.write("$orbi_welcome_msg1");</script></div>
+					<div id="welcome_info" class="desc-text w3-large text-block-child"><script>document.write("$orbi_welcome_msg2");</script></div>
+				</div>
+				<div class="buttons">
+					<button id="welcome_next" class="btn button-nav" type="button" onclick="location.href='BRS_config_basic.html';">
+						<span><script>document.write("$orbi_next_mark");</script></span>
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+
+</html>

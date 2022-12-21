@@ -1,0 +1,38 @@
+From c1ad526d96785964fcd4a6b58a746efb09c87d5d Mon Sep 17 00:00:00 2001
+From: caojingzhe <caojingzhe@twsh.com>
+Date: Mon, 24 Oct 2022 16:48:40 +0800
+Subject: [PATCH] 2
+
+---
+ .../linux-mediatek_mt7986/mt_wifi/mt_wifi/embedded/common/rt_channel.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/mt_wifi/embedded/common/rt_channel.c b/mt_wifi/embedded/common/rt_channel.c
+index ce9b82383..98021d231 100755
+--- a/mt_wifi/embedded/common/rt_channel.c
++++ b/mt_wifi/embedded/common/rt_channel.c
+@@ -167,18 +167,21 @@ UINT16 const Country_Region_GroupNum_2GHZ = sizeof(Country_Region_ChDesc_2GHZ) /
+ 
+ CH_DESC Country_Region0_ChDesc_5GHZ[] = {
+ 	{36, 8, CHANNEL_DEFAULT_PROP},
++	{100, 11, CHANNEL_DEFAULT_PROP},
+ 	//{149, 5, CHANNEL_DEFAULT_PROP},
+ 	{}
+ };
+ 
+ CH_DESC Country_Region1_ChDesc_5GHZ[] = {
+ 	{36, 8, CHANNEL_DEFAULT_PROP},
++	{100, 11, CHANNEL_DEFAULT_PROP},
+ 	{149, 4, CHANNEL_DEFAULT_PROP},
+ 	{}
+ };
+ 
+ CH_DESC Country_Region2_ChDesc_5GHZ[] = {
+ 	{36, 8, CHANNEL_DEFAULT_PROP},
++	{100, 11, CHANNEL_DEFAULT_PROP},
+ 	{149, 5, CHANNEL_DEFAULT_PROP},
+ 	{}
+ };
+-- 
+2.13.1
+

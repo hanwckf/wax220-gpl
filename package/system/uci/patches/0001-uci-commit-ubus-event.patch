@@ -1,0 +1,137 @@
+--- a/delta.c
++++ b/delta.c
+@@ -222,7 +222,24 @@
+ 		goto error;
+ 
+ 	if (ctx->flags & UCI_FLAG_SAVED_DELTA)
+-		uci_add_delta(ctx, &p->saved_delta, cmd, ptr.section, ptr.option, ptr.value);
++	{
++		if (UCI_CMD_REMOVE == cmd)
++		{
++			struct uci_element *se = uci_lookup_list(&p->sections, ptr.section);
++			if (se != NULL) {
++				struct uci_section *us = uci_to_section(se);
++				uci_add_delta(ctx, &p->saved_delta, cmd, ptr.section, ptr.option, us->type);
++			}
++			else
++			{
++				uci_add_delta(ctx, &p->saved_delta, cmd, ptr.section, ptr.option, ptr.value);
++			}
++		}
++		else
++		{
++			uci_add_delta(ctx, &p->saved_delta, cmd, ptr.section, ptr.option, ptr.value);
++		}
++	}
+ 
+ 	switch(cmd) {
+ 	case UCI_CMD_REORDER:
+--- a/file.c
++++ b/file.c
+@@ -33,6 +33,10 @@
+ #include "uci.h"
+ #include "uci_internal.h"
+ 
++#include <libubox/blobmsg.h>
++#include <libubox/blobmsg_json.h>
++#include <libubus.h>
++
+ #define LINEBUF	32
+ 
+ /*
+@@ -642,6 +646,21 @@
+ 	fprintf(stream, "\n");
+ }
+ 
++static int uci_get_section_idx(struct uci_package *p, const char *type, const char *name)
++{
++    int idx = 0;
++    struct uci_element *s;
++    uci_foreach_element(&p->sections, s) {
++        struct uci_section *sec = uci_to_section(s);
++        if (strcmp(type, sec->type) ==0){
++            if (strcmp(name, sec->e.name) == 0)
++                return idx;
++            idx++;
++        }
++    }
++    return -1;
++}
++
+ int uci_export(struct uci_context *ctx, FILE *stream, struct uci_package *package, bool header)
+ {
+ 	struct uci_element *e;
+@@ -785,6 +804,62 @@
+ 		if (!uci_load_delta(ctx, p, true))
+ 			goto done;
+ 	}
++    {
++        struct uci_element *e;
++        static struct blob_buf buf;
++        void *tbl;
++        struct ubus_context *ubus_ctx;
++        unsigned int num = 0;
++        ubus_ctx = ubus_connect(NULL);
++        blobmsg_buf_init(&buf);
++        blobmsg_add_string(&buf, "package", p->e.name);
++        tbl = blobmsg_open_array(&buf, "delta");
++        uci_foreach_element(&p->saved_delta, e) {
++        struct uci_delta *h = uci_to_delta(e);
++        struct uci_element *se;
++        void *tbt = blobmsg_open_table(&buf, NULL);
++        bool getsecname = false;
++        blobmsg_add_u32(&buf, "cmd", h->cmd);
++        //blobmsg_add_string(&buf, "package", p->e.name);
++        //blobmsg_add_string(&buf, "section_name", h->section);
++
++            se = uci_lookup_list(&p->sections, h->section);
++            if (se != NULL) {
++                struct uci_section *us = uci_to_section(se);
++                if(us != NULL) {
++                    blobmsg_add_string(&buf, "section_type", us->type);
++           blobmsg_add_string(&buf, "section_name", us->e.name);
++                    blobmsg_add_u32(&buf, "idx", uci_get_section_idx(p, us->type, us->e.name));
++           getsecname = true;
++                }
++            }
++
++       if (!getsecname)
++       {
++           if (h->section)
++           {
++                   blobmsg_add_string(&buf, "section_name", h->section);
++               blobmsg_add_string(&buf, "section_type", h->value);
++           }
++       }
++
++            if (e->name) {
++                blobmsg_add_string(&buf, "name", e->name);
++            }
++            if (h->value) {
++                blobmsg_add_string(&buf, "value", h->value);
++            }
++            blobmsg_close_table(&buf, tbt);
++            num++;
++        }
++        blobmsg_close_array(&buf, tbl);
++        blobmsg_add_u32(&buf, "count", num);
++
++        if (ubus_ctx) {
++            ubus_send_event(ubus_ctx, "UCI_COMMIT_DELTA", buf.head);
++            ubus_free(ubus_ctx);
++        }
++    }
+ 
+ 	fd = mkstemp(filename);
+ 	if (fd == -1)
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -33,7 +33,7 @@
+ 
+ ADD_LIBRARY(uci SHARED ${LIB_SOURCES})
+ SET_TARGET_PROPERTIES(uci PROPERTIES OUTPUT_NAME uci)
+-TARGET_LINK_LIBRARIES(uci ${ubox})
++TARGET_LINK_LIBRARIES(uci ${ubox} ubus blobmsg_json)
+ 
+ ADD_LIBRARY(uci-static STATIC ${LIB_SOURCES})
+ SET_TARGET_PROPERTIES(uci-static PROPERTIES OUTPUT_NAME uci)

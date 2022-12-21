@@ -1,0 +1,25 @@
+From 33e19415ad344717cbcd7050579dce2e0259c857 Mon Sep 17 00:00:00 2001
+From: caojingzhe <caojingzhe@twsh.com>
+Date: Sat, 8 Oct 2022 17:34:28 +0800
+Subject: [PATCH] 2
+
+---
+ .../linux-mediatek_mt7986/mt_wifi/mt_wifi/embedded/common/rt_channel.c  | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mt_wifi/embedded/common/rt_channel.c b/mt_wifi/embedded/common/rt_channel.c
+index b378d1f36..7fe582745 100755
+--- a/mt_wifi/embedded/common/rt_channel.c
++++ b/mt_wifi/embedded/common/rt_channel.c
+@@ -315,7 +315,7 @@ CH_DESC Country_Region22_ChDesc_5GHZ[] = {
+ /* for JP capable of using 144 , mapping of Country_Region18 */
+ CH_DESC Country_Region23_ChDesc_5GHZ[] = {
+ 	{36, 8, CHANNEL_DEFAULT_PROP},
+-	{100, 5, CHANNEL_DEFAULT_PROP},
++	{100, 8, CHANNEL_DEFAULT_PROP},
+ 	{132, 4, CHANNEL_DEFAULT_PROP},
+ 	{}
+ };
+-- 
+2.13.1
+

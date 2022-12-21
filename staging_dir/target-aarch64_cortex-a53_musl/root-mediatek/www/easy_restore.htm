@@ -1,0 +1,40 @@
+<%#
+LuCI - Lua Configuration Interface
+Copyright 2008 Steven Barth <steven@midlink.org>
+Copyright 2008 Jo-Philipp Wich <xm@leipzig.freifunk.net>
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+	http://www.apache.org/licenses/LICENSE-2.0
+
+$Id: flashops.htm 7798 2011-10-26 23:43:04Z jow $
+
+-%>
+
+
+
+<script>
+
+</script>
+	<fieldset class="cbi-section">
+		<form method="post" action="<%=REQUEST_URI%>" enctype="multipart/form-data">
+		<table>
+			<tr>
+				<td class="title"><%:Config Upload%></td>
+			</tr>
+			<tr class="title-option">
+				<td ><input type="file" name="binary" id="binary" style="background:#F0F0F0;"/></td><td>
+				<input type="submit" class="cbi-button" name="restore" value="<%:Import%>" /></td>
+			</tr>
+			<% if backup_invalid then %>
+			<tr class="title-option">
+				<td colspan="3" style="padding-left: 30px;"><span style="color:#FF0000;"><%:Invalid backup configuration.%></span></td>
+			</tr>
+			<% end %>
+		</table>
+		</form>
+	</fieldset>
+
+

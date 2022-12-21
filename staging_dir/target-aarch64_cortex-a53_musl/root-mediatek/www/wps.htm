@@ -1,0 +1,565 @@
+<%+header%>
+<%local laninfo = luci.model.uci.cursor():get_all("network", "lan")%>
+<% 
+	local uci = require "luci.model.uci".cursor()
+    local ntm = require "luci.model.network"
+    ntm.init(uci)
+    netName_ap = {}
+    netName_wds_ap={}
+    local pin2_4G = ""
+    local pin5G = ""
+    local opmode_24g = ""
+	local opmode_5g = ""
+	local netName2_4G, netName5G
+	local blockRadio2_4G, blockRadio5G, statusradio2_4G, statusradio5G
+	local ssid2_4G, ssid5G, ency2_4G, ency5G, key2_4G, key5G
+	local state2_4G, state5G
+
+    --pin2_4G = luci.util.exec("sysCommand generate wpsPin 0|awk {'printf $1'}")
+    --pin5G = luci.util.exec("sysCommand generate wpsPin 1|awk {'printf $1'}")
+    local x=1
+    opmode_24g = uci:get("wireless", "wifi0", "opmode") or "none"
+	opmode_5g = uci:get("wireless", "wifi1", "opmode") or "none"
+
+
+    for i, dev in ipairs(ntm:get_wifidevs()) do             
+    	netName_ap[i] = ntm:get_wifinet_index(dev:name(),"ap",tonumber(1)):name()   	
+    	if x == 1 then
+    		pin2_4G = uci:get('wireless',netName_ap[i],"wps_pin")
+    	else
+    		pin5G = uci:get('wireless',netName_ap[i],"wps_pin")
+    	end
+    	x = x+1
+	end
+
+	local flag = "0"
+	local k = 1
+	while flag == "0" do
+		for i, dev in ipairs(ntm:get_wifidevs()) do  
+			local wds_ap = ntm:get_wifinet_index(dev:name(),"wds_ap",tonumber(k)):name()
+			local nawds = uci:get("wireless",wds_ap,"nawds")
+			if(nawds == "0") then
+				for j, p in ipairs(ntm:get_wifidevs()) do 
+				netName_wds_ap[j] = ntm:get_wifinet_index(p:name(),"wds_ap",tonumber(k)):name()
+				end
+				flag = "1"
+			end
+			k = k+1
+		end
+	end
+
+	if uci:get("functionlist","functionlist","SUPPORT_COMBINED_SSID_SETTING") == '1' then
+		local COMBINED_SSID = '1'
+
+		if opmode_24g == "wds_ap" then
+			netName2_4G = netName_wds_ap[1]
+		else
+			netName2_4G = netName_ap[1]
+		end
+
+		if opmode_5g == "wds_ap" then
+			netName5G = netName_wds_ap[2]
+		else
+			netName5G = netName_ap[2]
+		end
+	else
+		netName2_4G = netName_ap[1]
+		netName5G = netName_ap[2]
+	end
+
+	if netName2_4G ~= nil then
+		if opmode_24g == "wds_ap" or opmode_24g == "ap" then
+			blockRadio2_4G = uci:get("wireless",netName2_4G,"disabled")
+		else
+			blockRadio2_4G = "1"
+		end
+		statusradio2_4G = uci:get("wireless",netName2_4G,"wps_pbc")
+		ssid2_4G = uci:get("wireless",netName2_4G,"ssid")
+		ency2_4G = uci:get("wireless",netName2_4G,"encryption")
+		key2_4G = uci:get("wireless",netName2_4G,"key") or "none"
+		state2_4G = uci:get("wireless",netName2_4G,"wps_state")
+	end
+
+	if netName5G ~= nil then
+		if opmode_5g == "wds_ap" or opmode_5g == "ap" then
+			blockRadio5G = uci:get("wireless",netName5G,"disabled")
+		else
+			blockRadio2_4G = "1"
+		end
+		statusradio5G = uci:get("wireless",netName5G,"wps_pbc")
+		ssid5G = uci:get("wireless",netName5G,"ssid")
+		ency5G = uci:get("wireless",netName5G,"encryption")
+		key5G = uci:get("wireless",netName5G,"key") or "none"
+		state5G = uci:get("wireless",netName5G,"wps_state")
+	end
+%>
+
+	<script>
+	$(function() 
+	{
+		// initial radio status 2.4G
+		var statusradio2_4G = '<%=statusradio2_4G%>';
+		 $("input[name$=\"<%=netName2_4G%>.wps_pbc\"][value='"+statusradio2_4G+"']").attr("checked",true);
+
+		// initial radio status 5G
+		var statusradio5G = '<%=statusradio5G%>';
+		 $("input[name$=\"<%=netName5G%>.wps_pbc\"][value='"+statusradio5G+"']").attr("checked",true);
+
+		// initial key 2.4G
+		var key2_4G = ("<%=ency2_4G%>" == "none") ? "" : "<%=key2_4G%>";
+		(key2_4G == "") ?  $("td[name=key2_4G]").text("none") : $("td[name=key2_4G]").text(key2_4G);
+		
+		// initial key status 5G
+		var key5G = ("<%=ency5G%>" == "none") ? "" : "<%=key5G%>";
+		(key5G == "") ?  $("td[name=key5G]").text("none") : $("td[name=key5G]").text(key5G);
+		
+		// 2.4G status
+		if ('<%=state2_4G%>' == "1")
+		{
+			$("span[name=config2_4G]").text("UnConfigured");
+			$("input[name=release2_4G]").attr("disabled",true);
+		}
+		else
+		{
+			$("span[name=config2_4G]").text("Configured");
+			$("input[name=release2_4G]").attr("disabled",false);
+			if ('<%=statusradio2_4G%>' == "0")
+			{
+				$("input[name=release2_4G]").attr("disabled",true);
+			}			
+		}
+
+		// 5G status
+		if ('<%=state5G%>' == "1")
+		{
+			$("span[name=config5G]").text("UnConfigured");
+			$("input[name=release5G]").attr("disabled",true);
+		}
+		else
+		{
+			$("span[name=config5G]").text("Configured");
+			$("input[name=release5G]").attr("disabled",false);
+			if ('<%=statusradio5G%>' == "0")
+			{
+				$("input[name=release5G]").attr("disabled",true);
+			}
+		}
+
+		// if encryption disable or wpa2(AES) can choose enable	--2.4G
+		$("input[name$=\"<%=netName2_4G%>.wps_pbc\"]").change(function()
+		{
+			var url,data;
+			url='<%=luci.dispatcher.build_url("admin/network/ajax_IfEnable2_4G")%>';
+			data =  {data:'<%=netName2_4G%>'};
+			ajax_normal
+			({
+				async: false,
+		        type : "GET",
+		        url:url,
+		        data:data,
+		        dataType:"json",
+			    error:function(){        
+			    },		        
+		        success:function(result)		  
+		        {			        	
+		        	if ($('input[name$="'+result.secname2_4G+'.wps_pbc"]:checked').val() == '1') 
+					{					
+						if((result.encryption == "none" || result.encryption == "psk2+ccmp") == false)
+						{
+						alert("<%:WPS only support Disable security or WPA pre-shared key with WPA2-PSK(AES) encryption%>");
+						$("input[name$=\"<%=netName2_4G%>.wps_pbc\"][value=\"0\"]").prop("checked",true);
+						}
+			        }
+		    	}
+			})
+		});
+
+		// if encryption disable or wpa2(AES) can choose enable	--5G
+		$("input[name$=\"<%=netName5G%>.wps_pbc\"]").change(function()
+		{
+			var url,data;
+			url='<%=luci.dispatcher.build_url("admin/network/ajax_IfEnable5G")%>';
+			data =  {data:'<%=netName5G%>'};
+			ajax_normal
+			({
+				async: false,
+		        type : "GET",
+		        url:url,
+		        data:data,
+		        dataType:"json",
+			    error:function(){        
+			    },		        
+		        success:function(result)		  
+		        {	
+		        	if ($('input[name$="'+result.secname5G+'.wps_pbc"]:checked').val() == '1') 
+					{						
+						if((result.encryption == "none" || result.encryption == "psk2+ccmp") == false)
+						{
+						alert("<%:WPS only support Disable security or WPA pre-shared key with WPA2-PSK(AES) encryption%>");
+						$("input[name$=\"<%=netName5G%>.wps_pbc\"][value=\"0\"]").prop("checked",true);
+						}
+			        }
+		    	}
+			})
+		});
+
+		// release button 2.4G
+		$("input[name=release2_4G]").click(function()
+		{
+			var r = confirm("Do you sure release configuration?")
+			if (r == true)
+			{
+				var url,data;
+				url='<%=luci.dispatcher.build_url("admin/network/ajax_release2_4G")%>';
+				data =  {ap:'<%=netName_ap[1]%>' , wds:'<%=netName_wds_ap[1]%>'};
+				ajax_normal
+				{
+					async: false,
+			        type : "GET",
+			        url:url,
+			        data:data,
+			        dataType:"json",
+				    error:function(){},		        
+			        success:function(result)
+			        {
+			        	var key2_4G = result.key;
+						(key2_4G == "") ?  $("td[name=key2_4G]").text("none") : $("td[name=key2_4G]").text(key2_4G);
+						$("td[name=encryption2_4G]").text(result.encryption);
+						$("span[name=config2_4G]").text("UnConfigured");
+						$("input[name=release2_4G]").attr("disabled",true);
+						$("input[name$=\"<%=netName2_4G%>.wps_pbc\"][value='"+result.radio+"']").prop("checked",true);		
+						$( "#wps2_4G" ).submit();
+			        }
+
+				});
+			}
+		});
+
+		// release button 5G
+		$("input[name=release5G]").click(function()
+		{
+			var r = confirm("Do you sure release configuration?")
+			if (r == true)
+			{
+				var url,data;
+				url='<%=luci.dispatcher.build_url("admin/network/ajax_release5G")%>';
+				data =  {ap:'<%=netName_ap[2]%>' , wds:'<%=netName_wds_ap[2]%>'};
+				ajax_normal(
+				{
+					async: false,
+			        type : "GET",
+			        url:url,
+			        data:data,
+			        dataType:"json",
+				    error:function(){},		        
+			        success:function(result)
+			        {
+						var key5G = result.key;
+						(key5G == "") ?  $("td[name=key5G]").text("none") : $("td[name=key5G]").text(key5G);
+						$("td[name=encryption5G]").text(result.encryption);
+						$("span[name=config5G]").text("UnConfigured");
+						$("input[name=release5G]").attr("disabled",true);
+						$("input[name$=\"<%=netName5G%>.wps_pbc\"][value='"+result.radio+"']").prop("checked",true);		
+						$( "#wps5G" ).submit();
+			        }
+
+				});
+			}
+		});
+		if ('<%=statusradio2_4G%>' == "0"  || '<%=blockRadio2_4G%>' == "1")
+		{
+			$("input[name=wps_pbc2_4G]").attr("disabled",true);
+			$("input[name=viaPin2_4G]").attr("disabled",true);		
+		}
+
+		if ('<%=statusradio5G%>' == "0" || '<%=blockRadio5G%>' == "1")
+		{
+			$("input[name=wps_pbc5G]").attr("disabled",true);
+			$("input[name=viaPin5G]").attr("disabled",true);		
+		}
+
+		if ('<%=blockRadio2_4G%>' == "1")
+			$("input[name$=\"<%=netName2_4G%>.wps_pbc\"]").attr("disabled",true);
+		if ('<%=blockRadio5G%>' == "1")
+			$("input[name$=\"<%=netName5G%>.wps_pbc\"]").attr("disabled",true);
+
+		<% if uci:get('functionlist','functionlist','SUPPORT_WPS_ONLY_CB_MODE') == '1' then %>
+			<% if uci:get('wireless','wifi0','opmode') == 'sta_ap' then %>
+				$("input[name=wps_pbc2_4G]").attr("disabled",false);
+			<% end %>
+			<% if uci:get('wireless','wifi1','opmode') == 'sta_ap' then %>
+				$("input[name=wps_pbc5G]").attr("disabled",false);
+			<% end %>
+		<% end %>
+	
+		<% if uci:get('functionlist','functionlist','SUPPORT_WPS_ONLY_CB_MODE') == '1' then %>
+		// WPS via Push Button 2.4G CB mode
+		$("input[name=wps_pbc2_4G]").click(function()
+		{			
+			var url;
+			url='<%=luci.dispatcher.build_url("admin/network/ajax_wps_repeater_2_4G")%>';
+			ajax_normal(
+			{
+			//async: false,
+		        type : "GET",
+		        url:url,
+		        success:function()
+		        {
+					console.log("success");
+		        }
+			});
+			location.href='<%=luci.dispatcher.build_url("admin", "system", "setup_wizard_reboot")%>';
+		});
+		<% else %>
+		// WPS via Push Button 2.4G
+		$("input[name=wps_pbc2_4G]").click(function()
+                {
+                    var url;
+                    url='<%=luci.dispatcher.build_url("admin/network/ajax_wps_pbc2_4G")%>';
+					ajax_normal(
+                    {
+	                    async: true,
+	                    type : "GET",
+	                    url:url,
+	                    //success:function()
+	                    //{
+	                    //	alert("<%:You must go to station side to push its button within two minute%>");
+						//	console.log("success");
+	                    //}
+                    });
+                    alert("<%:You must go to station side to push its button within two minute%>");
+                });
+		<% end %>
+
+		<% if uci:get('functionlist','functionlist','SUPPORT_WPS_ONLY_CB_MODE') == '1' then %>
+		// WPS via Push Button 5G
+		$("input[name=wps_pbc5G]").click(function()
+		{			
+			var url;
+			url='<%=luci.dispatcher.build_url("admin/network/ajax_wps_repeater_5G")%>';
+			ajax_normal(
+			{
+			//async: false,
+		        type : "GET",
+		        url:url,
+		        success:function()
+		        {
+					console.log("success");
+		        }
+			});
+			location.href='<%=luci.dispatcher.build_url("admin", "system", "setup_wizard_reboot")%>';
+		});
+		<% else %>
+		// WPS via Push Button 5G
+                $("input[name=wps_pbc5G]").click(function()
+                {
+                    var url;
+                    url='<%=luci.dispatcher.build_url("admin/network/ajax_wps_pbc5G")%>';
+                    ajax_normal(
+                    {
+                        async: true,
+                        type : "GET",
+                        url:url,
+                        //success:function()
+                        //{
+						//	alert("<%:You must go to station side to push its button within two minute%>");
+						//	console.log("success");
+                        //}
+                    });
+                    alert("<%:You must go to station side to push its button within two minute%>");
+                });
+		<% end %>
+
+		//	WPS via Pin 2.4G
+		$("input[name=viaPin2_4G]").click(function()
+		{
+			if(isNumber($("input[name=pincode2_4G]").val()) &&
+				$("input[name=pincode2_4G]").val().length == 8)
+			{
+				var url,data;
+				url='<%=luci.dispatcher.build_url("admin/network/ajax_viaPin2_4G")%>';
+				data =  {data:$("input[name=pincode2_4G]").val()};
+				ajax_normal(
+				{
+					async: true,
+			        type : "GET",
+			        url:url,
+			        data:data,
+			        //success:function()
+			        //{
+			        //	alert("<%:The setup may take up to two minutes to complete.%>");
+					//	console.log("success");
+			        //}
+				});
+				alert("<%:The setup may take up to two minutes to complete.%>");
+			}
+			else
+			{
+				alert("<%:Invalid Pin code%>");
+				setfocus(getByName('pincode2_4G'));
+				return false;
+			}			
+		});		
+
+		//	WPS via Pin 5G
+		$("input[name=viaPin5G]").click(function()
+		{
+			if(isNumber($("input[name=pincode5G]").val()) &&
+				$("input[name=pincode5G]").val().length == 8)
+			{
+				var url,data;
+				url='<%=luci.dispatcher.build_url("admin/network/ajax_viaPin5G")%>';
+				data =  {data:$("input[name=pincode5G]").val()};
+				ajax_normal(
+				{
+					async: true,
+			        type : "GET",
+			        url:url,
+			        data:data
+//			        success:function()
+//			        {
+//			        	alert("<%:The setup may take up to two minutes to complete.%>");
+//						console.log("success");
+//			        }
+				});
+				alert("<%:The setup may take up to two minutes to complete.%>");
+			}
+			else
+			{
+				alert("<%:Invalid Pin code%>");
+				setfocus(getByName('pincode5G'));
+				return false;
+			}			
+		});	
+
+		//form submit 2.4G
+		$("input[name=save2_4G]").click(function()
+		{
+			$("input[name='wds_ap24G_1']").val("<%=netName_wds_ap[1]%>");
+			$( "#wps2_4G" ).submit();
+		});
+		//form submit 5G
+		$("input[name=save5G]").click(function()
+		{
+			$("input[name='wds_ap5G_1']").val("<%=netName_wds_ap[2]%>");
+			$( "#wps5G" ).submit();
+		});
+
+
+	});
+
+	</script>
+	<form id="wps2_4G" method="post"  action='<%=luci.dispatcher.build_url("admin/network/wps")%>'>
+	<input type='hidden' name="wds_ap24G_1"/>
+	<fieldset class="cbi-section">
+		<table name="table2_4G">
+			<tr>
+				<td colspan="2" class="title">WPS <%:Settings%> - 2.4GHz</td>
+			</tr>	
+			<% if uci:get('functionlist','functionlist','SUPPORT_WPS_ONLY_CB_MODE') ~= '1' then %>
+			<tr class="title-option">
+				<td>Status</td>
+				<td ><input name="cbid.wireless.<%=netName2_4G%>.wps_pbc" value="1" type="radio"/>&nbsp;Enable&nbsp;&nbsp;<input name="cbid.wireless.<%=netName2_4G%>.wps_pbc" value="0" type="radio"/>&nbsp;Disable&nbsp;</td>
+				
+			</tr>
+			<tr class="title-option">
+				<td>Current Configuration</td>
+				<td colspan="2"><span name="config2_4G"></span><input name="release2_4G" type="button" value="Release Configuration"></input></td>
+			</tr>
+			<tr class="title-option">
+				<td>Self-Pin Code</td>
+				<td><%=pin2_4G %></td>
+			</tr>
+			<tr class="title-option">
+				<td >SSID</td>
+				<td ><%=ssid2_4G%></td>
+			</tr>
+			<tr class="title-option">
+				<td>Authentication Mode</td>
+				<td name="encryption2_4G"><%=ency2_4G%></td>
+			</tr>
+			<tr class="title-option">
+				<td>Encryption Key</td>
+				<td name="key2_4G"></td>
+			</tr>
+			<% end %>
+			<tr class="title-option">
+				<td>WPS via Push Button</td>
+				<% if uci:get('functionlist','functionlist','SUPPORT_WPS_ONLY_CB_MODE') == '1' then %>
+				<td><input name="wps_pbc2_4G" type="button" value="Start to Process"></input></td>
+				<% else %>
+				<td><input name="wps_pbc2_4G" type="button" value="Start"></input></td>
+				<% end %>
+			</tr>
+			<% if uci:get('functionlist','functionlist','SUPPORT_WPS_ONLY_CB_MODE') ~= '1' then %>
+			<tr class="title-option">
+				<td>WPS via Pin</td>
+				<td colspan="2"><input name="pincode2_4G" type="text" maxlength="8" style="width:120px;"></input><input name="viaPin2_4G" type="button" value="Start"></input></td>	
+			</tr>
+			<% end %>
+		</table>
+		<% if uci:get('functionlist','functionlist','SUPPORT_WPS_ONLY_CB_MODE') ~= '1' then %>
+		<div class="cbi-page-actions">
+			<input class="cbi-button cbi-button-save" name="save2_4G" type="button" value="Save"> &nbsp;<span class="btn_desc"><%:Save current setting(s)%></span>
+		</div>
+		<% end %>
+	</fieldset>
+	</form>
+	<br/>
+	<form id="wps5G" method="post"  action='<%=luci.dispatcher.build_url("admin/network/wps5G")%>'>
+	<input type='hidden' name="wds_ap5G_1"/>
+	<fieldset class="cbi-section">
+		<table name="table5G">
+			<tr>
+				<td colspan="2" class="title">WPS <%:Settings%> - 5GHz</td>
+			</tr>			
+			<% if uci:get('functionlist','functionlist','SUPPORT_WPS_ONLY_CB_MODE') ~= '1' then %>
+			<tr class="title-option">
+				<td>Status</td>
+				<td ><input name="cbid.wireless.<%=netName5G%>.wps_pbc" value="1" type="radio"/>&nbsp;Enable&nbsp;&nbsp;<input name="cbid.wireless.<%=netName5G%>.wps_pbc" value="0" type="radio"/>&nbsp;Disable&nbsp;
+				</td>
+			</tr>
+			<tr class="title-option">
+				<td>Current Configuration</td>
+				<td colspan="2"><span name="config5G"></span><input name="release5G" type="button" value="Release Configuration"></input></td>
+			</tr>
+			<tr class="title-option">
+				<td>Self-Pin Code</td>
+				<td><%=pin5G %></td>
+			</tr>
+			<tr class="title-option">
+				<td>SSID</td>
+				<td><%=ssid5G%></td>
+			</tr>
+			<tr class="title-option">
+				<td>Authentication Mode</td>
+				<td name="encryption5G"><%=ency5G%></td>
+			</tr>
+			<tr class="title-option">
+				<td>Encryption Key</td>
+				<td name="key5G"><%=key5G%></td>
+			</tr>
+			<% end %>
+			<tr class="title-option">
+				<td>WPS via Push Button</td>
+				<% if uci:get('functionlist','functionlist','SUPPORT_WPS_ONLY_CB_MODE') ~= '1' then %>
+				<td><input name="wps_pbc5G" type="button" value="Start"></input></td>
+				<% else %>
+				<td><input name="wps_pbc5G" type="button" value="Start to Process"></input></td>
+				<% end %>
+			</tr>
+			<% if uci:get('functionlist','functionlist','SUPPORT_WPS_ONLY_CB_MODE') ~= '1' then %>
+			<tr class="title-option">
+				<td>WPS via Pin</td>
+				<td colspan="2"><input name="pincode5G" type="text" maxlength="8" style="width:120px;"></input><input name="viaPin5G" type="button" value="Start"></input></td>	
+			</tr>
+			<% end %>
+		</table>
+		<% if uci:get('functionlist','functionlist','SUPPORT_WPS_ONLY_CB_MODE') ~= '1' then %>
+		<div class="cbi-page-actions">
+			<input class="cbi-button cbi-button-save" name="save5G" type="button" value="Save"> &nbsp;<span class="btn_desc"><%:Save current setting(s)%></span>
+		</div>
+		<% end %>
+	</fieldset>		
+	</form>
+<%+footer%>  	

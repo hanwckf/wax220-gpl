@@ -1,0 +1,41 @@
+From f0bfb370c1c2c39263bcc433de8a4ffd0ed5dc45 Mon Sep 17 00:00:00 2001
+From: caojingzhe <caojingzhe@twsh.com>
+Date: Tue, 10 May 2022 15:33:26 +0800
+Subject: [PATCH] 2
+
+---
+ .../mt_wifi/mt_wifi/embedded/common/rt_channel.c                     | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+ mode change 100644 => 100755 mt_wifi/embedded/common/rt_channel.c
+
+diff --git a/mt_wifi/embedded/common/rt_channel.c b/mt_wifi/embedded/common/rt_channel.c
+old mode 100644
+new mode 100755
+index e6900eca..191bf9af
+--- a/mt_wifi/embedded/common/rt_channel.c
++++ b/mt_wifi/embedded/common/rt_channel.c
+@@ -167,18 +167,19 @@ UINT16 const Country_Region_GroupNum_2GHZ = sizeof(Country_Region_ChDesc_2GHZ) /
+ 
+ CH_DESC Country_Region0_ChDesc_5GHZ[] = {
+ 	{36, 8, CHANNEL_DEFAULT_PROP},
+-	{149, 5, CHANNEL_DEFAULT_PROP},
++	//{149, 5, CHANNEL_DEFAULT_PROP},
+ 	{}
+ };
+ 
+ CH_DESC Country_Region1_ChDesc_5GHZ[] = {
+ 	{36, 8, CHANNEL_DEFAULT_PROP},
+-	{100, 11, CHANNEL_DEFAULT_PROP},
++	{149, 4, CHANNEL_DEFAULT_PROP},
+ 	{}
+ };
+ 
+ CH_DESC Country_Region2_ChDesc_5GHZ[] = {
+ 	{36, 8, CHANNEL_DEFAULT_PROP},
++	{149, 5, CHANNEL_DEFAULT_PROP},
+ 	{}
+ };
+ 
+-- 
+2.13.1
+

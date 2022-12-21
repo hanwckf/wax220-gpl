@@ -1,0 +1,8 @@
+<%+cbi/valueheader%>
+<%
+local syslog = luci.sys.syslog()
+%>
+<div id="content_syslog">
+<textarea readonly="readonly" wrap="off" rows="<%=syslog:cmatch("\n")+2%>" id="syslog"><%=syslog:pcdata()%></textarea>
+</div>
+<%+cbi/valuefooter%>

@@ -1,0 +1,29 @@
+From 8baaae0f394b3d6e3ecd4a63316b0b9bfd16e8ae Mon Sep 17 00:00:00 2001
+From: caojingzhe <caojingzhe@twsh.com>
+Date: Mon, 8 Aug 2022 10:15:55 +0800
+Subject: [PATCH] 2
+
+---
+ .../linux-mediatek_mt7986/mt_wifi/mt_wifi/embedded/mgmt/bss_ops.c   | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/mt_wifi/embedded/mgmt/bss_ops.c b/mt_wifi/embedded/mgmt/bss_ops.c
+index 644f8866d..6966f1706 100755
+--- a/mt_wifi/embedded/mgmt/bss_ops.c
++++ b/mt_wifi/embedded/mgmt/bss_ops.c
+@@ -426,6 +426,12 @@ static VOID BssCipherParse(BSS_ENTRY *pBss)
+ 			/*pBss->WPA2.RsnCapability = *(PUSHORT) pTmp;*/
+ 			pBss->RsnCapability = (pTmp[1] << 8) + pTmp[0];
+ 			pTmp += sizeof(USHORT);
++			if(IS_AKM_WPA2(pBss->AKMMap)
++				&&(pBss->IsSupportSHA256KeyDerivation == TRUE)
++				&&(pBss->RsnCapability&(1<<6))
++				){
++				SET_AKM_WPA3(pBss->AKMMap);
++			}
+ 			break;
+ 		case IE_RSNXE:
+ #ifdef DOT11_SAE_SUPPORT
+-- 
+2.13.1
+

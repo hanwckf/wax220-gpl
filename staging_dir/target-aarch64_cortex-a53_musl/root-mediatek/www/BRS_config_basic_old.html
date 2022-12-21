@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<script type="text/javascript" src="/script/md5.js"></script>
+
+<style>
+	@font-face{
+		font-family:'Avenir Next';
+		src:url("style/font/Avenir Next Regular.eot");
+		src:url("style/font/Avenir Next Regular.eot?#iefix") format("embedded-opentype"),
+			url("style/font/Avenir Next Regular.woff2") format("woff2"),
+			url("style/font/Avenir Next Regular.woff") format("woff"),
+			url("style/font/Avenir Next Regular.svg#Avenir Next Regular") format("svg");
+		font-weight:400;
+		font-style:normal;
+		font-stretch:normal;
+		unicode-range:U+0020-00FE
+	}
+	@font-face{
+		font-family:'Avenir Next';
+		src:url("style/font/AvenirNext-Medium.eot");
+		src:url("style/font/AvenirNext-Medium.eot?#iefix") format("embedded-opentype"),
+			url("style/font/AvenirNext-Medium.woff2") format("woff2"),
+			url("style/font/AvenirNext-Medium.woff") format("woff"),
+			url("style/font/AvenirNext-Medium.ttf") format("truetype"),
+			url("style/font/AvenirNext-Medium.svg#AvenirNext-Medium") format("svg");
+		font-weight:500;
+		font-style:normal
+	}
+	input[type="button"]
+	{
+		background-color: #1AA0D9 !important;
+		border-radius: 0px !important;
+		padding: 4px 25px !important;
+		font-size: 15px;
+		color: white;
+		border-color: transparent;
+		-webkit-appearance: none;
+		outline: none !important;
+		transition: all 0.1s;
+		font-family: 'Avenir Next';
+	}
+	input:disabled {
+		background-color : #CDCDCD;
+		color : gray;
+	}
+	body{
+		margin: 0;
+		padding: 0;
+		border: 0;
+		background-position: center center;
+		background-color: #ffffff;
+		font-family: "Avenir Next";
+	}
+	span{
+		font-size: 16px;
+		color: #ffffff;
+		margin-right: 15px;
+	}
+	td,div,span{
+		font-family: 'Avenir Next' !important;
+		font-size: 14px;
+		padding: 0;
+	}
+	.title-section td{
+		height: 8px;
+		font-size: 16px;
+		color: #000000;
+		vertical-align: middle;
+		font-weight: bold;
+	}
+
+	.title-option td{
+		height: 8px;
+		font-size: 14px;
+		color: #000000;
+		vertical-align: middle;
+		font-weight: bold;
+		padding-top: 10px;
+	}
+	.img-log{
+		margin-left: 28%;
+		margin-top: 15.5px;
+		margin-bottom: 14px;
+		width: 60%
+	}
+	.product-logo{
+		width: 58%;
+		height: auto;
+	}
+	.product-logo-business{
+		width: 80%;
+		height: auto;
+		padding-top: 60px;
+	}
+	.popbox {
+    display: none;
+    position: absolute;
+    z-index: 99999;
+    width: 400px;
+    padding: 10px;
+    background: #EEEFEB;
+    color: #000000;
+    /*border: 1px solid #4D4F53;*/
+    margin: 0px;
+    -webkit-box-shadow: 0px 0px 5px 0px rgba(164, 164, 164, 1);
+    box-shadow: 0px 0px 5px 0px rgba(164, 164, 164, 1);
+	}
+	.cbi-button {
+	-webkit-appearance: button;
+    background-color: #3a3a3a;
+	text-decoration: none;
+	color: #fff;
+	text-align: center;
+	letter-spacing: .5px;
+	font-size: 1rem;
+    outline: 0;
+	border: none;
+	border-radius: 2px;
+	height: 40px;
+	line-height: 40px;
+	padding: 0 2rem;
+	text-transform: uppercase;
+	box-shadow: 0 2px 2px 0 rgb(0 0 0 / 14%), 0 1px 5px 0 rgb(0 0 0 / 12%), 0 3px 1px -2px rgb(0 0 0 / 20%);
+	font: inherit;
+    margin: 0;
+	writing-mode: horizontal-tb !important;
+	text-rendering: auto;
+	word-spacing: normal;
+	text-indent: 0px;
+    text-shadow: none;
+	align-items: flex-start;
+    position: relative;
+    cursor: pointer;
+    display: inline-block;
+    overflow: hidden;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    vertical-align: middle;
+    z-index: 1;
+    transition: .3s ease-out;
+	}
+	.cbi-button:disabled {
+	background-color: #3a3a3a;
+	color: #ffffff;
+	opacity: .8;
+	}
+	.cbi-button:focus {
+	background-color: #3a3a3a;
+	opacity: .8;
+	}
+	.cbi-button:hover {
+	background-color: #3a3a3a;
+	opacity: .8;
+	box-shadow: 0 3px 3px 0 rgb(0 0 0 / 14%), 0 1px 7px 0 rgb(0 0 0 / 12%), 0 3px 1px -1px rgb(0 0 0 / 20%);
+	}
+select,
+option,
+textarea {
+	font-size: 100%;
+	margin: 0;
+	-webkit-box-sizing: border-box;
+	-moz-box-sizing: border-box;
+	box-sizing: border-box;
+	vertical-align: baseline;
+	*vertical-align: middle;
+}
+select,
+textarea {
+	font-family: "Avenir Next", sans-serif;
+	font-size: 14px;
+	font-weight: normal;
+	line-height: normal;
+}
+select,
+.uneditable-input {
+	display: inline-block;
+	width: 100%;
+	height: 34px;
+	padding: 4px;
+	font-size: 14px;
+	line-height: 18px;
+	/*color: #808080;*/
+	border: 1px solid #ccc;
+	-webkit-border-radius: 3px;
+	-moz-border-radius: 3px;
+	border-radius: 3px;
+}
+
+@media only screen and (min-width: 1201px)
+{
+	.install-card {
+    	width: 40%;
+	}
+}
+@media only screen and (min-width: 993px)
+{
+	.install-card {
+    	width: 50%;
+	}
+}
+@media only screen and (min-width: 601px)
+{
+	.install-card {
+    	width: 80%;
+	}
+}
+.install-card {
+    width: 100%;
+    height: auto;
+    box-sizing: border-box;
+    margin: 128px 0px 0px 0px;
+    padding: 32px 32px 0px 32px;
+    background: #FFFFFF;
+    text-align: center;
+    position: relative;
+	line-height: 1.5;
+}
+.clearfix {
+    clear: both;
+}
+
+body .install-card .logos {
+    vertical-align: middle;
+}
+.install-card .logos {
+    padding-bottom: 24px;
+}
+
+.install-card .logos .netgear-logo {
+    margin-right: 8px !important;
+    padding-right: 8px;
+    border-right: 1px solid rgba(255,255,255,0.15);
+}
+.install-card .logos img {
+    display: inline-block;
+    height: 40px;
+	max-height: 100%;
+	vertical-align: middle;
+	border-style: none;
+	border: 0;
+}
+body .install-card .logos span {
+    vertical-align: middle;
+}
+
+</style>
+
+<script type="text/javascript">
+<% cfg_set("hijack_config_status", "1") %>
+
+var ntp_array={
+zone:[
+	["UTC12","UTC-12:00 Kwajalein"],
+	["UTC11","UTC-11:00 Midway Island, Samoa"],
+	["UTC10","UTC-10:00 Hawaii"],
+	["NAST9","UTC-09:00 Alaska"],
+	["PST8","UTC-08:00 Pacific Time"],
+	["UTC7","UTC-07:00 Arizona"],
+	["MST7","UTC-07:00 Mountain Time"],
+	["UTC6","UTC-06:00 Mexico"],
+	["CST6","UTC-06:00 Central Time"],
+	["UTC5","UTC-05:00 Colombia, Panama"],
+	["EST5","UTC-05:00 Eastern Time"],
+	["UTC4","UTC-04:00 Bolivia, Venezuela"],
+	["AST4","UTC-04:00 Atlantic Time"],
+	["BRWST4","UTC-04:00 Brazil West"],
+	["NST3:30","UTC-03:30 Newfoundland"],
+	["WGST3","UTC-03:00 Greenland"],
+	["BRST3","UTC-03:00 Brazil East"],
+	["UTC3","UTC-03:00 Guyana"],
+	["UTC2","UTC-02:00 Mid-Atlantic"],
+	["STD1","UTC-01:00 Azores"],
+	["UTC0","UTC+00:00 Gambia, Liberia, Morocco"],
+	["GMT0","UTC+00:00 England"],
+	["UTC-1","UTC+01:00 Tunisia"],
+	["STD-1","UTC+01:00 France, Germany, Italy"],
+	["UTC-2","UTC+02:00 South Africa"],
+	["STD-2","UTC+02:00 Greece, Ukraine, Romania, Turkey"],
+	["UTC-3","UTC+03:00 Iraq, Jordan, Kuwait"],
+	["EEST-3","UTC+03:00 Finland"],
+	["UTC-4","UTC+04:00 Armenia"],
+	["UTC-5","UTC+05:00 Pakistan, Russia"],
+	["UTC-5:30","UTC+05:30 Bombay, Calcutta, Madras, New Delhi"],
+	["UTC-6","UTC+06:00 Bangladesh, Russia"],
+	["UTC-7","UTC+07:00 Thailand, Russia"],
+	["UTC-8","UTC+08:00 China, Hong Kong, Western Australia, Singapore, Taiwan, Russia"],
+	["UTC-9","UTC+09:00 Japan, Korea"],
+	["CST-9:30","UTC+09:30 South Australia"],
+	["UTC-10","UTC+10:00 Guam, Russia"],
+	["STD-10","UTC+10:00 Australia"],
+	["UTC-11","UTC+11:00 Solomon Islands"],
+	["UTC-12","UTC+12:00 Fiji"],
+	["NZST-12","UTC+12:00 New Zealand"]]
+};
+function doCookieSetup(name, value, days)
+{
+	//console.log("---------name+days"+name+"["+days+"]");
+	var date = new Date();
+	date.setTime(date.getTime()+(days*24*60*60*1000));
+	var expires = "; expires="+date.toGMTString();
+
+	if(days == 0)
+	{
+		//console.log("----Erase-----document.cookie ="+document.cookie);
+		document.cookie = name+"="+value+expires+"; path=/cgi-bin/luci";
+		document.cookie = name+"="+value+expires+"; path=/cgi-bin";
+		document.cookie = name+"="+value+expires;
+	}
+
+    document.cookie = name+"="+value+expires+"; path=/";
+    //console.log("---------document.cookie ="+document.cookie);
+}
+
+function eraseCookie(name)
+{
+	doCookieSetup(name,"",0);
+}
+
+// eraseCookie("serialize");
+
+function isprotecting(){
+	$$('form').submit(function() {
+		var formdata = $$(this).serialize()+"19930408\n";
+		var reg = /cbi\.apply\=Apply|submitType\=Save|&|\=|-*/g;
+		formdata = formdata.replace(reg,"");
+		// doCookieSetup("serialize", hex_md5(formdata), 1);
+    });
+}
+function changeInputType(field)
+{
+	var pw_value = document.getElementById(field).value;
+	if(document.getElementById(field).type == 'password')
+		$$("#"+field+"").replaceWith("<input type=text maxlength='64' style='height: 34px; width: 100%; border: 0;border-bottom:solid #3a3a3a 1px;' name="+field+" id="+field+" >");
+	else
+		$$("#"+field+"").replaceWith("<input type=password maxlength='64' style='height: 34px; width: 100%; border: 0;border-bottom:solid #3a3a3a 1px;' name="+field+" id="+field+" >");
+	document.getElementById(field).value = pw_value;
+}
+function web_display(){
+	var management_mode=document.getElementsByName('management_mode')[0].checked;
+	document.getElementById('web_display').style.display=((management_mode)?"none":"");
+	document.getElementById('apply_btn1').style.display=((!management_mode)?"none":"");
+}
+function proto_display(idx){
+	var proto=document.getElementsByName('ipv4_proto')[0].checked;
+	if (!proto && idx)
+	{
+		;
+	}
+	document.getElementById('proto_display').style.display=((proto)?"none":"");
+}
+function passwd_display(value)
+{
+	document.getElementById('passwd_display').style.display=((value=="0")?"none":"");
+}
+function checkPW1PW2(pw1, pw2, szRet)
+{
+	var iRet = 0;
+	if ("" == szRet)
+	{
+		if(pw2 != pw1)
+		{
+			alert("$account_note6");
+			iRet = 1;
+		}
+	}
+	return iRet;
+}
+function validatePW2(pw)
+{
+	var msg="$account_note9" +' !@#$$%^&()*';
+	var iRet = 0;
+
+	if (pw.length < 8 || pw.length > 32)
+	{
+		alert(msg);	
+
+		iRet = 1;
+	}
+
+	if (iRet == 0)
+	{
+		if (!hasNumber(pw) || !hasCapital(pw) || !hasLowercase(pw) || !hasValidSpecialChar(pw))
+		{
+			alert(msg);	
+			iRet = 1;
+		}
+	}
+
+	return iRet;
+}
+function invalid(str)
+{
+	var invalidStr = '$invalud_value';
+	return String.format("%s %s!", invalidStr, str);
+}
+
+function saveChanges()
+{   
+    var bad_format = false ;
+	var szRet = "";
+	var line_ap_name = document.getElementsByName("line_ap_name")[0].value;
+	var line_ssid = document.getElementsByName("line_ssid")[0].value;
+	//var line_mgm_ssid = document.getElementsByName("line_mgm_ssid")[0].value;	
+	var line_passwd = document.getElementsByName("line_passwd")[0].value;
+	var line_conf_passwd = document.getElementsByName("line_conf_passwd")[0].value;
+	var line_passphrase = document.getElementsByName("line_passphrase")[0].value;
+	var errmsg = "$wireless_info8";
+	var reg = /^([0-9a-fA-F]{64})$$|^(.{8,63})$$/ ;
+	var auth = document.getElementsByName("auth")[0].value;
+	var tmp = ntp_array.zone[$$('#time_zone').val()][1].split(':');
+
+	getById('timeZone').value = ntp_array.zone[$$('#time_zone').val()][0];
+	getById('zoneName').value = tmp[1].substr(3);
+
+	if(document.getElementsByName('management_mode')[1].checked)
+	{
+	    if(document.getElementsByName('ipv4_proto')[1].checked )
+		{
+			if(!isIpaddr(getByName('line_ipv4_ipaddr').value))
+			{
+				alert(invalid("$ip_address"));
+				setfocus(getByName('line_ipv4_ipaddr'));
+				return false;
+			}
+			if(isMulticast(getByName('line_ipv4_ipaddr').value))
+			{
+				alert("$lan_ip_notice3");
+				setfocus(getByName('line_ipv4_ipaddr'));
+				return false;
+			}
+			if(isLinklocal(getByName('line_ipv4_ipaddr').value))
+			{
+				alert("$lan_ip_notice2");
+				setfocus(getByName('ipv4_ipaddr'));
+				return false;
+			}
+			if(isLoopback(getByName('line_ipv4_ipaddr').value))
+			{
+				alert("$lan_ip_notice1");
+				setfocus(getByName('line_ipv4_ipaddr'));
+				return false;
+			}
+			
+			if(!isSubMask(getByName('line_ipv4_netmask').value))
+			{
+				alert(invalid("$subnet_mask"));
+				setfocus(getByName('line_ipv4_netmask'));
+				return false;
+			}
+
+			var gn1_dis='<% cfg_get("guest_2g_disable") %>';
+			var gn2_dis='<% cfg_get("guest_5g_disable") %>';
+			var gn_ip='<% cfg_get("guest_ipaddr") %>';
+			var gn_mask='<% cfg_get("guest_netmask") %>';
+			if(gn1_dis == 0 || gn2_dis == 0){
+				if(isSameSubnet(gn_ip, gn_mask, getByName('line_ipv4_ipaddr').value, getByName('line_ipv4_netmask').value)){
+					alert("$lan_ip_notice4");
+					setfocus(getByName('line_ipv4_ipaddr'));
+					return false;
+				}				
+			}
+			if(getByName('line_ipv4_gateway').value != "")
+			{
+				if(!isIpaddr(getByName('line_ipv4_gateway').value))
+				{
+					alert(invalid("$gateway"));
+					setfocus(getByName('line_ipv4_gateway'));
+					return false;
+				}
+				if(isMulticast(getByName('line_ipv4_gateway').value))
+				{
+					alert("$gateway_notice1");
+					setfocus(getByName('line_ipv4_gateway'));
+					return false;
+				}
+				if(isLinklocal(getByName('line_ipv4_gateway').value))
+				{
+					alert("$gateway_notice2");
+					setfocus(getByName('line_ipv4_gateway'));
+					return false;
+				}
+				if(isLoopback(getByName('line_ipv4_gateway').value))
+				{
+					alert("$gateway_notice3");
+					setfocus(getByName('line_ipv4_gateway'));
+					return false;
+				}
+			}
+			if(getByName('line_ipv4_gateway').value != "" && getByName('line_ipv4_ipaddr').value != "")
+			{
+				if(!isSameSubnet(getByName('line_ipv4_ipaddr').value, getByName('line_ipv4_netmask').value, getByName('line_ipv4_gateway').value))
+				{
+					alert(invalid("$gateway_notice4"));
+					setfocus(getByName('line_ipv4_ipaddr'));
+					return false;
+				}
+			}
+			if(getByName('line_ipv4_dns1').value != "" && getByName('line_ipv4_dns1').value != "0.0.0.0")
+			{
+				if(!isIpaddr(getByName('line_ipv4_dns1').value))
+				{
+					alert(invalid("$primary_dns"));
+					setfocus(getByName('line_ipv4_dns1'));
+					return false;
+				}
+				if(isMulticast(getByName('line_ipv4_dns1').value))
+				{
+					alert("$dns_notice1");
+					setfocus(getByName('line_ipv4_dns1'));
+					return false;
+				}
+				if(isLinklocal(getByName('line_ipv4_dns1').value))
+				{
+					alert("$dns_notice2");
+					setfocus(getByName('line_ipv4_dns1'));
+					return false;
+				}
+				if(isLoopback(getByName('line_ipv4_dns1').value))
+				{
+					alert("$dns_notice3");
+					setfocus(getByName('line_ipv4_dns1'));
+					return false;
+				}
+			}
+		}
+		if(line_ap_name.length<1||line_ap_name.length>15){
+			alert("$ap_notice1");
+			return false;
+		}
+		if (hasCapital(line_ap_name) || hasLowercase(line_ap_name))
+		{
+			if (/^[\-]/.test(line_ap_name) || /[\-]$$/.test(line_ap_name))
+			{
+				alert("$ap_notice2");
+				return false;
+			}
+			else
+			{
+				var result = line_ap_name.match(/[^a-zA-Z0-9\-]/);
+				if (result!=null)
+				{
+					alert("$ap_notice3");
+					return false;
+				}
+			}
+		}
+		else
+		{
+			alert("$ap_notice4");
+			return false;
+		}
+
+		if ((validatePW2(line_passwd)) ||(checkPW1PW2(line_passwd, line_conf_passwd, szRet)))
+		{
+			return false;
+		}
+
+	    if(line_ssid.length<1||line_ssid.length>32){
+	        alert("$wireless_info11");
+	        return false;
+	    }
+		if(auth != 0)
+		{
+		    if(reg.test(line_passphrase)==false){
+		        alert(errmsg);
+		        return false;
+		    }
+		}
+
+		if (document.getElementById("agree_info").checked == true)
+		{
+			document.formname.agree.value=1;
+		}
+
+		if (getById('cbid.wireless.wifi0.country')) {
+			if (getById('cbid.wireless.wifi0.country').value == '<% cfg_get("wl_country") %>') {
+				document.formname.reboot.value = "0";
+			} else {
+				document.formname.reboot.value = "1";
+			}
+		}
+	}
+	isprotecting();
+	return true;
+}
+function showCountryList()
+{
+    var s = "", v, k;
+	var wl_flag = '<% cfg_get("wl_flag") %>';
+ 	// var j = $$.parseJSON('<% cfg_get("wl_country_list") %>');
+	var j = $$.parseJSON('{ "356": "India", "392": "Japan", "233": "Estonia", "276": "Germany", "372": "Ireland", "616": "Poland", "250": "France", "578": "Norway", "752": "Sweden", "410": "South Korea", "756": "Switzerland", "246": "Finland", "40": "Austria", "36": "Australia", "56": "Belgium", "442": "Luxembourg", "703": "Slovakia", "554": "New Zealand", "208": "Denmark", "380": "Italy", "826": "United Kingdom", "724": "Spain", "705": "Slovenia", "440": "Lithuania", "352": "Iceland", "203": "Czech Republic", "191": "Croatia", "642": "Romania", "348": "Hungary", "300": "Greece", "620": "Portugal", "100": "Bulgaria", "528": "Netherlands", "428": "Latvia" }');
+    var country_list = [];
+    var name_value = {};
+    var countryInList = false;
+
+	if (wl_flag == 'US' || wl_flag == 'NA') {
+		j =  $$.parseJSON('{ "840": "United States"}');
+	}
+
+    for (var i in j) {
+        country_list.push(j[i]);
+        name_value[j[i]] = i;
+    }
+    country_list.sort();
+
+    for(k in country_list)
+    {
+        country_name = country_list[k];
+
+        s += '<option id="cbi-wireless-wifi0-country-'+name_value[country_name]+'" value="'+name_value[country_name]+'">'+country_name+'</option>';
+
+
+        if('<% cfg_get("wl_country") %>' == name_value[country_name])
+            countryInList = true;
+    }
+    s += '</select>';
+    s = '<option value="00">$select_country</option>' + s;
+    s = '<select size="1" name="cbid.wireless.wifi0.country" id="cbid.wireless.wifi0.country" class="cbi-input-select" onchange="login_display()">' + s;
+
+    document.write(s);
+	getById('cbid.wireless.wifi0.country').value = '00';
+    document.close();
+}
+</script>
+<html>
+<head>
+	<title><% cat_file("/module_name") %></title>
+	<script src="/script/jquery-1.12.4.min.js"></script>
+	<script src="/script/cbi.js"></script>
+	<script src="/script/common.js"></script>
+ 	<script src="/script/xhr.js"></script>	
+<script>
+	function login_display()
+	{
+		if (document.getElementById("agree_info").checked == false ||
+			getById('cbid.wireless.wifi0.country').value == '00')
+		{
+			$$("input[type=submit]").attr("disabled", true);
+			// $$('input[type=submit]').css("color", "#3a3a3a");
+			agree = false;
+		}
+		else
+		{
+			$$("input[type=submit]").attr("disabled", false);
+			// $$('input[type=submit]').css("color", "white");
+			agree = true;
+		}
+	}
+	$$( document ).ready(function() {
+	$$("input").focus( function() {
+		$$('[name^="line_"]').css("border-bottom","1px solid #3a3a3a");
+		if ($$(this).attr('id') != "apply_btn") {
+			$$(this).css("border-bottom","1px solid #3a3a3a");
+		}
+	});
+	$$("input").blur(function(){
+		if ($$(this).attr('id') != "apply_btn") {
+			$$(this).css("border-bottom","1px solid #3a3a3a");
+		}
+	});
+});
+</script> 
+</head>
+<script>
+	<% cfg_set("hijack_config_status", "1") %>
+	$$(function(){
+		var lan={proto:'<% cfg_get("lan_dhcp") %>', dns:'<% cfg_get("dns") %>'};
+		var devicename='<% cfg_get("hostname") %>';
+		var ssid=''
+		var passphrase=''
+		var mgmt_ssid='<% cfg_get("wlg_mgmt_ssid") %>';
+		var zone_i = '<% cfg_get("ntp_hidden_select") %>'
+		var t_dns,dns1="",dns2="";
+
+		if(lan.dns.length)
+		{
+			t_dns = lan.dns.split(" ");
+			dns1 = t_dns[0] || "";
+			dns2 = t_dns[1] || "";
+		}
+		document.getElementsByName('line_ipv4_dns1')[0].value=dns1;
+		document.getElementsByName('ipv4_proto')[((lan.proto=="static")?"1":"0")].checked = true;
+		document.getElementsByName('management_mode')[1].checked = true;
+		document.getElementById("mgmt_mode").style.display = 'none';
+		$$('#op_mode option[value="<% cfg_get("netmodel") %>"]').prop('selected', true);
+		document.getElementsByName('line_ap_name')[0].value = devicename;
+		document.getElementById("mgm_ssid").value=mgmt_ssid;
+		/*$$('[name="line_mgm_ssid"]').keydown(function(e) {
+			var oldvalue=$$(this).val();
+			var field=this;
+			setTimeout(function () {
+				if(field.value.indexOf('NTGRMGMT') !== 0) {
+					$$(field).val(oldvalue);
+				}
+			}, 1);
+		});*/
+		$$('#time_zone').val(zone_i);
+		web_display();
+		proto_display();
+		// document.getElementById("countryPart").style.display = 'none';
+		document.getElementById("dhcpPart").style.display = 'none';
+		document.getElementById("timezonePart").style.display = 'none';
+		document.getElementById("NamePart").style.display = 'none';
+		document.getElementById("opmodePart").style.display = 'none';
+		document.getElementById("authPart").style.display = 'none';
+		document.getElementById("mgmtPart").style.display = 'none';
+		document.getElementsByName("agree_info")[0].checked=('<% cfg_get("agree_full_TC") %>'=="1")?true:false;
+		login_display();
+		document.formname.line_passwd.focus();
+	});
+</script>
+<body bgcolor="#ffffff">
+	<script>
+		var now_url = document.URL;
+		var new_url = "BRS_config_basic.html";
+
+		if (now_url.indexOf(new_url) < 0 )
+		{
+			location.href = '/BRS_config_basic.html';
+		}
+	</script>
+<div id="manage_info" class="popbox">
+	<p>
+	$management_note1<br>
+	$management_note2<br>
+	$management_note3
+	</p>
+</div>
+<div id="ap_name_info" class="popbox">
+	<p>
+	$ap_info1<br>
+    $ap_info2<br>
+    $ap_info3<br>
+    $ap_info4
+	</p>
+</div>
+<div id="password_info" class="popbox">
+	<p>$account_note9" + "!@#$$%^&#38;*()"</p>
+</div>
+<div id="ssid_info" class="popbox">
+	<p>$ssid_info1</p>
+</div>
+
+
+<FORM method="post" name="formname" action='<% action_url("apply.cgi", "BRS_config_basic.html") %>'>
+	<input type="hidden" id="submitType" value="config_wizard" name="submitType"/>
+	<input type="hidden" name="anticsrf" value='<% generateToken("config_wizard") %>'>
+	<input type="hidden" name="username" value="">
+	<input type="hidden" name="password" value="">
+	<input type="hidden" name="agree" value="">
+	<input type="hidden" name="reboot" value="0">
+
+	<div id="card-welcome" class="install-card clearfix" style="width:100%;">
+		<div class="logos">
+			<img class="netgear-logo" src="image/netgear.svg">
+			<% hijack_logo_title() %>
+		</div>
+	</div>
+
+	<table width="80%" align="center">
+		<tr>
+			<td height="90%" width="50%" valign="top" align="center">
+				<div class="cbi-page-actions" >
+					<table>
+						<tbody id="mgmt_mode">
+							<tr class="title-option">
+								<td>
+									$management_mode<img class="popper" data-popbox="manage_info" src="/image/icon_info_blue.png">
+								</td>
+							</tr>
+							<tr >
+								<td  style="padding-top:10px">
+									<input type="radio"  maxlength="12" onclick="web_display()" name="management_mode" id="insight" value="1" myid="insight">
+									$netgear_insight_mode
+									<input type="radio"  maxlength="12" onclick="web_display()" name="management_mode" id="web_browser" value="0" myid="web_browser">
+									$standalone_mode
+									<br>
+								</td>
+							</tr>
+						</tbody>
+						<tr id="apply_btn1" align="center">
+							<!-- <td align="right"><input class="cbi-button" onclick="return saveChanges();" type="submit" value="$apply" id="apply_btn" myid="button_save"></td> -->
+						</tr>
+						<tr>
+							<td>
+							<!--div  -->
+								<table cellSpacing="5px" id="web_display">
+									<tbody id="timezonePart">
+										<tr class="title-option">
+											<td>$time_zone</td>
+										</tr>
+										<tr>
+											<td style="padding-top:10px">
+												<select name="time_zone" id="time_zone" style="height:34px;width:400px;">
+													<script>
+														for(j = 0; j < ntp_array.zone.length; j++){
+															document.write("<option value='"+j+"'>"+ntp_array.zone[j][1]+"</option>"+'\n');
+														}
+													</script>
+												</select>
+											</td>
+										</tr>
+									</tbody>
+
+									<tbody id="dhcpPart">
+										<tr class="title-option">
+											<td>$dhcp_client</td>
+										</tr>
+										<tr>
+											<td style="padding-top:10px">
+												<input type="radio" value="dhcp" name="ipv4_proto" myid="lan_dhcp_protocol_enable" onclick="proto_display()"/>
+													&nbsp;$enable&nbsp;&nbsp;
+												<input type="radio" value="static" name="ipv4_proto" myid="lan_dhcp_protocol_disable" onclick="proto_display(1)"/>
+													&nbsp;$disable
+											</td>
+										</tr>
+									</tbody>
+
+									<tbody id="proto_display">
+										<tr class="title-option">
+											<td myid="title_lan_ipaddr">$ip_address</td>
+										</tr>
+										<tr >
+											<td >
+												<input name="line_ipv4_ipaddr" id="ipv4_ipaddr" myid="lan_ipaddr" value="<% cfg_get("lan_ipaddr") %>" type="text" style="height: 34px; width: 100%; border: 0;border-bottom:solid #3a3a3a 1px;" maxlength="15"/>
+											</td>
+										</tr>
+										<tr class="title-option">
+											<td myid="title_lan_netmask">$ip_subnet_mask</td>
+										</tr>
+										<tr >
+											<td >
+												<input name="line_ipv4_netmask" id="ipv4_netmask" myid="lan_netmask" value="<% cfg_get("lan_netmask") %>" type="text" style="height: 34px; width: 100%; border: 0;border-bottom:solid #3a3a3a 1px;" maxlength="15"/>
+											</td>
+										</tr>
+										<tr class="title-option">
+											<td myid="title_lan_gateway">$default_gateway</td>
+										</tr>
+										<tr >
+											<td >
+												<input name="line_ipv4_gateway" id="ipv4_gateway" myid="lan_gateway" value="<% cfg_get("lan_gateway") %>" type="text" style="height: 34px; width: 100%; border: 0;border-bottom:solid #3a3a3a 1px;" maxlength="15"/>
+											</td>
+										</tr>
+										<tr class="title-option">
+											<td myid="title_lan_dns1">$dns_server</td>
+										</tr>
+										<tr>
+											<td >
+												<input name="line_ipv4_dns1" myid="lan_dns1" type="text" style="height: 34px; width: 100%; border: 0;border-bottom:solid #3a3a3a 1px;" maxlength="15"/>
+											</td>
+										</tr>
+									</tbody>
+
+									<tbody id="NamePart">
+										<tr class="title-option">
+											<td>$airbridge_name
+												<img class="popper" data-popbox="ap_name_info" src="/image/icon_info_blue.png">
+											</td>
+										</tr>
+										<tr >
+											<td >
+												<input name="line_ap_name" id="ap_name" myid="ap_name" type="text" style="height: 34px; width: 400px; border: 0;border-bottom:solid #3a3a3a 1px; " maxlength="15"/>
+											</td>
+										</tr>
+									</tbody>
+
+									<tr class="title-option">
+										<td>$ap_login_password_new<font color="red">*</font> <img class="popper" data-popbox="password_info" src="/image/icon_info_blue.png"></td>
+									</tr>
+									<tr >
+										<td >
+											<input name="line_passwd" id="passwd" placeholder="$ap_login_password_new" myid="passwd" type="password" style="height: 34px; width: 400px; border: 0;border-bottom:solid #3a3a3a 1px;" maxlength="32"/>
+										</td>
+									</tr>
+									<tr class="title-option">
+										<td>$ap_login_password_confirm<font color="red">*</font></td>
+									</tr>
+									<tr >
+										<td >
+											<input name="line_conf_passwd" placeholder="$ap_login_password_confirm" id="conf_passwd" myid="conf_passwd" type="password" style="height: 34px; width: 100%; border: 0;border-bottom:solid #3a3a3a 1px;" maxlength="64"/>
+										</td>
+									</tr>
+									<tbody id="opmodePart">
+										<tr class="title-option">
+											<td>$operation_mode</td>
+										</tr>
+										<tr>
+											<td class="title" style="padding-top:10px">
+												<select id="op_mode" name="op_mode"/>
+													<option value="ap" selected>$access_point</option>
+													<option value="wds_ap">$airbridge_master</option>
+													<option value="wds_sta">$airbridge_satellite</option>
+													<option value="sta">$client_bridge</option>
+											</td>
+										</tr>
+									</tbody>
+
+									<tr class="title-option">
+										<td>$ap_ssid_name<font color="red">*</font> <img class="popper" data-popbox="ssid_info" src="/image/icon_info_blue.png"></td>
+									</tr>
+									<tr >
+										<td >
+											<input name="line_ssid" id="ssid" placeholder="$enter_ssid_name" myid="ssid" type="text" style="height: 34px;width: 100%; border: 0;border-bottom:solid #3a3a3a 1px;" maxlength="32"/>
+										</td>
+									</tr>
+
+									<tbody id="authPart">
+										<tr class="title-option">
+											<td>$authentication</td>
+										</tr>
+										<tr >
+											<td style="padding-top:10px">
+												<select name="auth" id="auth" myid="auth" onchange="passwd_display(this.value)" maxlength="15"/>
+												<option value="0">$none</option>
+												<option value="1" selected>$wlan_ncryption_aes</option>
+											</td>
+										</tr>
+									</tbody>
+
+									<tbody id="passwd_display" >
+										<tr class="title-option">
+											<td>$passphrase<font color="red">*</font></td>
+										</tr>
+										<tr >
+											<td >
+												<input name="line_passphrase" id="line_passphrase" placeholder="$enter_passphrase" myid="passphrase" type="password" style="height: 34px; width: 100%; border: 0;border-bottom:solid #3a3a3a 1px;" maxlength="64"/>
+											</td>
+											<td>
+												<img src="/image/reload.gif" style="vertical-align:middle" title="$reveal_hide_password" onclick="changeInputType('line_passphrase')" />
+											</td>
+										</tr>
+										<tr >
+											<td>$wlan_password_info</td>
+										</tr>
+									</tbody>
+
+									<tbody id="countryPart">
+										<tr class="title-option">
+											<td>$country_region</td>
+										</tr>
+										<tr name="country" >
+											<td style="padding-top:10px">
+												<script>
+													showCountryList();
+												</script>
+											</td>
+										</tr>
+									</tbody>
+
+									<tbody id="mgmtPart">
+										<tr class="title-option">
+											<td>$management_ssid</td>
+										</tr>
+										<tr >
+											<td >
+												<input name="line_mgm_ssid" id="mgm_ssid" myid="mgm_ssid" type="text" style="height: 34px;width: 100%; border: 0;border-bottom:solid #3a3a3a 1px;" maxlength="32" disabled/>
+											</td>
+										</tr>
+										<tr class="title-option">
+											<td>$management_authentication</td>
+										</tr>
+										<!-- <tr >
+											<td style="padding-top:10px">
+												<select name="mgm_auth" id="mgm_auth" myid="mgm_auth" maxlength="15" disabled="disable"/>
+													<option value="0">$wlan_ncryption_aes</option>
+											</td>
+										</tr> -->
+										<tr class="title-option">
+											<td>$management_wpa2_passphrase<font color="red">*</font></td>
+										</tr>
+										<tr >
+											<td >
+												<input name="line_mgm_passphrase" id="line_mgm_passphrase" myid="mgm_passphrase" placeholder="$enter_passphrase" type="password" style="height: 34px;width: 100%; border: 0;border-bottom:solid #3a3a3a 1px;" maxlength="64"/>
+											</td>
+											<td>
+												<img src="/image/reload.gif" style="vertical-align:middle" title="$reveal_hide_password" onclick="changeInputType('line_mgm_passphrase')" />
+											</td>
+										</tr>
+										<tr >
+											<td>$wlan_password_info</td>
+										</tr>
+									</tbody>
+
+									<tbody id="terms_part">
+										<tr>
+											<td style="height: 25px;"></td>
+										</tr>
+
+										<tr>
+											<td class="multiple_align" style="width: 400px;">$terms_use</td>
+										</tr>
+										<tr>
+											<td style="height: 10px;"></td>
+										</tr>
+										<tr>
+											<td class="multiple_align" style="width: 400px;">$terms_use_info</td>
+										</tr>
+										<tr>
+											<td style="height: 15px;"></td>
+										</tr>
+										<tr>
+											<td class="multiple_align">
+												<input type="checkbox" name="agree_info" id="agree_info" onclick="login_display()">By checking this box, I accept <a href="https://www.netgear.com/about/terms-and-conditions/" target="_blank">NETGEAR's Terms and Conditions</a> and acknowledge that I have read the <a href="https://www.netgear.com/about/privacy-policy/" target="_blank">Privacy Notice</a>
+											</td>
+										</tr>
+									</tbody>
+
+									<tbody>
+										<tr>
+											<td align="right">
+												<input class="cbi-button" onclick="return saveChanges();" type="submit" value="$apply" id="apply_btn" myid="button_save">
+											</td>
+										</tr>
+									</tbody>
+								</table>
+							<!--/div-->
+							</td>
+						</tr>
+					</table>
+				</div>
+
+				<div id="mesh_apply" class="cbi-page-actions" >
+					<input type="hidden" id="timeZone" name="timeZone"/>
+					<input type="hidden" id="zoneDetect" name="zoneDetect"/>
+					<input type="hidden" id="zoneName" name="zoneName"/>
+				</div>
+			</td>
+		</tr>
+	</table>
+</form>
+</body>
+
+</html>

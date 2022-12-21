@@ -1,0 +1,118 @@
+<% http_header("style/cascade.css", "style/cascade2.css", "style/cascade-custom.css", "script/jquery-1.12.4.min.js", "script/cbi.js", "script/common.js", "script/md5.js", "script/time_zone.js") %>
+<body onLoad="please_wait(false);" bgcolor="#ffffff">
+<form action='<% action_url("apply.cgi", "time_zone.htm") %>' name="form" id="time_zone_form" method="post">
+<fieldset class="cbi-section">
+<table>
+	<tr>
+		<td colspan="1" class="title">$date_and_time_settings</td>
+	</tr>
+	<tr class="title-option"><td>
+		<input type="radio" name="ntpserverEnable" value="0" id="ntpserverEnable_disable" onclick="date_time_status()" checked/>
+		<label for="ntpserverEnable_disable">$manually_set_date_and_time</label></td>
+	</tr>
+	<tr class="title-option"><td class="subtitle">
+		$date_colon<input type="text" name="man_year" id="man_year" style="height:27px;width:70px;" maxlength="4" value="<% cat_file("/time_year") %>"> / 
+		<input type="text" name="man_mon" id="man_mon" style="height:27px;width:50px;" maxlength="2" value="<% cat_file("/time_month") %>"> / 
+		<input type="text" name="man_day" id="man_day" style="height:27px;width:50px;" maxlength="2" value="<% cat_file("/time_day") %>"></td>
+	</tr>
+	<tr class="title-option"><td class="subtitle">
+		$time_colon<input type="text" name="man_hour" id="man_hour" style="height:27px;width:50px;" maxlength="2" value="<% cat_file("/time_hour") %>"> : 
+		<input type="text" name="man_min" id="man_min" style="height:27px;width:50px;" maxlength="2" value="<% cat_file("/time_minute") %>"> $hour_24</td>
+	</tr>
+	<tr class="title-option"><td class="subtitle">
+		<input id="man_syn_pc" type="submit" name="man_syn_pc" class="cbi-button" onclick="return savechanges(2)" value="$synchronize_with_pc"></td>
+	</tr>
+	<tr class="title-option"><td>
+		<input type="radio" name="ntpserverEnable" value="1" id="ntpserverEnable_enable" onclick="date_time_status()"/>
+		<label for="ntpserverEnable_enable">$automatically_get_date_and_time</label></td>
+	</tr>
+	<tr class="title-option"><td class="subtitle">
+		$ntp_server_colon<input type="text" name="ntp_server" id="ntp_server" style="height:27px;width:200px;" value="<% cfg_get("ntp_server") %>"></td>
+	</tr>
+</table>
+</fieldset>
+<fieldset class="cbi-section">
+<table>
+	<tr>
+		<td colspan="1" class="title">$time_zone</td>
+	</tr>
+	<tr class="title-option"><td>$time_zone_colon
+		<select name="time_zone" id="time_zone" style="height:27px;width:400px;">
+			<script>
+			for (j = 0; j < ntp_array.zone.length; j++){
+				document.write("<option value='"+j+"'>"+ntp_array.zone[j][1]+"</option>"+'\n');
+			}</script>
+		</select>
+		</td>
+	</tr>
+	<tr class="title-option"><td><input type="checkbox" name="daylight_enable" id="daylight_enable" onclick="daylight_status()" checked><label>&nbsp;$enable_daylight_saving</label></td>
+	</tr>
+	<tr class="title-option" style="display:none"><td class="subtitle">$start_colon
+		<select name="day_s_mon" id="day_s_mon" style="height:27px;width:100px;">
+			<script>
+			for (var i = 0; i < daylight_array.mon.length; i++){
+			    document.write("<option value='"+daylight_array.mon[i][0]+"'>"+daylight_array.mon[i][1]+"</option>"+'\n');
+			}</script>
+		</select>
+		<select name="day_s_week_idx" id="day_s_week_idx" style="height:27px;width:75px;">
+			<script>
+			for (var i = 0; i < daylight_array.week_idx.length; i++){
+				document.write("<option value='"+daylight_array.week_idx[i][0]+"'>"+daylight_array.week_idx[i][1]+"</option>"+'\n');
+			}</script>
+		</select>		
+		<select name="day_s_week" id="day_s_week" style="height:27px;width:100px;">
+			<script>
+			for (var i = 0; i < daylight_array.week.length; i++){
+				document.write("<option value='"+daylight_array.week[i][0]+"'>"+daylight_array.week[i][1]+"</option>"+'\n');
+			}</script>
+		</select>		
+		<select name="day_s_time" id="day_s_time" style="height:27px;width:80px;">
+			<script>
+			for (var i = 0; i < daylight_array.time.length; i++){
+				document.write("<option value='"+daylight_array.time[i][0]+"'>"+daylight_array.time[i][1]+"</option>"+'\n');
+			}</script>
+		</select>
+		</td>
+	</tr>
+	<tr class="title-option" style="display:none"><td class="subtitle">
+		$end_colon&nbsp;
+		<select name="day_e_mon" id="day_e_mon" style="height:27px;width:100px;">
+			<script>
+			for (var i = 0; i < daylight_array.mon.length; i++){
+				document.write("<option value='"+daylight_array.mon[i][0]+"'>"+daylight_array.mon[i][1]+"</option>"+'\n');
+			}</script>
+		</select>
+		<select name="day_e_week_idx" id="day_e_week_idx" style="height:27px;width:75px;">
+			<script>
+			for (var i = 0; i < daylight_array.week_idx.length; i++){
+				document.write("<option value='"+daylight_array.week_idx[i][0]+"'>"+daylight_array.week_idx[i][1]+"</option>"+'\n');
+			}</script>
+		</select>		
+		<select name="day_e_week" id="day_e_week" style="height:27px;width:100px;">
+			<script>
+			for (var i = 0; i < daylight_array.week.length; i++){
+				document.write("<option value='"+daylight_array.week[i][0]+"'>"+daylight_array.week[i][1]+"</option>"+'\n');
+			}</script>
+		</select>		
+		<select name="day_e_time" id="day_e_time" style="height:27px;width:80px;">
+			<script>
+			for (var i = 0; i < daylight_array.time.length; i++){
+				document.write("<option value='"+daylight_array.time[i][0]+"'>"+daylight_array.time[i][1]+"</option>"+'\n');
+			}</script>
+		</select>
+		</td>
+	</tr>
+</table>
+</fieldset>
+<br>
+<div class="cbi-page-actions">
+	<input type="hidden" id="submitType" name="submitType" value="ntp_debug"/>
+	<input type="hidden" name="anticsrf" value='<% generateToken("ntp_debug") %>'>
+	<input type="hidden" id="setTime" name="setTime"/>
+	<input type="hidden" id="timeZone" name="timeZone"/>
+	<input type="hidden" id="zoneName" name="zoneName"/>
+	<input type="hidden" id="daylightStatus" name="daylightStatus"/>
+	<input class="cbi-button cbi-button-apply" onclick="return savechanges(1)" type="submit" myid="button_save" value="$apply">&nbsp;<span class="btn_desc">$apply_saved_settings_to_take_effect</span>
+</div>
+</form>
+</body>

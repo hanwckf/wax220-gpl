@@ -1,0 +1,12 @@
+prefix=/usr
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libselinux
+Description: SELinux utility library
+Version: 3.2
+URL: http://userspace.selinuxproject.org/
+Requires.private: libsepol libpcre
+Libs: -L${libdir} -lselinux
+Cflags: -I${includedir}

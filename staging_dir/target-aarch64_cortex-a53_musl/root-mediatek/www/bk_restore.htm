@@ -1,0 +1,169 @@
+<%+header%>
+<%
+local uci = require("luci.model.uci").cursor()
+local download_backup = uci:get("tmp_wizard","backup","download_backup")
+local user_backup = uci:get("tmp_wizard","backup","user_backup")
+local user_restore = uci:get("tmp_wizard","backup","user_restore")
+%>
+<script>
+$(function()
+{
+	$("input[name='reset']").on("click", function()
+	{
+		return confirm("<%=translate('The action will erase existing settings and reset all settings to factory default')%>");
+	});
+	$("input[name='user_restore']").on("click", function()
+	{
+		return confirm("<%=translate('The action will erase existing settings and reset all settings to user default.')%>");
+	});
+	$("input[name='user_backup']").on("click", function()
+	{
+		return confirm("<%=translate('Warning: This feature will overwrite the factory default setting with your current settings. Pressing the physical reset button will restore the configuration of the current settings, not factory default settings.')%>");
+	});
+});
+function copyto()
+{
+	document.getElementsByName("bk_setting")["<%=download_backup%>"].checked = true;
+	document.getElementsByName("user_setting")["<%=user_backup%>"].checked = true;
+	document.getElementsByName("restore_setting")["<%=user_restore%>"].checked = true;
+}
+function savechanges(value)
+{
+	switch (value)
+	{
+		case 0:
+			if(document.getElementsByName("bk_setting")[0].checked == true)
+			{
+				document.getElementsByName("bk_select")[0].value = 0;
+			}
+			else if(document.getElementsByName("bk_setting")[1].checked == true)
+			{
+				document.getElementsByName("bk_select")[0].value = 1;
+			}
+			else
+			{
+				document.getElementsByName("bk_select")[0].value = 2;
+			}
+			break;
+		case 1:
+			if(document.getElementsByName("user_setting")[0].checked == true)
+			{
+				document.getElementsByName("user_select")[0].value = 0;
+			}
+			else if(document.getElementsByName("user_setting")[1].checked == true)
+			{
+				document.getElementsByName("user_select")[0].value = 1;
+			}
+			else
+			{
+				document.getElementsByName("user_select")[0].value = 2;
+			}		
+			break;
+
+		case 2:
+			if(document.getElementsByName("restore_setting")[0].checked == true)
+			{
+				document.getElementsByName("restore_select")[0].value = 0;
+			}
+			else if(document.getElementsByName("restore_setting")[1].checked == true)
+			{
+				document.getElementsByName("restore_select")[0].value = 1;
+			}
+			else
+			{
+				document.getElementsByName("restore_select")[0].value = 2;
+			}
+			break;
+	}
+	ajax_setCsrf();
+	
+	return true;
+}
+</script>
+<body onLoad="copyto();">
+<div id="Reset_to_Default_info" class="popbox">
+    <p><%:Reset to factory default setting.%></p>
+</div>
+<div id="Back_Up_Setting_as_Default_info" class="popbox">
+    <p><%:Backup the device settings to backup config file.%></p>
+</div>
+<div id="Restore_to_User_Default_info" class="popbox">
+    <p><%:After user setting is backup as default, the system will allow restore to this user setting instead of factory default. %></p>
+</div>
+	<fieldset class="cbi-section">
+		<form method="post" action="<%=REQUEST_URI%>" enctype="multipart/form-data">
+		<input type="hidden" name="bk_select" value="1">
+		<input type="hidden" name="user_select" value="1">
+		<input type="hidden" name="restore_select" value="1">
+		<table>
+			<tr>
+				<td class="title" colspan="3"><%:Backup%>/<%:Restore Settings%></td>
+			</tr>
+			<tr class="title-option">
+				<td colspan="3"><%:Backup Setting%></td>
+			</tr>
+			<tr class="title-option">
+				<td style="width: 35%; padding-left: 30px;">- <%:Backup Setting%><img class="popper" data-popbox="Back_Up_Setting_as_Default_info" src="<%=media%>/pictures/icon_info_blue.png"></td>
+				<td>
+					<input type="radio"  maxlength="12" name="bk_setting" id="bk_camera">
+					<%:Camera%>
+					<input type="radio"  maxlength="12" name="bk_setting" id="bk_ap">
+					<%:Access Point%>
+					<input type="radio"  maxlength="12" name="bk_setting" id="bk_all">
+					<%:All%>
+				</td>
+				<td><input class="cbi-button" type="submit" onclick="savechanges(0)" name="backup" value="<%:Export%>" /></td>
+			</tr>
+			<tr class="title-option">
+				<td style="width: 35%; padding-left: 30px;">- <%:Restore New Setting%></td>
+				<td ><input type="file" name="archive" id="archive" style="background:#F0F0F0;"/></td><td>
+				<input type="submit" class="cbi-button" name="restore" onclick="ajax_setCsrf();" value="<%:Import%>" /></td>
+			</tr>
+			<% if backup_invalid then %>
+			<tr class="title-option">
+				<td colspan="3" style="padding-left: 30px;"><span style="color:#FF0000;"><%:Invalid backup configuration.%></span></td>
+			</tr>
+			<% end %>
+			<!--<tr class="title-option">
+				<td style="width: 35%; padding-left: 30px;">- <%:Reset to Default%><img class="popper" data-popbox="Reset_to_Default_info" src="<%=media%>/pictures/icon_info_blue.png"></td>
+				<td><input class="cbi-button" type="submit" name="reset" value="<%:Reset%>" /></td>
+			</tr>-->
+			<tr class="title-option">
+				<td colspan="3"><%:User Setting%></td>
+			</tr>
+			<tr class="title-option">
+				<td style="width: 35%; padding-left: 30px;">- <%:Back Up Setting as Default%></td>
+				<td>
+					<input type="radio"  maxlength="12" name="user_setting" id="user_camera">
+					<%:Camera%>
+					<input type="radio"  maxlength="12" name="user_setting" id="user_ap">
+					<%:Access Point%>
+					<input type="radio"  maxlength="12" name="user_setting" id="user_all">
+					<%:All%>
+				</td>
+				<td><input class="cbi-button" onclick="savechanges(1)" id="user_backup" name="user_backup" value="<%:Backup%>" type="submit"/></td>
+			</tr>
+			<tr class="title-option">
+				<td style="width: 35%; padding-left: 30px;">- <%:Restore to User Default%><img class="popper" data-popbox="Restore_to_User_Default_info" src="<%=media%>/pictures/icon_info_blue.png"></td>
+				<td>
+					<input type="radio"  maxlength="12" name="restore_setting" id="restore_camera">
+					<%:Camera%>
+					<input type="radio"  maxlength="12" name="restore_setting" id="restore_ap">
+					<%:Access Point%>
+					<input type="radio"  maxlength="12" name="restore_setting" id="restore_all">
+					<%:All%>
+				</td>
+				<td><input class="cbi-button" onclick="savechanges(2)" id="user_restore" name="user_restore" value="<%:Restore%>" type="submit"/></td>
+			</tr>
+			<tr class="title-option">
+				<td style="width: 35%; padding-left: 30px;" colspan="3">- <span class="caution"><%:Warning%>:</span>&nbsp;<%:This feature will overwrite the factory default setting with your current settings. Pressing the physical reset button will restore the configuration of the current settings, not factory default settings.%></td>
+			</tr>
+		</table>
+		<br/>
+		<table>
+			
+		</table>
+		</form>
+	</fieldset>
+</body>
+<%+footer%>

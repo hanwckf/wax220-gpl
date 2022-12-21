@@ -1,0 +1,30 @@
+#!/bin/sh /etc/rc.common
+
+START=99
+USE_PROCD=1
+
+start_service() {
+	local factory_mode=$(envctl factory get factory_mode 2>/dev/null)
+	local model=$(uci get system.@system[0].model 2>/dev/null)
+
+	if [ "$factory_mode" != "off" ] || [ -z "$model" ]; then
+		return
+	fi
+
+	local power=$(uci get system.leds.power 2>/dev/null)
+	local other=$(uci get system.leds.other 2>/dev/null)
+	local type=$(uci get powerdetection.power.power_type 2>/dev/null)
+	if [ "x$power" = "x" ]; then
+		power="1"
+	fi
+	if [ "x$other" = "x" ]; then
+		other="1"
+	fi
+	if [ "x$type" = "x" ]; then
+		type="1"
+	fi
+	procd_open_instance
+	procd_set_param command /usr/sbin/ledControl $power $other $type
+	procd_set_param respawn
+	procd_close_instance
+}

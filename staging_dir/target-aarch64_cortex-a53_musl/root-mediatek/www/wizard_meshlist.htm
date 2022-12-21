@@ -1,0 +1,172 @@
+<%+header%>
+<%
+local uci = require("luci.model.uci").cursor()
+local disp = require "luci.dispatcher"
+local CREATE_OR_EXTEND_MESH = uci:get('functionlist', 'functionlist', 'SUPPORT_CREATE_OR_EXTEND_MESH')
+local menu = luci.http.formvalue("menu")
+%>
+<script>
+if ("<%=menu%>"==0)
+	document.getElementById('menu_right_style').style.display = "none";
+$("#maincontent").removeClass();
+$("#maincontent").css('margin','auto');
+$("#maincontent").css('padding-top','30px');
+$("#maincontent").css('padding-bottom','50px');
+$("#maincontent").css('width','80%');
+
+var hostname_mesh=new Array(), mac_mesh=new Array(), ip_mesh=new Array();
+var connectedNode = 0, margin_left=0, w=0;
+
+function refreshLog()
+{
+	var url, container, data ;
+	var meshlist, maclist = "";
+	var mac, i, j, k, batctl_mac, strength;
+	var match = 0;
+	var obj, jsonlist;
+	url = '<%=luci.dispatcher.build_url("admin/network/ajax_getMeshList")%>';
+
+	ajax_normal({
+		async: false,
+		type : "GET",
+		url:url,
+		dataType:"json",
+		error:function(){
+		},
+		success:function(result){
+			if(result[0].meshData!="")
+			{
+				result[0].meshData=result[0].meshData.replace(/\\/g, '');
+				result[0].meshData=result[0].meshData.replace(/u0022/g, '"');
+				result[0].meshData=result[0].meshData.replace(/},{/g, '},\n{');
+				meshlist = result[0].meshData ;
+				maclist = result[0].macData ;
+			}
+		}
+	});
+
+	if(maclist != "")
+	{
+		macdata = maclist.split("\n");
+		meshdata = meshlist.split("\n");
+		// macdata = ["02:aa:bb:cc:dd:13    2.820s   (172) 02:aa:bb:cc:dd:13 [     ath35]: 02:aa:bb:cc:dd:13 (172)", "02:aa:bb:cc:dd:15    2.820s   (172) 02:aa:bb:cc:dd:15 [     ath35]: 02:aa:bb:cc:dd:15 (172)", "02:aa:bb:cc:dd:17    2.820s   (172) 02:aa:bb:cc:dd:17 [     ath35]: 02:aa:bb:cc:dd:17 (172)"];
+		// meshdata = ["{ \"02:aa:00:aa:00:13\", \"{\"DeviceType\":\"AP\",\"DeviceName\":\"EWS1025\",\"ModelName\":\"EWS1025\",\"IPAddress\":\"169.254.3.249\",\"LANIPAddress\":\"192.168.1.110\",\"UID\":\"\"}\" }" ,"{ \"02:aa:bb:cc:dd:13\", \"{\"DeviceType\":\"AP\",\"DeviceName\":\"1111111_11111111\",\"ModelName\":\"EWS1025\",\"IPAddress\":\"169.254.3.135\",\"LANIPAddress\":\"192.168.1.123\",\"UID\":\"\"}\" }" ,"{ \"02:aa:bb:cc:dd:15\", \"{\"DeviceType\":\"AP\",\"DeviceName\":\"ABC\",\"ModelName\":\"EWS1025\",\"IPAddress\":\"169.254.3.137\",\"LANIPAddress\":\"192.168.1.125\",\"UID\":\"\"}\" }", "{ \"02:aa:bb:cc:dd:17\", \"{\"DeviceType\":\"AP\",\"DeviceName\":\"QWE\",\"ModelName\":\"EWS1025\",\"IPAddress\":\"169.254.3.139\",\"LANIPAddress\":\"192.168.1.127\",\"UID\":\"\"}\" }"];
+
+		if(macdata=="No batman nodes in range ...")
+			connectedNode = 0;
+		else
+			connectedNode = macdata.length;
+
+		k = 0;
+
+		for(i=0;i<meshdata.length ;i++)
+		{
+			mac=meshdata[i].substring(3,20);
+
+			for(j=0;j<macdata.length ;j++)
+			{
+				batctl_mac = macdata[j].substring(0,17);
+				strength = macdata[j].substring(31,34);
+				strength = Math.floor(((strength*100))/255)
+
+				if(mac == batctl_mac)
+				{
+					match = 1;
+				}
+			}
+			if(match == 1)
+			{
+				jsonlist=meshdata[i].substring(24,meshdata[i].length-4);
+				obj = JSON.parse(jsonlist);
+
+				k++;
+				hostname_mesh[k] = obj.DeviceName;
+				mac_mesh[k] = mac;
+				ip_mesh[k] = obj.IPAddress;
+				// hostname_mesh[1] = "1111111_11111111";
+				// mac_mesh[1] = "02:aa:bb:cc:dd:13";
+				// ip_mesh[1] = "192.168.1.123";
+				// hostname_mesh[2] = "ABC";
+				// mac_mesh[2] = "02:aa:bb:cc:dd:15";
+				// ip_mesh[2] = "192.168.1.125";
+				// hostname_mesh[3] = "QWE";
+				// mac_mesh[3] = "02:aa:bb:cc:dd:17";
+				// ip_mesh[3] = "192.168.1.127";
+			}
+			else
+			{
+				host_alfred = i;
+			}
+			match = 0;
+		}
+	}
+}
+
+function savechanges()
+{
+	var f = document.wizard_meshlist;
+	var deleteDeviceArray = new Array();
+	var i = 0, j = 0;
+
+	f.menu.value = "<%=menu%>";
+
+	while(connectedNode!=0 && i<connectedNode){
+		i++;
+		if(eval("document.wizard_meshlist.device"+(i)).checked==false)
+		{
+			deleteDeviceArray[j] = ip_mesh[i];
+			// alert(deleteDeviceArray[j]);
+			j++;
+		}
+	}
+	f.deleteDevice.value = deleteDeviceArray;
+	return true;
+}
+
+function copyto()
+{
+
+}
+</script>
+
+<body onLoad="copyto();">
+<form name="wizard_meshlist" action="<%=luci.dispatcher.build_url("admin/network/wizard_meshlist")%>" method="post">
+<input type="hidden" name="deleteDevice" value="">
+<input type="hidden" name="menu" value="">
+<div id="start_wizard" style="padding-left:20px;padding-right:20px">
+	<font size="4">Choose Mesh devices which you want to join to Mesh Network. You can check the label of device bottom to find device’s MAC address.</font><br><br>
+	<div id="mesh_status">
+		<table>
+			<tr class="title-option" style="background-color:#1E90FF;">
+				<td></td>
+				<td style="text-align:center; color:#FFFFFF;">Device Model Name</td>
+				<td style="text-align:center; color:#FFFFFF;">MAC Address</td>
+			</tr>
+			<script>
+				refreshLog();
+				var i=0;
+				while(connectedNode!=0 && i<connectedNode){
+					i++;
+					dw('<tr class="title-option">');
+						dw('<td style="text-align:center;"><input type="checkbox" name="device'+i+'"></td>');
+						dw('<td style="text-align:center;">'+hostname_mesh[i]+'</td>');
+						dw('<td style="text-align:center;">'+mac_mesh[i]+'</td>');
+					dw('</tr>');
+				}
+			</script>
+		</table>
+		<br><br>
+		<table>
+			<tr>
+				<div class="cbi-page-actions">
+					<script>
+							dw('&nbsp;&nbsp;&nbsp;<input class="cbi-button cbi-button-save" type="submit" name="next" myid="" onclick="savechanges();" value="Next"/>');
+					</script>
+				</div>
+			</tr>
+		</table>
+	</div>
+</div>
+</form>
+</body>
+<%+footer%>

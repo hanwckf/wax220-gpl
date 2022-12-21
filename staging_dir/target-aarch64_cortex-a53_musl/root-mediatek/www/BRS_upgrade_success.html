@@ -1,0 +1,45 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+
+<head>
+<% new_hijack_flow_head() %>
+</head>
+<body>
+<% form_submit("apply", "BRS_register_router.html", "hijack_register_router")%>
+	<% cfg_set("hijack_config_status", "8") %>
+<div id="container">
+	<div class="dialog-content">
+		<!--checking new formware-->
+          <div id="card-checking-for-updates" class="install-card" style="min-width: 750px;">
+            <div class="logos">
+				<div><img class="netgear-logo" src="image/netgear_business.png"></div>
+		    	<% hijack_logo_title() %>
+            </div>
+            <img class="card-image" src="<% product_img_path() %>" onerror="this.onerror=null; this.src='image/robot.png'">
+		   <div class="content">
+			   <!-- <div class="desc-title w3-xlarge"><script>document.write("$firmware_updating")</script></div> -->
+			   <div class="desc-title w3-xlarge" id="upg_msg"><script>document.write("$update_success")</script></div>
+		   </div>
+		   <div class="buttons">
+				<button id="next_btn" class="btn button-nav" type="submit" onclick="return toInternet();">
+					<span><script>document.write("$orbi_next_mark");</script></span>
+			  </button>
+		  </div>
+          </div>
+	</div>
+</div>
+<script>
+var ts="<% cfg_get("hijack_save_time") %>";
+function toInternet()
+{
+	var cf = document.forms[0];
+	cf.action="/apply.cgi?/to_internet_no_auth.htm timestamp="+ts;
+	cf.submitType.value = "hijack_save_time";
+	cf.anticsrf.value='<% generateToken("hijack_save_time") %>';
+	cf.target = "_top";
+	return true;
+}
+</script>
+</form>
+</body>
+</html>

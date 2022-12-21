@@ -1,0 +1,142 @@
+<% http_header( "script/jquery-1.12.4.min.js", "style/cascade2.css", "style/cascade.css", "style/cascade-custom.css", "font/AvenirNextLTPro-Regular.ttf", "script/cbi.js", "script/common.js", "script/network.js") %>
+<body onLoad="please_wait(false);" bgcolor="#ffffff">
+<form action='<% action_url("apply.cgi", "network.htm") %>' method="post">
+<table>
+	<input type="hidden" name="linklocal_ipv6_checked">
+	<tr>
+		<td colspan="2" class="title">IPv4 $settings</td>
+	</tr>
+	<tr class="title-option">
+		<td style="width:40%" myid="title_lan_dhcp_protocol">$ip_network_setting</td>
+		<td style="width:60%">
+		<input type="radio" value="dhcp" name="ipv4_proto" myid="lan_dhcp_protocol_enable" onclick="proto_display()"/>&nbsp;$dhcp&nbsp;&nbsp;
+		<input type="radio" value="static" name="ipv4_proto" myid="lan_dhcp_protocol_disable" onclick="proto_display(1)"/>&nbsp;$static_ip
+		</td>
+	</tr>
+	<tbody id="proto_display">
+	<tr class="title-option">
+		<td myid="title_lan_ipaddr">$ip_address</td>
+		<td><input name="ipv4_ipaddr" id="ipv4_ipaddr" myid="lan_ipaddr" value="<% cfg_get("lan_ipaddr") %>" type="text" maxlength="15"/></td>
+	</tr>
+	<tr class="title-option">
+		<td myid="title_lan_netmask">$subnet_mask</td>
+		<td><input name="ipv4_netmask" id="ipv4_netmask" myid="lan_netmask" value="<% cfg_get("lan_netmask") %>" type="text" maxlength="15"/></td>
+	</tr>
+	<tr class="title-option">
+		<td myid="title_lan_gateway">$gateway</td>
+		<td><input name="ipv4_gateway" id="ipv4_gateway" myid="lan_gateway" value="<% cfg_get("lan_gateway") %>" type="text" maxlength="15"/></td>
+	</tr>
+	<tr class="title-option">
+		<td myid="title_lan_dns1">$primary_dns</td>
+		<td><input name="ipv4_dns1" myid="lan_dns1" value="<% cfg_get("dns1") %>" type="text" maxlength="15"/></td>
+	</tr>
+	<tr class="title-option">
+		<td myid="title_lan_dns2">$secondary_dns</td>
+		<td><input name="ipv4_dns2" myid="lan_dns2" value="<% cfg_get("dns2") %>" type="text" maxlength="15"/></td>
+	</tr>
+	</tbody>
+</table>
+
+<table id="ipv6_set" style="display: none;">  <!--SUPPORT_IPV6_DISABLED==0-->
+	<tr>
+		<td class="title" id="title_lan_linklocal_enable">IPv6 $settings</td>
+        <td class="title"><input type="checkbox" name="linklocal_ipv6" id="lan_linklocal_enable" myid="lan_linklocal_enable" onclick="ipv6_display()"/>&nbsp;
+		<span myid="title_lan_linklocal_enable">$link_local_address</span></td>
+	</tr>
+	<tbody id="ipv6_setting_span">
+		<tr class="title-option">
+			<td style="width:40%" myid="title_lan_ip6addr">$ip_address</td>
+			<td style="width:60%"><input name="ipv6_ipaddr" myid="lan_ip6addr" type="text" maxlength="39"/></td>
+		</tr>
+		<tr class="title-option">
+			<td myid="title_lan_ip6prefixlen">$subnet_prefix_length</td>
+			<td><input name="ipv6_subprefixleng" myid="lan_ip6prefixlen" type="text" maxlength="3"/></td>
+		</tr>
+		<tr class="title-option">
+			<td myid="title_lan_ip6gw">$gateway</td>
+			<td><input name="ipv6_gateway" myid="lan_ip6gw" type="text" maxlength="39"/></td>
+		</tr>
+		<tr class="title-option">
+			<td myid="title_lan_ip6dns1">$primary_dns</td>
+			<td><input name="ipv6_dns1" myid="lan_ip6dns1" type="text" maxlength="39"/></td>
+		</tr>
+		<tr class="title-option">
+			<td myid="title_lan_ip6dns2">$secondary_dns</td>
+			<td><input name="ipv6_dns2" myid="lan_ip6dns2" type="text" maxlength="39"/></td>
+		</tr>
+	</tbody>
+</table>
+<br/>
+
+<!-- <table>
+	<tr>
+		<td colspan="2" class="title">$spanning_tree_protocol_stp_settings</td>
+	</tr>
+	<tr class="title-option">
+		<td style="width:40%" myid="title_lan_stp">$status</td>
+		<td style="width:60%">
+			<input type="radio" value="1" name="enable_stp" myid="lan_stp_enable" onclick="stp_status()"/>&nbsp;$enable&nbsp;&nbsp;
+			<input type="radio" value="0" name="enable_stp" myid="lan_stp_disable" onclick="stp_status()"/>&nbsp;$disable
+		</td>
+	</tr>
+	<tr class="title-option">
+		<td myid="title_lan_stp_hello">$hello_time</td>
+		<td><input type="text" maxlength="2" name="stp_hello_time" myid="lan_stp_hello" value=""/>&nbsp;$seconds (1-10)</td>
+	</tr>
+	<tr class="title-option">
+		<td myid="title_lan_stp_mage">$max_age</td>
+		<td><input type="text" maxlength="2" name="stp_max_age" myid="lan_stp_mage" value=""/>&nbsp;$seconds (6-40)</td>
+	</tr>
+	<tr class="title-option">
+		<td myid="title_lan_stp_delay">$forward_delay</td>
+		<td><input type="text" maxlength="4" name="stp_forward_delay" myid="lan_stp_delay" value=""/>&nbsp;$seconds (4-30)</td>
+	</tr>
+	<tr class="title-option">
+		<td myid="title_lan_stp_priority">$priority</td>
+		<td><input type="text" maxlength="5" name="stp_priority" myid="lan_stp_priority" value=""/>&nbsp;(0-65535)</td>
+	</tr>
+</table> -->
+
+<!-- <table id="table_lacp_set"> <SUPPORT_ETHERNET_BONDING> 
+	<tr>
+		<td colspan="2" class="title">$link_aggregation_control_protocol_lacp_settings</td>
+	</tr>
+	<tr class="title-option">
+		<td style="width:40%" myid="title_lan_stp">$status</td>
+		<td style="width:60%">
+			<input type="radio" value="1" name="lacp_enable" />&nbsp;$enable&nbsp;&nbsp;
+			<input type="radio" value="0" name="lacp_enable" />&nbsp;$disable
+		</td>
+	</tr>
+	<tr class="title-option">
+		<td style="width:40%" >$timeout</td>
+		<td style="width:60%">
+			<input type="radio" value="0" name="short_timeout" />&nbsp;$long&nbsp;&nbsp;
+			<input type="radio" value="1" name="short_timeout" />&nbsp;$short
+		</td>
+	</tr>
+	<tr class="title-option">
+		<td style="width:40%" >$system_priority</td>
+		<td style="width:60%">
+			<input type="text" maxlength="5" name="system_priority" />&nbsp;(1~65535)
+		</td>
+	</tr>
+</table> -->
+
+<!--SUPPORT_ETHERNET_VLAN==1 -->
+<div id="lan_port_settings" class="table"></div>
+
+<br/>
+<div class="cbi-page-actions">
+<!-- <HAS_ALL_APPLY==1>
+	<input class="cbi-button cbi-button-save" name="submitType" myid="button_save" onclick="return saveChanges()" type="submit" value="$apply">&nbsp;<span class="btn_desc">$apply_saved_settings_to_take_effect</span>
+
+<%else%> -->
+	<input type="hidden" id="submitType" value="1" name="submitType"/>
+	<input type="hidden" name="anticsrf" value='<% generateToken("basic") %>'>
+	<input class="cbi-button cbi-button-save" myid="button_save" onclick="return saveChanges()" type="submit" value="$apply">&nbsp;<span class="btn_desc">$apply_saved_settings_to_take_effect</span>
+<!-- <%end%> -->
+
+</div>
+</form>
+</body>

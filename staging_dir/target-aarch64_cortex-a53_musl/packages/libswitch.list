@@ -1,0 +1,8 @@
+./
+./host
+./usr
+./usr/include
+./usr/include/libswitch
+./usr/include/libswitch/mtk_eth_api.h
+./usr/lib
+./usr/lib/libswitch.so

@@ -1,0 +1,227 @@
+#!/bin/sh
+[ -z "$1" ] && echo "Error: should be run by udhcpc" && exit 1
+
+. /lib/functions.sh
+. /lib/netifd/netifd-proto.sh
+
+set_classless_routes() {
+	local max=128
+	while [ -n "$1" -a -n "$2" -a $max -gt 0 ]; do
+		proto_add_ipv4_route "${1%%/*}" "${1##*/}" "$2" "$ip"
+		route add -$type "$1" gw "$2" dev "$interface"
+		max=$(($max-1))
+		shift 2
+	done
+}
+
+setup_interface () {
+	net_mode="$(uci get system.@system[0].netmode 2> /dev/null)"
+	net_mode="${net_mode:-"router"}"
+	net_model="$(uci get system.@system[0].model 2> /dev/null)"
+	net_model="$(uci get system.@system[0].model 2> /dev/null)"
+	forward_icmp_drop="$(iptables -nvL FORWARD 1 2> /dev/null |grep icmp)"
+
+	guest_rtip="$(uci get network.guest.rtip 2> /dev/null)"
+	guest_rtmask="$(uci get network.guest.rtmask 2> /dev/null)"
+
+	lan_ip=`ifconfig br-lan | awk '/inet addr/ {print substr($2,6)}' 2>/dev/null`
+	mgm_ip=`ifconfig br-mgmt | awk '/inet addr/ {print substr($2,6)}' 2>/dev/null`
+	lan_new_ip=$lan_ip
+	mgm_new_ip=$mgm_ip
+	if [ "$interface" == "br-lan" ]; then
+		lan_new_ip=$ip
+	fi
+	if [ "$interface" == "br-mgmt" ]; then
+		lan_mgm_ip=$ip
+	fi
+
+	if [ "$net_mode" != "router" ];then
+		ifconfig $interface $ip netmask ${subnet:-255.255.255.0} broadcast ${broadcast:-+}
+	fi
+	if [ "$forward_icmp_drop" == "" ];then
+		iptables -I FORWARD -p icmp -d $ip/${subnet:-255.255.255.0} -j DROP
+	else
+		iptables -D FORWARD 1
+		iptables -I FORWARD -p icmp -d $ip/${subnet:-255.255.255.0} -j DROP
+	fi
+	if [ "$net_model" == "WAX220" ] ;then
+		ifconfig $interface $ip netmask ${subnet:-255.255.255.0} broadcast ${broadcast:-+}
+		iptables -t nat -F postrouting_rule
+		iptables -t nat -A postrouting_rule -s $guest_rtip/$guest_rtmask  -j SNAT --to $ip
+
+		if [ "$interface" == "br-lan" ] || [ "$interface" == "br-mgmt" ]; then
+			iptables -t nat -D zone_lan_prerouting -i br-lan -p tcp --sport 1024:65535 -d $lan_ip --dport 80 -j DNAT --to-destination $lan_ip:8480 2>/dev/null
+			iptables -t nat -D zone_lan_prerouting -i br-lan -p tcp --sport 1024:65535 -d $lan_ip --dport 443 -j DNAT --to-destination $lan_ip:8443 2>/dev/null
+
+			iptables -t nat -D zone_mgmt_prerouting -i br-mgmt -p tcp --sport 1024:65535 -d $lan_ip --dport 80 -j DNAT --to-destination $lan_ip:8480 2>/dev/null
+			iptables -t nat -D zone_mgmt_prerouting -i br-mgmt -p tcp --sport 1024:65535 -d $lan_ip --dport 443 -j DNAT --to-destination $lan_ip:8443 2>/dev/null
+			iptables -t nat -D zone_mgmt_prerouting -i br-mgmt -p tcp --sport 1024:65535 ! -d $mgm_ip --dport 80 -j DNAT --to-destination $mgm_ip:80 2>/dev/null
+			iptables -t nat -D zone_mgmt_prerouting -i br-mgmt -p tcp --sport 1024:65535 ! -d $mgm_ip --dport 443 -j DNAT --to-destination $mgm_ip:443 2>/dev/null
+
+			iptables -t nat -A zone_lan_prerouting -i br-lan -p tcp --sport 1024:65535 -d $lan_new_ip --dport 80 -j DNAT --to-destination $lan_new_ip:8480 2>/dev/null
+			iptables -t nat -A zone_lan_prerouting -i br-lan -p tcp --sport 1024:65535 -d $lan_new_ip --dport 443 -j DNAT --to-destination $lan_new_ip:8443 2>/dev/null
+
+			iptables -t nat -A zone_mgmt_prerouting -i br-mgmt -p tcp --sport 1024:65535 -d $lan_new_ip --dport 80 -j DNAT --to-destination $lan_new_ip:8480 2>/dev/null
+			iptables -t nat -A zone_mgmt_prerouting -i br-mgmt -p tcp --sport 1024:65535 -d $lan_new_ip --dport 443 -j DNAT --to-destination $lan_new_ip:8443 2>/dev/null
+			iptables -t nat -A zone_mgmt_prerouting -i br-mgmt -p tcp --sport 1024:65535 ! -d $mgm_new_ip --dport 80 -j DNAT --to-destination $mgm_new_ip:80 2>/dev/null
+			iptables -t nat -A zone_mgmt_prerouting -i br-mgmt -p tcp --sport 1024:65535 ! -d $mgm_new_ip --dport 443 -j DNAT --to-destination $mgm_new_ip:443 2>/dev/null
+                fi
+	fi
+
+	ubus send get_dhcp_ip "{\"interface\":\"$interface\", \"ip\":\"$ip\", \"subnet\":\"$subnet\"}"
+	proto_init_update "*" 1
+	proto_add_ipv4_address "$ip" "${subnet:-255.255.255.0}"
+	# TODO: apply $broadcast
+
+	local ip_net
+	eval "$(ipcalc.sh "$ip/$mask")";ip_net="$NETWORK"
+
+	local i
+	for i in $router; do
+		local gw_net
+		eval "$(ipcalc.sh "$i/$mask")";gw_net="$NETWORK"
+
+		route delete default
+		route add default gw $i dev $interface
+
+		[ "$ip_net" != "$gw_net" ] && proto_add_ipv4_route "$i" 32 "" "$ip"
+		proto_add_ipv4_route 0.0.0.0 0 "$i" "$ip"
+
+		local r
+		for r in $CUSTOMROUTES; do
+			proto_add_ipv4_route "${r%%/*}" "${r##*/}" "$i" "$ip"
+		done
+	done
+
+	# CIDR STATIC ROUTES (rfc3442)
+	[ -n "$staticroutes" ] && set_classless_routes $staticroutes
+	[ -n "$msstaticroutes" ] && set_classless_routes $msstaticroutes
+
+	for i in $dns; do
+		proto_add_dns_server "$i"
+	done
+	for i in $domain; do
+		proto_add_dns_search "$i"
+	done
+
+	# TODO: Deprecate timesvr in favor of timesrv
+	if [ -n "$timesvr" -a -z "$timesrv" ]; then
+		timesrv="$timesvr"
+		echo "Environment variable 'timesvr' will be deprecated; use 'timesrv' instead."
+	fi
+
+	proto_add_data
+	[ -n "$ZONE" ]     && json_add_string zone "$ZONE"
+	[ -n "$ntpsrv" ]   && json_add_string ntpserver "$ntpsrv"
+	[ -n "$timesrv" ]  && json_add_string timeserver "$timesrv"
+	[ -n "$hostname" ] && json_add_string hostname "$hostname"
+	[ -n "$message" ]  && json_add_string message "$message"
+	[ -n "$timezone" ] && json_add_int timezone "$timezone"
+	[ -n "$lease" ]    && json_add_int leasetime "$lease"
+	proto_close_data
+
+	proto_send_update "$INTERFACE"
+
+
+	if [ "$IFACE6RD" != 0 -a -n "$ip6rd" ]; then
+		local v4mask="${ip6rd%% *}"
+		ip6rd="${ip6rd#* }"
+		local ip6rdprefixlen="${ip6rd%% *}"
+		ip6rd="${ip6rd#* }"
+		local ip6rdprefix="${ip6rd%% *}"
+		ip6rd="${ip6rd#* }"
+		local ip6rdbr="${ip6rd%% *}"
+
+		[ -n "$ZONE" ] || ZONE=$(fw3 -q network $INTERFACE 2>/dev/null)
+		[ -z "$IFACE6RD" -o "$IFACE6RD" = 1 ] && IFACE6RD=${INTERFACE}_6
+
+		json_init
+		json_add_string name "$IFACE6RD"
+		json_add_string ifname "@$INTERFACE"
+		json_add_string proto "6rd"
+		json_add_string peeraddr "$ip6rdbr"
+		json_add_int ip4prefixlen "$v4mask"
+		json_add_string ip6prefix "$ip6rdprefix"
+		json_add_int ip6prefixlen "$ip6rdprefixlen"
+		json_add_string tunlink "$INTERFACE"
+		[ -n "$IFACE6RD_DELEGATE" ] && json_add_boolean delegate "$IFACE6RD_DELEGATE"
+		[ -n "$ZONE6RD" ] || ZONE6RD=$ZONE
+		[ -n "$ZONE6RD" ] && json_add_string zone "$ZONE6RD"
+		[ -n "$MTU6RD" ] && json_add_string mtu "$MTU6RD"
+		json_close_object
+
+		ubus call network add_dynamic "$(json_dump)"
+	fi
+}
+
+deconfig_interface() {
+	net_mode="$(uci get system.@system[0].netmode 2> /dev/null)"
+	net_mode="${net_mode:-"router"}"
+	net_model="$(uci get system.@system[0].model 2> /dev/null)"
+	forward_icmp_drop="$(iptables -nvL FORWARD 1 2> /dev/null |grep icmp)"
+
+	lan_ip=`ifconfig br-lan | awk '/inet addr/ {print substr($2,6)}' 2>/dev/null`
+	mgm_ip=`ifconfig br-mgmt | awk '/inet addr/ {print substr($2,6)}' 2>/dev/null`
+	lan_new_ip="$(uci get network.lan.gateway 2>/dev/null)"
+	mgm_new_ip="$(uci get network.mgmt.ipaddr 2>/dev/null)"
+	if [ "$interface" == "br-lan" ]; then
+		mgm_new_ip=$mgm_ip
+	fi
+	if [ "$interface" == "br-mgmt" ]; then
+		lan_new_ip=$lan_ip
+	fi
+
+	ubus send release_dhcp_ip "{\"interface\":\"$interface\"}"
+	if [ "$net_mode" != "router" ];then
+		ifconfig $interface 192.168.0.100
+	fi
+	if [ "$forward_icmp_drop" == "" ];then
+		iptables -I FORWARD -p icmp -d 192.168.0.100/24 -j DROP
+	else
+		iptables -D FORWARD 1
+		iptables -I FORWARD -p icmp -d 192.168.0.100/24 -j DROP
+	fi
+	if [ "$net_model" == "WAX220" ] ;then
+		ifconfig $interface 192.168.0.100
+		iptables -t nat -F postrouting_rule
+		iptables -t nat -A postrouting_rule -s $guest_rtip/$guest_rtmask  -j SNAT --to $ip
+
+		if [ "$interface" == "br-lan" ] || [ "$interface" == "br-mgmt" ]; then
+			iptables -t nat -D zone_lan_prerouting -i br-lan -p tcp --sport 1024:65535 -d $lan_ip --dport 80 -j DNAT --to-destination $lan_ip:8480 2>/dev/null
+			iptables -t nat -D zone_lan_prerouting -i br-lan -p tcp --sport 1024:65535 -d $lan_ip --dport 443 -j DNAT --to-destination $lan_ip:8443 2>/dev/null
+
+			iptables -t nat -D zone_mgmt_prerouting -i br-mgmt -p tcp --sport 1024:65535 -d $lan_ip --dport 80 -j DNAT --to-destination $lan_ip:8480 2>/dev/null
+			iptables -t nat -D zone_mgmt_prerouting -i br-mgmt -p tcp --sport 1024:65535 -d $lan_ip --dport 443 -j DNAT --to-destination $lan_ip:8443 2>/dev/null
+			iptables -t nat -D zone_mgmt_prerouting -i br-mgmt -p tcp --sport 1024:65535 ! -d $mgm_ip --dport 80 -j DNAT --to-destination $mgm_ip:80 2>/dev/null
+			iptables -t nat -D zone_mgmt_prerouting -i br-mgmt -p tcp --sport 1024:65535 ! -d $mgm_ip --dport 443 -j DNAT --to-destination $mgm_ip:443 2>/dev/null
+
+			iptables -t nat -A zone_lan_prerouting -i br-lan -p tcp --sport 1024:65535 -d $lan_new_ip --dport 80 -j DNAT --to-destination $lan_new_ip:8480 2>/dev/null
+			iptables -t nat -A zone_lan_prerouting -i br-lan -p tcp --sport 1024:65535 -d $lan_new_ip --dport 443 -j DNAT --to-destination $lan_new_ip:8443 2>/dev/null
+
+			iptables -t nat -A zone_mgmt_prerouting -i br-mgmt -p tcp --sport 1024:65535 -d $lan_new_ip --dport 80 -j DNAT --to-destination $lan_new_ip:8480 2>/dev/null
+			iptables -t nat -A zone_mgmt_prerouting -i br-mgmt -p tcp --sport 1024:65535 -d $lan_new_ip --dport 443 -j DNAT --to-destination $lan_new_ip:8443 2>/dev/null
+			iptables -t nat -A zone_mgmt_prerouting -i br-mgmt -p tcp --sport 1024:65535 ! -d $mgm_new_ip --dport 80 -j DNAT --to-destination $mgm_new_ip:80 2>/dev/null
+			iptables -t nat -A zone_mgmt_prerouting -i br-mgmt -p tcp --sport 1024:65535 ! -d $mgm_new_ip --dport 443 -j DNAT --to-destination $mgm_new_ip:443 2>/dev/null
+		fi
+	fi
+
+	proto_init_update "*" 0
+	proto_send_update "$INTERFACE"
+}
+
+case "$1" in
+	deconfig)
+		deconfig_interface
+	;;
+	renew|bound)
+		setup_interface
+	;;
+esac
+
+# user rules
+[ -f /etc/udhcpc.user ] && . /etc/udhcpc.user "$@"
+for f in /etc/udhcpc.user.d/*; do
+	[ -f "$f" ] && (. "$f" "$@")
+done
+
+exit 0

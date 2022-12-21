@@ -1,0 +1,510 @@
+<%+header%>
+<%
+local uci = require("luci.model.uci").cursor()
+local disp = require "luci.dispatcher"
+local ssid, passwd, encryption, mesh_ssid
+local ssid_5g, passwd_5g, encryption_5g, mesh_ssid_5g
+local meshband, mesh_encryption, mesh_passwd, mesh_encryption_5g, mesh_passwd_5g
+    ssid = uci:get("tmp_wizard","wizard","ssid")
+    ssid_5g = uci:get("tmp_wizard","wizard","ssid_5g")
+    passwd = uci:get("tmp_wizard","wizard","passwd")
+    passwd_5g = uci:get("tmp_wizard","wizard","passwd_5g")
+    encryption = uci:get("tmp_wizard","wizard","encryption")
+    encryption_5g = uci:get("tmp_wizard","wizard","encryption_5g")
+	meshband = uci:get('tmp_wizard', 'wizard', 'meshband')
+	mesh_ssid = uci:get("tmp_wizard","wizard","mesh_ssid")
+	mesh_ssid_5g = uci:get("tmp_wizard","wizard","mesh_ssid_5g")
+	mesh_encryption = uci:get('tmp_wizard', 'wizard', 'mesh_encryption')
+	mesh_passwd = uci:get('tmp_wizard', 'wizard', 'mesh_passwd')
+	mesh_encryption_5g = uci:get('tmp_wizard', 'wizard', 'mesh_encryption_5g')
+	mesh_passwd_5g = uci:get('tmp_wizard', 'wizard', 'mesh_passwd_5g')
+	channel = uci:get('tmp_wizard', 'wizard', 'mesh_channel')
+	channel_5g = uci:get('tmp_wizard', 'wizard', 'mesh_channel_5g')
+	mesh_ID = uci:get("tmp_wizard","wizard","mesh_ID")
+	mesh_ID_5g = uci:get("tmp_wizard","wizard","mesh_ID_5g")
+	mesh_connectType = uci:get("tmp_wizard","wizard","mesh_connectType")
+	mesh_connectType_5g = uci:get("tmp_wizard","wizard","mesh_connectType_5g")
+
+	ssid  = string.gsub(ssid,"\\","\\\\")
+	ssid  = string.gsub(ssid,"\"","\\\"")
+	ssid_5g  = string.gsub(ssid_5g,"\\","\\\\")
+	ssid_5g  = string.gsub(ssid_5g,"\"","\\\"")
+	passwd  = string.gsub(passwd,"\\","\\\\")
+	passwd  = string.gsub(passwd,"\"","\\\"")
+	passwd_5g  = string.gsub(passwd_5g,"\\","\\\\")
+	passwd_5g  = string.gsub(passwd_5g,"\"","\\\"")
+	mesh_ssid  = string.gsub(mesh_ssid,"\\","\\\\")
+	mesh_ssid  = string.gsub(mesh_ssid,"\"","\\\"")
+	mesh_ssid_5g  = string.gsub(mesh_ssid_5g,"\\","\\\\")
+	mesh_ssid_5g  = string.gsub(mesh_ssid_5g,"\"","\\\"")	
+	mesh_passwd  = string.gsub(mesh_passwd,"\\","\\\\")
+	mesh_passwd  = string.gsub(mesh_passwd,"\"","\\\"")	
+	mesh_passwd_5g  = string.gsub(mesh_passwd_5g,"\\","\\\\")
+	mesh_passwd_5g  = string.gsub(mesh_passwd_5g,"\"","\\\"")
+%>
+<script>document.getElementById('menu_right_style').style.display = "none";
+var MESH_AP_SAME = <%=MESH_AP_SAME%>;
+var JSONDATA_DDNS=<%=JSONDATA_DDNS%>;
+var JSONDATA_EG_DDNS=<%=JSONDATA_EG_DDNS%>;
+var g_fromApply, g_check_or_submit;
+var ENGENIUS_DOMAIN_NAME_REGX =new RegExp("^[a-zA-Z0-9]{1,64}$");
+$("#maincontent").removeClass();
+$("#maincontent").css('margin','auto');
+$("#maincontent").css('padding-top','20px');
+$("#maincontent").css('width','100%');
+
+var count=0;
+var countStr="";
+
+function savechange()
+{
+	var ret = $('#DDNSEnable_enable').prop('checked');
+	if(ret)
+	{
+		ret = $('#EnGeniusDDNS_enable').prop('checked');
+		if(ret)
+		{
+			if($('#eg_aliasDomainName').val().length != 0)
+			{
+				if(!checkDomainNameIsAvailable(1))
+					return false;
+			}
+		}
+	}
+   	document.getElementsByName("mesh_followAP")[0].value = MESH_AP_SAME;
+	return true;
+}
+function gostep1 () {
+	//location.href=(MESH_AP_SAME==0)?"<%=disp.build_url('admin/network/wizard')%>":"<%=disp.build_url('admin/network/wizard_join_mesh')%>";
+	location.href="<%=disp.build_url('admin/network/wizard')%>?mesh_ap_same="+MESH_AP_SAME+"";
+}
+function mesh_information()
+{
+    var mesh_ssid = "<%=mesh_ssid%>";
+	var mesh_ssid_5g = "<%=mesh_ssid_5g%>";
+    var mesh_passwd = "<%=mesh_passwd%>";
+	var mesh_passwd_5g = "<%=mesh_passwd_5g%>";
+	var mesh_ID = "<%=mesh_ID%>";
+	var mesh_ID_5g = "<%=mesh_ID_5g%>";
+    mesh_ssid = mesh_ssid.replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    mesh_ssid_5g = mesh_ssid_5g.replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    mesh_passwd = mesh_passwd.replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    mesh_passwd_5g = mesh_passwd_5g.replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+
+	dw('<td colspan="2">');
+	dw("<%:Mesh Status%>:");
+	dw('</td>');
+	dw('<td colspan="3">');
+	if("<%=meshband%>"==0)
+	{
+		("<%=mesh_connectType%>"==0)?dw('<%:Wi-Fi Name(SSID):%>'):dw('<%:Mesh ID%>:');
+		("<%=mesh_connectType%>"==0)?dw(mesh_ssid+'<br>'):dw(mesh_ID+'<br>');
+	}
+	else
+	{
+		("<%=mesh_connectType_5g%>"==0)?dw('<%:Wi-Fi Name(SSID):%>'):dw('<%:Mesh ID%>:');
+		("<%=mesh_connectType_5g%>"==0)?dw(mesh_ssid_5g+'<br>'):dw(mesh_ID_5g+'<br>');
+	}
+
+	dw('<%:Mesh Band:%>');
+	("<%=meshband%>"==0)?dw('<%:2.4GHz%><br>'):dw('<%:5GHz%><br>');
+	dw('<%:Mesh Channel%>:');
+	("<%=meshband%>"==0)?dw('<%=channel%><br>'):dw('<%=channel_5g%><br>');
+	dw('<%:Encryption:%>');
+	if( MESH_AP_SAME ==0 )
+	{
+		if("<%=meshband%>"==0)
+			("<%=encryption%>" == "none")?dw('Disable'):dw('WPA Pre-Shared key');
+		else
+			("<%=encryption_5g%>" == "none")?dw('Disable'):dw('WPA Pre-Shared key');
+		dw('<br>');
+		dw('<%:Encryption Key:%>');
+		if("<%=meshband%>"==0)
+			("<%=encryption%>" == "none")?dw('None'):dw(passwd);
+		else
+			("<%=encryption_5g%>" == "none")?dw('None'):dw(passwd_5g);
+	}
+	else
+	{
+		if("<%=meshband%>"==0)
+			("<%=mesh_encryption%>" == "none")?dw('Disable'):dw('WPA Pre-Shared key');
+		else
+			("<%=mesh_encryption_5g%>" == "none")?dw('Disable'):dw('WPA Pre-Shared key');
+		dw('<br>');
+		dw('<%:Encryption Key:%>');
+		if("<%=meshband%>"==0)
+			("<%=mesh_encryption%>" == "none")?dw('None'):dw(mesh_passwd);
+		else	
+			("<%=mesh_encryption_5g%>" == "none")?dw('None'):dw(mesh_passwd_5g);
+
+	}
+	dw('</td>');
+}
+
+function copyto()
+{
+	document.getElementById('join_setup').style.display = (MESH_AP_SAME == "0")?"none":"";
+	document.getElementById('create_setup').style.display = (MESH_AP_SAME == "0")?"":"none";
+}
+
+function ProtectButton(enable)
+{
+	if(enable)
+	{	
+		$('input[name^="DDNSEnable"]').removeAttr('disabled');
+		$('input[name^="EnGeniusDDNS"]').removeAttr('disabled');
+		$('select[name^="eg_"]').removeAttr('disabled');
+		$('input[name^="eg_"]').removeAttr('disabled');
+	}
+	else
+	{
+		$('input[name^="DDNSEnable"]').attr('disabled', 'disabled');
+		$('input[name^="EnGeniusDDNS"]').attr('disabled', 'disabled');
+		$('select[name^="eg_"]').attr('disabled', 'disabled');
+		$('input[name^="eg_"]').attr('disabled', 'disabled');
+	}
+}
+
+function ddnsStatus()
+{
+	var ret = $('#DDNSEnable_enable').prop('checked');
+	if(ret)
+	{
+		$('input[name^="EnGeniusDDNS"]').removeAttr('disabled');
+		enDdnsStatus();
+	}
+	else
+	{
+		$('input[name^="EnGeniusDDNS"]').attr('disabled', 'disabled');
+		$('select[name^="eg_"]').attr('disabled', 'disabled');
+		$('input[name^="eg_"]').attr('disabled', 'disabled');
+	}
+}
+
+function enDdnsStatus()
+{
+	var ret = $('#EnGeniusDDNS_enable').prop('checked');
+	if(ret)
+	{
+		$('select[name^="eg_"]').removeAttr('disabled');
+		$('input[name^="eg_"]').removeAttr('disabled');
+	}
+	else
+	{
+		$('select[name^="eg_"]').attr('disabled', 'disabled');
+		$('input[name^="eg_"]').attr('disabled', 'disabled');
+	}
+}
+
+XHR.poll(1, '<%=luci.dispatcher.build_url("admin", "network", "getddns")%>', null, function(x, info)
+{
+	var ddnsEnable, enGeniusEnable;
+	if(x.responseText && info)
+	{
+		$('#uid_status').html(info.uidStatus);
+		$('#ddns_status').html(info.ddnsStatus);
+
+		if(g_check_or_submit==1 && info.ddnsStatus!="Checking")
+		{
+			ProtectButton(1);
+			g_check_or_submit = 0;
+			if(info.domainStatus=="OK")
+			{
+				if(g_fromApply==0)
+					alert("<%:The domain name is available.%>");
+				else
+					document.forms[document.forms.length-1].submit();
+				return true;
+			}
+			else if(info.domainStatus=="FAILED")
+			{
+				alert("<%:The domain name is taken.%>");
+				return false;
+			}
+			else
+			{
+				alert("<%:Error occurs in the server.%>");
+				return false;
+			}
+		}
+	}
+});
+
+function checkDomainNameIsAvailable(fromApply)
+{
+	g_fromApply = fromApply;
+
+	if($('#EnGeniusDDNS_enable').prop('checked'))
+	{
+		if($('#eg_aliasDomainName').val().length != 0)
+		{
+			if(!(ENGENIUS_DOMAIN_NAME_REGX.test($('#eg_aliasDomainName').val())))
+			{
+				alert("<%:Domain name given is invalid%>");
+				$('#eg_aliasDomainName').focus();
+				return false;
+			}
+		}
+
+		if(fromApply==0)
+		{
+			if($('#eg_aliasDomainName').val().length == 0)
+			{
+				alert("<%:Domain name cannot be empty!%>");
+				$('#eg_aliasDomainName').focus();
+				return false; 
+			}
+		}
+		ProtectButton(0);
+		var domain;
+		domain = $('#eg_aliasDomainName').val();
+		ajax_normal(
+		{
+			url: '<%=luci.dispatcher.build_url("admin/network/checkddns_domain_status")%>',
+			type: 'POST',
+			dataType: 'json',
+			data: {domain:domain},
+			success: function()
+			{
+				g_check_or_submit=1;
+				//console.log("&&&&&& success");
+			},
+			error: function(){
+				//console.log("&&&&&& error");
+			}
+		});
+	}
+}
+
+function showRefreshTime()
+{
+	var i,str="";
+	var timeStr=["3HR","6HR","9HR","12HR","24HR"];
+	var timeVal=["3","6","9","12","24"];
+	
+	for(i=0;i<timeStr.length;i++)
+	{
+		str+='<option value="'+timeVal[i]+'">'+timeStr[i]+'</option>';
+	}
+	document.write(str);
+}
+
+function init()
+{
+	g_check_or_submit = 0;
+	document.getElementsByName("DDNSEnable")[(JSONDATA_DDNS.myddns.enabled=="1" || JSONDATA_EG_DDNS.ddns.enable=="1")?0:1].checked=true;
+	document.getElementsByName("EnGeniusDDNS")[(JSONDATA_DDNS.myddns.enabled=="1")?1:0].checked=true;
+	$('#eg_refresh_time').val(JSONDATA_EG_DDNS.ddns.update_time);
+	$('#eg_aliasDomainName').val(JSONDATA_EG_DDNS.ddns.domain);
+	ddnsStatus();
+}
+$(function() {
+	init();
+});
+</script>
+
+<body  onLoad="copyto();">
+<form name="wizard_mesh" action='<%=luci.dispatcher.build_url("admin/network/wizard_status")%>'  method="post">
+<input type="hidden" name="mesh_followAP" value="1">
+<input type="hidden" id="setTime" name="setTime"/>
+<input type="hidden" id="timeZone" name="timeZone"/>
+<input type="hidden" id="zoneName" name="zoneName"/>
+<input type="hidden" id="daylightStatus" name="daylightStatus"/>
+<div  id="save_status">
+	<table>
+	<tr>
+		<td>
+			<div id = "create_setup" style="background-color: #1B489C;border-top: 1px solid #1B489C;border-left: 1px solid #1B489C;border-right: 1px solid #1B489C;border-bottom: 1px solid #1B489C;margin-left 0px;width:200px;display:none">
+			<table>
+			<tr style="background-color: #ffffff;font-weight:bold;padding-left: 10px;color:#000000;height: 31px;">
+			<td style="padding-bottom: 10px;padding-top: 10px;">
+				<span style="font-size: 16px"><%:Step 1.%></span><br>
+				<span style="font-size: 14px"><%:Set up the Wireless Security/Device Password%></span>
+			</td></tr>
+			<tr style="background-color: #1B489C;font-weight:bold;padding-left: 10px;color:#ffffff;height: 31px;">
+			<td style="padding-top: 10px;">
+				<span style="font-size: 16px"><%:Step 2.%></span><br>
+				<span style="font-size: 14px"><%:Check the Status and Save Settings%></span>
+			</td></tr>
+			</table>
+			</div>
+			<div id="join_setup" style="background-color: #1B489C;border-bottom: 1px solid #1B489C;border-top: 1px solid #1B489C;border-left: 1px solid #1B489C;border-right: 1px solid #1B489C;margin-left 0px; width:200px;display:none">
+			<table>
+			<tr style="background-color: #ffffff;font-size: 18px;padding-left: 10px;border-bottom: 1px solid #1B489C;color:#000000;height: 31px;">	
+			<td style="padding-bottom: 10px;padding-top: 10px;">
+				<span style="font-size: 16px"><%:Step 1.%></span><br>
+				<span style="font-size: 14px"><%:Set up Mesh network settings%></span>
+			</td></tr>
+			<tr style="background-color: #ffffff;font-size: 18px;padding-left: 10px;border-bottom: 1px solid #1B489C;color:#000000;height: 31px;">
+			<td style="padding-bottom: 10px;padding-top: 10px;">
+				<span style="font-size: 16px"><%:Step 2.%></span><br>
+				<span style="font-size: 14px"><%:Set up the Wireless Security/Device Password%></span>
+			</td></tr>
+			<tr style="background-color: #1B489C;font-weight:bold;padding-left: 10px;color:#ffffff;height: 31px;border-bottom: 1px solid #1B489C;">
+			<td style="padding-top: 10px;">
+				<span style="font-size: 16px"><%:Step 3.%></span><br>
+				<span style="font-size: 14px"><%:Check the Status and Save Settings%></span>
+			</td></tr>
+			</table>
+			</div>
+		</td>
+		<td style="width:100%">
+			<div >
+				<table >
+					<tr class="title" style="background: url('<%=media%>/banner_model.png');">
+						<td style="color:#ffffff;padding-left:20px;">
+							<script>
+							if(MESH_AP_SAME == "0")
+							{
+								dw('<%:Step 2.Check the Status and Save Settings%>');
+							}
+							else
+							{
+								dw('<%:Step 3.Check the Status and Save Settings%>');
+							}
+							</script>
+						</td>
+					</tr>
+				</table>
+			</div>
+			<div><table><tr><td></td></tr></table></div>			
+			<div style="border-bottom: 1px solid #1B489C;border-top: 1px solid #1B489C;border-left: 1px solid #1B489C;border-right: 1px solid #1B489C;padding-left:20px;padding-right:20px">
+	<table>
+		<tr></tr>
+		<tr style="background-color:#ffffff;font-size: 16px;vertical-align: middle;color:#000000;height: 8px;">
+			<td colspan="5">
+				<br><%:Click the SAVE button to save all the networks settings, and then you will need to enter the account and password to login the device%><br>
+			</td>
+		</tr>
+		<tr>
+			<td colspan="5" style="border-bottom: 1px solid #1B489C;height:10px"></td>
+		</tr>		
+		<tr class="title-option" style="font-size: 16px;vertical-align: middle;color:#000000;height: 8px;">
+			<td colspan="2">
+				<%:2.4GHz Wireless Settings/Status:%>
+			</td>
+			<td colspan="2">
+				<%:Wi-Fi Name(SSID):%>
+				<script>
+					var ssid = "<%=ssid%>";
+    				ssid = ssid.replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    				dw(ssid);
+    			</script>
+				<br>
+				<%:Encryption:%>
+				<script>
+					("<%=encryption%>" == "none")?dw('Disable'):dw('WPA Pre-Shared key');
+				</script>
+				<br>
+				<%:Encryption Key:%>
+				<script>
+					var passwd = "<%=passwd%>";
+    				passwd = passwd.replace(/</g,"&lt;").replace(/>/g,"&gt;");
+				("<%=encryption%>" == "none")?dw('None'):dw(passwd);
+				</script>
+			</td>
+				<td colspan="1">
+				<input class="cbi-button cbi-button-save" style="text-align:right;" onclick="gostep1()" type="button" value="<%:Setup%>">
+				</td>
+		</tr>
+	
+		<tr class="title-option" style="font-size: 16px;vertical-align: middle;color:#000000;height: 8px;">
+			<td colspan="2">
+				<%:5GHz Wireless Settings/Status:%>
+			</td>
+			<td colspan="3">
+				<%:Wi-Fi Name(SSID):%><script>
+					var ssid_5g = "<%=ssid_5g%>";
+    				ssid_5g = ssid_5g.replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    				dw(ssid_5g);</script>
+				<br>
+				<%:Encryption:%>
+				<script>
+					("<%=encryption_5g%>" == "none")?dw('Disable'):dw('WPA Pre-Shared key');
+				</script>
+				<br>
+				<%:Encryption Key:%>
+				<script>
+					var passwd_5g = "<%=passwd_5g%>";
+    				passwd_5g = passwd_5g.replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    				("<%=encryption_5g%>" == "none")?dw('None'):dw(passwd_5g);
+				</script>
+			</td>
+		</tr>
+		<tr class="title-option" style="font-size: 16px;vertical-align: middle;color:#000000;height: 8px;">
+		<script>
+			mesh_information();
+		</script>
+		</tr>
+		<tr>
+			<td colspan="5" style="border-bottom: 1px solid #1B489C;height:10px"></td>
+		</tr>
+	<tr style="background-color:#ffffff;font-size: 16px;vertical-align: middle;color:#000000;height: 8px;">
+		<td colspan="5" ><%:DDNS Settings%></td>
+	</tr>
+	<tr class="title-option">
+		<td colspan="2"><label for="DDNSEnable_enable"><%:UID/Dynamic DNS%></label></td>
+		<td colspan="3">
+			<input type="radio" name="DDNSEnable" value="1" id="DDNSEnable_enable"  onclick="ddnsStatus()">
+			<label for="DDNSEnable_enable"><%:Enable%></label>
+			<input type="radio" name="DDNSEnable" value="0" id="DDNSEnable_disable" onclick="ddnsStatus()">
+			<label for="DDNSEnable_disable"><%:Disable%></label>
+		</td>
+	</tr>
+	<tr class="title-option">
+		<td colspan="5">
+			<input type="radio" name="EnGeniusDDNS" value="1" id="EnGeniusDDNS_enable" onclick="enDdnsStatus()">
+			<label for="EnGeniusDDNS_enable"><%:Using Default UID/EnGenius DDNS Services %></label>
+		</td>
+	</tr>
+	<tr class="title-option">
+		<td colspan="2">-&nbsp;<%:Default UID%></td><td colspan="3"><%=uid_account%></td>
+	</tr>
+	<tr class="title-option">
+		<td colspan="2">-&nbsp;<%:UID Status%></td><td id="uid_status" colspan="3">Loading...</td>
+	</tr>
+	<tr class="title-option">
+		<td colspan="2">-&nbsp;<%:Default DDNS Name%></td><td colspan="3"><%=uid_account%>.<%=ddns_domain%></td>
+	</tr>
+	<tr class="title-option">
+		<td colspan="2" >-&nbsp;<%:Alias DDNS Name%></td>
+		<td colspan="3">
+			<input type="text" name="eg_aliasDomainName" id="eg_aliasDomainName" size="16" maxlength="64">.<%=ddns_domain%>
+		</td>
+	</tr>
+	<tr class="title-option">
+		<td colspan="2"></td>
+		<td class="subtitle" colspan="3">
+			<input type="button" name="eg_clickavailible" id="eg_clickavailible" value="<%:Availability Check%>" class="cbi-button" onclick="checkDomainNameIsAvailable(0);">
+		</td>
+	</tr>	
+	<tr class="title-option">
+		<td colspan="2">-&nbsp;<%:Refresh Time%></td>
+		<td colspan="3"><select name="eg_refresh_time" id="eg_refresh_time">
+			<script>
+				showRefreshTime();
+			</script>
+		</select>
+		</td>
+	</tr>
+	<tr class="title-option">
+		<td colspan="2">-&nbsp;<%:DDNS Status%></td><td id="ddns_status" colspan="3">Loading...</td>
+	</tr>
+		<tr>
+			<td colspan="5" style="border-bottom: 1px solid #1B489C;height:10px"></td>
+		</tr>
+		<tr style="height:80px;">
+			<td colspan="4" style="padding-top: 20px;text-align:center"><input class="cbi-button cbi-button-save" onclick="return savechange()" type="submit" value="<%:Save%>"></td>
+			<td colspan="1"><input type="hidden" id="submitType" value="1" name="submitType"/></td>
+		</tr>
+	</table>
+			</div>
+		</td>
+	</tr>
+	</table>
+
+</div>
+</form>
+</body>
+<%+footer%>

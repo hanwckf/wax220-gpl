@@ -1,0 +1,25 @@
+<% http_header("style/cascade2.css", "style/cascade-custom.css", "script/cbi.js", "script/jquery-1.12.4.min.js", "script/common.js") %>
+
+<body onLoad="please_wait(false);">
+	<fieldset class="cbi-section">
+		<form method="post" id="fw_up">
+			<table>
+				<tr>
+					<td class="title">$failure_head</td>
+				</tr>
+				<tr class="title-option">
+					<td style="width: 35%; text-align:center" colspan="2"><br/>$download_confile_fail</td>
+				</tr>
+				<td style="width: 35%; text-align:center" colspan="2">$few_second</td>
+				<script>
+					function goBack(){
+					    document.location.href="flashops.htm";
+					}
+					setTimeout("goBack()", 4000);
+				</script>
+			</table>
+		</form>
+		<br/>
+	</fieldset>
+</body>
+

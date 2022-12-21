@@ -1,0 +1,4 @@
+config ripd 'config'
+	option enabled '0'
+	option version 'RIP_2M'
+	option direction 'Both'

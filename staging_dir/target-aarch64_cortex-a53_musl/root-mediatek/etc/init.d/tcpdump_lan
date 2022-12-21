@@ -1,0 +1,14 @@
+#!/bin/sh /etc/rc.common
+
+START=102
+STOP=01
+USE_PROCD=1
+
+start_service() {
+    mkdir -p /var/log/netgear
+
+    procd_open_instance
+    procd_set_param command tcpdump -i br-lan -s 0 -W 1 -w /var/log/netgear/lan.pcap -C 5
+    procd_close_instance
+
+}

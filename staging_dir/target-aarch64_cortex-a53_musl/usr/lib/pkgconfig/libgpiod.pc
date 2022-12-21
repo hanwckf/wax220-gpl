@@ -1,0 +1,11 @@
+prefix=/usr
+exec_prefix=/usr
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libgpiod
+Description: Library and tools for the Linux GPIO chardev
+URL: 
+Version: 1.4.4
+Libs: -L${libdir} -lgpiod
+Cflags: -I${includedir}

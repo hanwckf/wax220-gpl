@@ -1,0 +1,223 @@
+<%+header%>
+<%
+local uci = require("luci.model.uci").cursor()
+local disp = require "luci.dispatcher"
+local CREATE_OR_EXTEND_MESH = uci:get('functionlist', 'functionlist', 'SUPPORT_CREATE_OR_EXTEND_MESH')
+local menu = luci.http.formvalue("menu")
+%>
+<script>
+if ("<%=menu%>"==0)
+	document.getElementById('menu_right_style').style.display = "none";
+$("#maincontent").removeClass();
+$("#maincontent").css('margin','auto');
+$("#maincontent").css('padding-top','30px');
+$("#maincontent").css('padding-bottom','50px');
+$("#maincontent").css('width','80%');
+
+var hostname_mesh=new Array(), mac_mesh=new Array(), ip_mesh=new Array();
+var connectedNode = 0, margin_left=0, w=0;
+
+function refreshLog()
+{
+	var url, container, data ;
+	var meshlist, maclist = "";
+	var mac, i, j, k, batctl_mac, strength;
+	var match = 0;
+	var obj, jsonlist;
+	url = '<%=luci.dispatcher.build_url("admin/network/ajax_getMeshList")%>';
+
+	ajax_normal({
+		async: false,
+		type : "GET",
+		url:url,
+		dataType:"json",
+		error:function(){
+		},
+		success:function(result){
+			if(result[0].meshData!="")
+			{
+				result[0].meshData=result[0].meshData.replace(/\\/g, '');
+				result[0].meshData=result[0].meshData.replace(/u0022/g, '"');
+				result[0].meshData=result[0].meshData.replace(/},{/g, '},\n{');
+				meshlist = result[0].meshData ;
+				maclist = result[0].macData ;
+			}
+		}
+	});
+
+	if(maclist != "")
+	{
+		macdata = maclist.split("\n");
+		meshdata = meshlist.split("\n");
+		if(macdata=="No batman nodes in range ...")
+			connectedNode = 0;
+		else
+			connectedNode = macdata.length;
+		k = 0;
+
+		for(i=0;i<meshdata.length ;i++)
+		{
+			mac=meshdata[i].substring(3,20);
+
+			for(j=0;j<macdata.length ;j++)
+			{
+				batctl_mac = macdata[j].substring(0,17);
+				strength = macdata[j].substring(31,34);
+				strength = Math.floor(((strength*100))/255)
+
+				if(mac == batctl_mac)
+				{
+					match = 1;
+				}
+			}
+			if(match == 1)
+			{
+				jsonlist=meshdata[i].substring(24,meshdata[i].length-4);
+				obj = JSON.parse(jsonlist);
+
+				k++;
+				hostname_mesh[k] = obj.DeviceName;
+				mac_mesh[k] = mac;
+				ip_mesh[k] = obj.LANIPAddress;
+			}
+			else
+			{
+				host_alfred = i;
+			}
+			match = 0;
+		}
+	}
+}
+
+function gotomeshsetting()
+{
+	location.href="<%=disp.build_url('admin/network/wireless_mesh')%>";
+}
+
+function savechanges()
+{
+	document.wizard_mesh.menu.value = "<%=menu%>";
+	return true;
+}
+
+function copyto()
+{
+	refreshLog();
+	if(connectedNode!=0)
+		document.getElementById('devlist').style.display = "";
+}
+</script>
+
+<body onLoad="copyto();">
+<form name="wizard_mesh" action="<%=luci.dispatcher.build_url("admin/network/wizard_mesh")%>" method="post">
+<input type="hidden" name="menu" value="">
+<div id="start_wizard" style="padding-left:20px;padding-right:20px">
+	<div id="mesh_status">
+		<table>
+			<tr ><td>&nbsp;</td></tr>
+			<tr style="height: 8px;font-size: 16px;color: #000000;vertical-align: middle;background-color:#ffffff" >
+				<td width="100%">
+					<script>
+						refreshLog();
+						if(connectedNode==0)
+							dw('<font size="5">No Mesh device is connected to your Mesh Router.</font>');
+						else
+							dw('<font size="5">The Mesh network setup is complete.</font>');
+					</script>
+				</td>
+			</tr>
+		</table>
+		<table>
+				<tr ><td>&nbsp;</td></tr>
+				<tr style="height: 8px;font-size: 16px;color: #000000;vertical-align: middle;background-color:#ffffff">
+					<td width="25%">
+						&nbsp;&nbsp;&nbsp;Connected Node
+					</td>
+					<td width="75%">
+						<div id="nodeNum" align="center"  vlign="middle" style="position:relative; top: 22px;left: 240px; border:2px #red solid;border-radius:10px;width:30px;height:20px;background-color:red; ">
+							<script>
+								dw('<font color="#FFFFFF" size="3px">'+connectedNode+'</font>');
+							</script>
+						</div>
+						<img style="z-index:-1;" src="<%=media%>/pictures/connected_node.png" height="65">
+					</td>
+				</tr>
+				<tr style="background-color:white; height: 8px;font-size: 16px;color: #000000;vertical-align: middle;background-color:#ffffff">
+					<td></td>
+					<td>
+						&nbsp;&nbsp;&nbsp;&nbsp;Managed&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Mesh Node<br><br>
+					</td>
+				</tr>
+			</table>
+			<div id="devlist" style="display: none;">
+				<script>
+					var w = 150 + (connectedNode%5==0?5:connectedNode%5)*100;
+					dw('<table style="table-layout:fixed; width:'+w+'px; word-break:break-all;">');
+				</script>
+					<tr style="background-color:white; height: 8px;font-size: 16px;color: #000000;vertical-align: middle;background-color:#ffffff;">
+						<td style="width:150px;">
+							&nbsp;&nbsp;&nbsp;Mesh Device List
+						</td>
+						<script>
+							var idx_mesh = connectedNode;
+							if(hostname_mesh[1]!="")
+							{
+								for(var i=1;i<=idx_mesh;i++)
+								{
+									if(i>1 && i%5==1)
+									{
+										dw('<tr style="background-color:white;"><td style="width:100px;"></td>');
+									}
+									dw('<td style="text-align:center; width:100px;"><img class="popper" style="" data-popbox="meshicon'+i+'" src="<%=media%>/pictures/icon_pc.png"><p align="center"><font size="3"><br>'+hostname_mesh[i]+'</font></p><br></td>');
+									if(i==idx_mesh || i%5==0)
+									{
+										dw('</tr>');
+									}
+								}
+							}
+						</script>
+					<tr style="background-color:white;"><td><br><br><br></td></tr>
+				</table>
+			</div>
+		<table>
+			<tr>
+				<script>
+					if(connectedNode==0)
+						dw('&nbsp;&nbsp;&nbsp;<font size="3">Would you like to retry the Mesh connection?</font><br><br>');
+					else
+						dw('&nbsp;&nbsp;&nbsp;<font size="3">Would you like to add another Mesh device to your network?</font><br><br>');
+				</script>
+				<div class="cbi-page-actions">
+					<script>
+						if("<%=CREATE_OR_EXTEND_MESH%>"=="1")
+						{
+							dw('&nbsp;&nbsp;&nbsp;<input class="cbi-button cbi-button-save" type="button" myid="" onclick="gotomeshsetting();" value="Done"/>');
+						}
+						else
+						{
+							if ("<%=menu%>"==0)
+								dw('&nbsp;&nbsp;&nbsp;<input class="cbi-button cbi-button-save" type="submit" name="ap_setting" myid="" onclick="savechanges();" value="No"/>');
+							else
+								dw('&nbsp;&nbsp;&nbsp;<input class="cbi-button cbi-button-save" type="button" myid="" onclick="gotomeshsetting();" value="No"/>');
+						}
+						if(connectedNode==0)
+							dw('&nbsp;&nbsp;&nbsp;<input class="cbi-button cbi-button-save" type="submit" name="retry" myid="" onclick="savechanges();" value="Retry"/>');
+						else
+							dw('&nbsp;&nbsp;&nbsp;<input class="cbi-button cbi-button-save" type="submit" name="add" myid="" onclick="savechanges();" value="Yes"/>');
+					</script>
+				</div>
+			</tr>
+		</table>
+	</div>
+</div>
+</form>
+</body>
+<script>
+	for(var i=1;i<=idx_mesh;i++)
+	{
+		dw('<div id="meshicon'+i+'" class="popbox3">');
+		dw('<table><tr><td width="50%">Hostname</td><td width="50%">'+hostname_mesh[i]+'</td></tr><tr><td>MAC Address</td><td>'+mac_mesh[i]+'</td></tr><tr><td>IP Address</td><td>'+ip_mesh[i]+'</td></tr></table>');
+		dw('</div>');
+	}
+</script>
+<%+footer%>

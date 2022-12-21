@@ -1,0 +1,7 @@
+./
+./host
+./usr
+./usr/include
+./usr/include/mapd_interface_ctrl.h
+./usr/lib
+./usr/lib/libmapd_interface_client.so

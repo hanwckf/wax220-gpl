@@ -1,0 +1,108 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<style type="text/css">
+@media not (prefers-contrast) {
+  * {
+    /* accent-color is a property that gets ignored in HCM */
+    accent-color: var(--in-content-accent-color);
+  }
+}
+
+body {
+  background-size: 64px 32px;
+  background-repeat: repeat-x;
+  padding: 0;
+  /* info-pages.css sets a minimum width of 13em to the content
+   * container. If we don't set a min-width here, the content
+   * gets clipped in iframes with small width. We don't accomodate
+   * any padding to prioritize real estate in the small viewport. */
+  min-width: 13em;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: 60px 48px;
+  align-items: center;
+  justify-content: center;
+}
+
+html|body {
+  font-size: 15px;
+  font-weight: normal;
+  margin: 0;
+}
+
+.container {
+  min-width: var(--in-content-container-min-width);
+  max-width: var(--in-content-container-max-width);
+}
+
+.title {
+  background-position: left 0;
+  background-repeat: no-repeat;
+  background-size: 1.6em;
+  margin-inline-start: -2.3em;
+  padding-inline-start: 2.3em;
+  font-size: 2.2em;
+  -moz-context-properties: fill;
+  fill: currentColor;
+}
+
+.noIllustration {
+  background-image: none;
+}
+body.certerror .title {
+  //background-image: url(data:image/svg+xml;base64,PCEtLSBUaGlzIFNvdXJjZSBDb2RlIEZvcm0gaXMgc3ViamVjdCB0byB0aGUgdGVybXMgb2YgdGhlIE1vemlsbGEgUHVibGljDQogICAtIExpY2Vuc2UsIHYuIDIuMC4gSWYgYSBjb3B5IG9mIHRoZSBNUEwgd2FzIG5vdCBkaXN0cmlidXRlZCB3aXRoIHRoaXMNCiAgIC0gZmlsZSwgWW91IGNhbiBvYnRhaW4gb25lIGF0IGh0dHA6Ly9tb3ppbGxhLm9yZy9NUEwvMi4wLy4gLS0+DQo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgdmlld0JveD0iMCAwIDE2IDE2IiB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIGZpbGw9ImNvbnRleHQtZmlsbCIgZmlsbC1vcGFjaXR5PSJjb250ZXh0LWZpbGwtb3BhY2l0eSI+DQogIDxwYXRoIGZpbGw9IiNmZmE0MzYiIGQ9Im0xNC44NzUgMTIuMDM3LTUuNDk3LTEwQzguOTk3IDEuMzQ2IDguMzExIDEgNy42MjUgMXMtMS4zNzIuMzQ2LTEuNzUyIDEuMDM3bC01LjQ5NyAxMEMtLjM1OCAxMy4zNy42MDcgMTUgMi4xMjggMTVsMTAuOTk1IDBjMS41MiAwIDIuNDg1LTEuNjMgMS43NTItMi45NjN6TTguMjUgMTEuNzUgOCAxMmwtLjc1IDAtLjI1LS4yNUw3IDExbC4yNS0uMjUuNzUgMCAuMjUuMjUgMCAuNzV6bTAtMi42ODhhLjYyNS42MjUgMCAwIDEtMS4yNSAwbDAtMy40MzdhLjYyNS42MjUgMCAwIDEgMS4yNSAwbDAgMy40Mzd6Ii8+DQo8L3N2Zz4=);
+}
+body.certerror .title {
+  color: var(--warning-color);
+}
+
+.title-text {
+  font-size: inherit;
+  //padding-bottom: 0.4em;
+}
+
+html|h1 {
+  font-size: 2.5em;
+  font-weight: lighter;
+  line-height: 1.2;
+  color: var(--in-content-text-color);
+  margin: 0;
+  margin-bottom: .5em;
+}
+p{
+font-size: 16px;
+}
+</style>
+</head>
+
+<script>
+</script>
+
+<body class="certerror">
+<div class="container">
+<div class="title noIllustration">
+<table>
+<!--
+	<tr>
+		<td><img style="height=56px;weight=56px;width: 56px;height: 56px;margin-right: 16px;" src="data:image/svg+xml;base64,PCEtLSBUaGlzIFNvdXJjZSBDb2RlIEZvcm0gaXMgc3ViamVjdCB0byB0aGUgdGVybXMgb2YgdGhlIE1vemlsbGEgUHVibGljDQogICAtIExpY2Vuc2UsIHYuIDIuMC4gSWYgYSBjb3B5IG9mIHRoZSBNUEwgd2FzIG5vdCBkaXN0cmlidXRlZCB3aXRoIHRoaXMNCiAgIC0gZmlsZSwgWW91IGNhbiBvYnRhaW4gb25lIGF0IGh0dHA6Ly9tb3ppbGxhLm9yZy9NUEwvMi4wLy4gLS0+DQo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgdmlld0JveD0iMCAwIDE2IDE2IiB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIGZpbGw9ImNvbnRleHQtZmlsbCIgZmlsbC1vcGFjaXR5PSJjb250ZXh0LWZpbGwtb3BhY2l0eSI+DQogIDxwYXRoIGZpbGw9IiNmZmE0MzYiIGQ9Im0xNC44NzUgMTIuMDM3LTUuNDk3LTEwQzguOTk3IDEuMzQ2IDguMzExIDEgNy42MjUgMXMtMS4zNzIuMzQ2LTEuNzUyIDEuMDM3bC01LjQ5NyAxMEMtLjM1OCAxMy4zNy42MDcgMTUgMi4xMjggMTVsMTAuOTk1IDBjMS41MiAwIDIuNDg1LTEuNjMgMS43NTItMi45NjN6TTguMjUgMTEuNzUgOCAxMmwtLjc1IDAtLjI1LS4yNUw3IDExbC4yNS0uMjUuNzUgMCAuMjUuMjUgMCAuNzV6bTAtMi42ODhhLjYyNS42MjUgMCAwIDEtMS4yNSAwbDAtMy40MzdhLjYyNS42MjUgMCAwIDEgMS4yNSAwbDAgMy40Mzd6Ii8+DQo8L3N2Zz4="></td>
+		<td><h1 class="title-text">$http_warning_title</h1></td>
+	</tr>
+-->
+	<tr>
+		<td>
+		</td>
+		<td>
+			$http_warning_context
+		</td>
+	</tr>
+</table>
+</div>
+</div>
+</body>
+</html>

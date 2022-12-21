@@ -1,0 +1,9 @@
+--- a/work/mozilla/blacklist.txt
++++ b/work/mozilla/blacklist.txt
+@@ -10,3 +10,6 @@
+ 
+ # Expired CA (#995432)
+ "DST Root CA X3"
++"GlobalSign Root CA - R2"
++"Cybertrust Global Root"
++"Staat der Nederlanden EV Root CA"

@@ -1,0 +1,11 @@
+prefix=/home2/caojingzhe/mtk7986_openwrt2/opt2102/staging_dir/hostpkg
+exec_prefix=/home2/caojingzhe/mtk7986_openwrt2/opt2102/staging_dir/hostpkg
+libdir=${exec_prefix}/lib
+toolexeclibdir=${libdir}
+includedir=${prefix}/include
+
+Name: libffi
+Description: Library supporting Foreign Function Interfaces
+Version: 3.3
+Libs: -L${toolexeclibdir} -lffi
+Cflags: -I${includedir}

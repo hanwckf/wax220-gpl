@@ -1,0 +1,85 @@
+<html>
+<head>
+<style type="text/css">
+html, body{ 
+    margin: 0; 
+    border:none; 
+    background-color:transparent; 
+    font-family:Arial, Helvetica, sans-serif; 
+    font-size:10pt; 
+    font-style:normal;
+    font-weight:normal; 
+    background-color: #ffffff; 
+    }
+</style>
+<meta http-equiv=Refresh content='<% env_applyGetState("delayTime") %>; url=<% env_applyGetState("redirectUrl") %>'>
+<meta http-equiv=content-type content='text/html; charset=<% lang_charset() %>'>
+<script>
+var xmlhttp;
+var wan_dhcp = "<% isWanDhcpEnable() %>";
+var next='<% env_applyGetState("redirectUrl")%>';
+if (next.indexOf("sysauth.htm") > -1) {
+    var delay_time = '<% env_applyGetState("delayTime") %>';
+    setTimeout(function(){
+        window.parent.location.href = next;
+    }, (parseInt(delay_time) - 1) * 1000);
+}
+
+if ( window.XMLHttpRequest)
+    xmlhttp = new XMLHttpRequest();
+else
+    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+xmlhttp.onreadystatechange = function() {
+if ( xmlhttp.readyState == 4 && (xmlhttp.status == 200 || xmlhttp.status == 0) ) {
+    var result = xmlhttp.responseText;
+    if ( result == 1 )
+    {
+        if((top.location.href.indexOf("RST_conn_status.htm") > -1) && (wan_dhcp == "1"))
+            setTimeout(location.href = '<% env_applyGetState("redirectUrl")%>', 5000);
+        else if(next.indexOf("vpn_client.htm") > -1)
+            setTimeout(location.href = '<% env_applyGetState("redirectUrl")%>', 10000);
+        else if (next.indexOf("sysauth.htm") > -1) {
+            window.parent.location.href = next;
+        }
+        else
+            location.href = '<% env_applyGetState("redirectUrl")%>';
+    }
+    else {
+        setTimeout(function() {
+            xmlhttp.open("GET", 'finish.txt?mark=<% env_applyGetState("redirectMark") %>', true);
+            xmlhttp.send();                 
+            }, 1000 );
+    }
+}
+};
+xmlhttp.open("GET", 'finish.txt?mark=<% env_applyGetState("redirectMark") %>', true);
+xmlhttp.send();
+function isCDLESS(){
+    var flag = top.location.href.indexOf("BRS_index.htm") > -1 ;
+    return flag;
+}
+
+function isWIZARD(){
+    var flag = top.location.href.indexOf("adv_index.htm") != -1 && top.setup_wizard_flag == 1;
+    return flag;
+}
+
+function getText(str1, str2){
+    if ( typeof(str1) != "undefined" && (isCDLESS() || isWIZARD()) )
+        return str1;
+    else
+        return str2;
+    }
+</script>
+</head>
+<body bgcolor=#ffffff>
+<div id="pls_wait_div" >
+    <div  align="center">
+    <br /><br /><b><script>document.write(getText(top.bh_plz_wait_moment, '<% env_applyGetState("reponseTitleStr") %>'));</script></b><br /><br />
+    </div>
+    <div class="waiting_img_div" align="center">
+        <img id="please_wait" src="image/wait30.gif" />
+    </div>
+</div>
+</body>
+</html>

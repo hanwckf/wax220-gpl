@@ -1,0 +1,248 @@
+<%+header%>
+<% 	
+local uci = require "luci.model.uci".cursor() 
+%>
+<STYLE>
+.msg_type_mark {
+    color: red;
+    font-size: 16px;
+    font-weight: bold;
+    margin-right: 9px;
+}
+</STYLE>
+<script type="text/javascript">
+	var connect_status = "Disconnect";
+	function refresh_ConnectStatus()
+	{
+		ajax_normal({
+			url: "<%=luci.dispatcher.build_url('admin/status/refresh_ConnectStatus')%>",
+			success: function(re) {
+				console.info(re.length);
+				if(re.length > 30){
+					$('#ConnectStaInfo').text(connect_status);
+				}
+				else{
+					connect_status = re;
+					$('#ConnectStaInfo').text(re);
+				}
+			}
+		});
+	}
+
+	function getRegistCheckCode()
+	{
+		ajax_normal({
+			url: "<%=luci.dispatcher.build_url('admin/status/getRegistCheckCode')%>",
+			success: function(re) {
+				$('#RegiCheckCodeInfo').text(re);
+			}
+		});
+	}
+
+	function refresh_controllerSettings()
+	{
+		// $("#ControllerIpHostname").val(CS_Json[0].force_ac);
+		// $("#DiscoveryInterval").val(CS_Json[0].disc_int);
+		// $("#DiscoveryProxyEnable").selectVal(CS_Json[0].disc_proxy);
+		// if(capwapVersion > "1.4") {
+			refresh_ConnectStatus();
+			getRegistCheckCode();
+			setInterval("refresh_ConnectStatus()",10000);
+		// }
+	}
+
+	var host_list={};
+	function on_CtrlSave()
+	{
+		var postData;
+		var checkIPHosetName_val =  $('#checkIPHosetName').val();
+		// if(capwapVersion > "1.4") {
+			postData="ControllerIpHostname="+checkIPHosetName_val;
+		// } else {
+		// 	postData="ControllerIpHostname="+document.getElementById("ControllerIpHostname").value
+	 //                +"&DiscoveryInterval="+document.getElementById("DiscoveryInterval").value
+	 //                +"&DiscoveryProxyEnable="+document.getElementById("DiscoveryProxyEnable").value;
+		// }
+		ajax_normal({
+			url: "<%=luci.dispatcher.build_url('admin/status/CTRLSET')%>",
+			data: postData,
+			beforeSend:function(){
+				var ret_CI=true;
+				var ret_DI=true;
+				if ((checkIPHosetName_val != "") &&(checkIPHosetName_val != "N/A")){
+					if (!isIpaddr(checkIPHosetName_val) && !isDomainName(checkIPHosetName_val)) {
+						alert("<%:Invalid IP or Hostname. Please enter again.%>");
+						ret_CI=false;
+					}
+				}
+				// if(capwapVersion < "1.4") {
+				// 	ret_DI=validateDecimalForDefvalue(document.getElementById("DiscoveryInterval"),"Discovery Interval",10,60);					
+				// }
+				if ((ret_CI==true)&&(ret_DI==true)){
+					$('#loadingIMG').show();
+					return true;	
+				}else{
+					return false;
+				}
+			},
+			complete:function(){
+				// $('#loadingIMG').hide();
+			},
+			statusCode: {   
+				201: function(err) {
+			// alert(_ML(g_Lang, DP_T_GET, "session time out"));
+					alert("<%:session time out.%>");	                        
+					window.parent.document.location=window.parent.document.location.href;
+				}
+			}
+		});
+	}
+
+	function getEtcHost()
+	{
+		ajax_normal({
+			url: "<%=luci.dispatcher.build_url('admin/status/getEtcHosts')%>",
+			success: function(re) {
+				host_list = re;
+			}
+		});
+	}
+	function checkEtcHost(host_check)
+	{
+		for(var i in host_list){
+			if(host_check == host_list[i]){
+				return true;
+			}
+		}
+		return false;
+	}
+
+	function TestAddr()
+	{
+		var checkIPHosetName_val =  $('#checkIPHosetName').val();
+		ajax_normal({
+			url: "<%=luci.dispatcher.build_url('admin/status/test_ac')%>",
+			data:"ControllerIpHostname="+checkIPHosetName_val,
+			beforeSend:function(){
+				if ((checkIPHosetName_val != "") && (checkIPHosetName_val != "N/A")){
+					if (!isIpaddr(checkIPHosetName_val) && !isDomainName(checkIPHosetName_val)) {
+						alert("<%:Invalid IP or Hostname. Please enter again.%>");
+						return false;
+					}
+				}
+			},
+			success: function(re) {
+				//console.log(re);
+				alert(re);
+			},
+			statusCode: {   
+				201: function(err) {
+					// alert(_ML(g_Lang, DP_T_GET, "session time out"));
+					alert("<%:session time out.%>");
+					window.parent.document.location=window.parent.document.location.href;
+				}
+			}
+		});
+	}
+
+	$( document ).ready(function() {
+		getEtcHost();
+		refresh_controllerSettings();
+		$('#apply_btn').click(on_CtrlSave);
+		$('#test_ac_btn').click(TestAddr);
+		$("input[name='reset']").on("click", function(){
+			return confirm("<%=translate('The action will erase existing settings and reset all settings to factory default')%>");
+		});		
+		$("input[name='reboot']").on("click", function(){
+			return confirm("<%=translate('This will reboot the device and may take few seconds.')%>");
+		});		
+	});
+</script>
+
+<form action='<%=luci.dispatcher.build_url("admin/system/flashops")%>' method="post">
+<fieldset class="cbi-section">
+	<table>
+	<tr>
+		<td colspan="2" class="title"><%:Reboot the Device%></td>
+	</tr>
+	<tr class="title-option">
+		<td colspan="2">
+			<label for=""><span class="msg_type_mark">&nbsp;<%:CAUTION%>:</span><%:The device will be rebooted when pressing this button%></label>
+		</td>
+	</tr>
+	<tr class="title-option">	
+		<td>
+			<input type="submit"  class="cbi-button" name="reboot" onclick="ajax_setCsrf();" value="<%:Reboot the Device%>" />
+		</td>
+	</tr>
+	</table>
+</fieldset>
+<fieldset class="cbi-section">
+	<table>
+
+<%	if (uci:get('sysProductInfo','model','modelName')=='EMD11') then%>
+	<tr>
+		<td colspan="2" class="title"><%:Restore the device to default%></td>
+	</tr>
+	<tr class="title-option">
+		<td colspan="2"><label for=""><span class="msg_type_mark">&nbsp;<%:CAUTION%>:</span><%: All settings will be cleared and reset to factory default settings.%></label>
+		</td>
+	</tr>
+<% else %>
+	<tr>
+		<td colspan="2" class="title"><%:Restore the device to standalone mode%></td>
+	</tr>
+		<tr class="title-option">
+		<td colspan="2"><label for=""><span class="msg_type_mark">&nbsp;<%:CAUTION%>:</span><%: All settings will be cleared and reset to standalone mode with factory default settings.%></label>
+		</td>
+	</tr>
+<% end %>
+	<tr class="title-option">	
+		<td>
+			<input type="submit" name="reset"  class="cbi-button" onclick="ajax_setCsrf();" value="<%:Restore%>" />
+		</td>
+	</tr>
+	</table>
+</fieldset>		
+<%
+if uci:get('apcontroller','capwap','enable') == '1' then -----#### Switch Control Mode  START ###
+%>
+<fieldset class="cbi-section">
+	<table>
+	<tr>
+		<td colspan="2" class="title"><%:Controller Settings%></td>
+	</tr>
+	<tr class="title-option">
+		<td style="width:45%;"><label for=""><%:Controller Address(Auto detection if leave empty)%></label></td>
+		<td>
+			<input type="text" id="checkIPHosetName" value="<%=uci:get('apcontroller','capwap','force_ac') or ""%>"/>
+			<input type="button" id="test_ac_btn"  class="cbi-button"  value="<%:Test%>" />
+		</td>
+	</tr>
+	<tr class="title-option">
+		<td style="width:45%;"><label for=""><%:Connection Status%></label></td>
+		<td >
+			<div id="ConnectStaInfo"><%:Disconnect%></div>
+		</td>
+	</tr>
+	<tr class="title-option">
+		<td style="width:45%;"><label for=""><%:Registration Check Code%></label></td>
+		<td>
+			<div id="RegiCheckCodeInfo">e299e523</div>
+		</td>
+	</tr>
+	<tr class="title-option">	
+		<td colspan="2">
+			<div class="cbi-page-actions" >
+				<input id="apply_btn" type="button" class="cbi-button cbi-button-apply" style=" text-align:center;" value="<%:Apply%>">
+			</div>
+		</td>
+	</tr>			
+	</table>
+</fieldset>
+<%
+end
+%>
+
+</form>
+<%+footer%>

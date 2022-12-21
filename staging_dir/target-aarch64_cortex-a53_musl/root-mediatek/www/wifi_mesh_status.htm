@@ -1,0 +1,358 @@
+<%+header%>
+<%
+local uci = require("luci.model.uci").cursor()
+local mesh_configured = uci:get('network', 'sys', 'mesh_configured')
+local mesh_configured_5g = uci:get('network', 'sys', 'mesh_configured_5g')
+local mesh_disabled = uci:get("mesh","wifi","disabled")
+local band = uci:get("wireless","wifi0_mesh","disabled")
+local band_5g = uci:get("wireless","wifi1_mesh","disabled")
+local mesh_ID = uci:get("wireless","wifi0_mesh","Mesh_id")
+local mesh_ID_5g = uci:get("wireless","wifi1_mesh","Mesh_id")
+local channel = uci:get("wireless","wifi0","channel")
+local channel_5g = uci:get("wireless","wifi1","channel")
+local myself_mac = luci.util.trim(luci.util.exec("/sbin/mesh.sh get_myselfmac"))
+local meshlist = luci.util.trim(luci.util.exec('cat /tmp/mesh_global_node_info'))
+local mesh_type = luci.util.trim(luci.util.exec("batctl gw | awk {\'printf $1\'}"))
+local SUPPORT_WLAN5G_2 = uci:get("functionlist","functionlist","SUPPORT_WLAN5G_2") or ""
+local band_5g_2 = uci:get("wireless","wifi2_mesh","disabled") or ""
+local mesh_ID_5g_2 = uci:get("wireless","wifi2_mesh","Mesh_id") or ""
+local channel_5g_2 = uci:get("wireless","wifi2","channel") or ""
+%>
+<script src="/luci-static/web_NTGR/jquery-1.12.4.min.js"></script>
+<script type="text/javascript">
+var meshdata = [];
+var macdata, t, myinterval;
+function mesh_table()
+{
+	var i, obj;
+	var j=0;
+
+	if('<%=meshlist%>' != "")
+	{
+		obj = JSON.parse('<%=meshlist%>');
+		for(i=0;i<obj.length;i++)
+		{
+			if(obj[i].GetMeshNodeInfoResult == "OK")
+			{
+				meshdata[j] = obj[i];
+				j++;
+			}
+		}
+	}
+}
+function savechanges(value){
+	var f = document.wifi_mesh_status;
+	var obj, jsonlist, k, match, mac, batctl_mac;
+	if(value==1)
+	{
+		var selectMesh =document.getElementsByName('selectMesh');
+
+
+		for (var i=0; i<selectMesh.length;i++)
+		{
+			if(selectMesh[i].checked==true)
+			{
+				for(k=0;k<meshdata.length ;k++)
+				{
+					mac=meshdata[k].substring(3,20);
+
+					for(j=0;j<macdata.length ;j++)
+					{
+						batctl_mac = macdata[j].substring(0,17);
+
+						if(mac == batctl_mac && i == j)
+						{
+							match = 1;
+						}
+					}
+					if(match == 1)
+					{
+						jsonlist=meshdata[k].substring(24,meshdata[k].length-4);
+						obj = JSON.parse(jsonlist);
+						f.deleteDevice.value=obj.IPAddress;
+					}
+					match = 0;
+				}
+			}
+		}
+
+		if(f.deleteDevice.value=="")
+		{
+			alert("<%:Please select delete mesh device%>");
+			return false;
+		}
+	}
+
+    document.getElementsByName("mesh_action")[0].value = value;
+	return true;
+}
+function refreshLog()
+{
+	t = 1;
+	document.getElementById('no_mesh_device').style.display = "none";	
+	document.getElementById('refresh').style.display = "none";
+	document.getElementById('mesh_list').style.display = "none";
+	document.getElementById('collecting').style.display = "";
+	myinterval = setInterval("get_meshresult()", 1000);
+}
+function get_meshresult()
+{
+	var obj, meshlist;
+	var url = '<%=luci.dispatcher.build_url("admin/network/ajax_getMeshList")%>';
+	var j=0;
+
+	if (t==0)
+	{
+		window.clearInterval(myinterval);
+		document.getElementById('refresh').style.display = "";
+		document.getElementById('collecting').style.display = "none";
+		if(meshdata != "")
+		{
+			mesh_global_node_info();
+		}
+	}
+	else
+	{
+		ajax_normal({
+			async: false,
+			type : "GET",
+			url:url,
+			dataType:"json",
+			error:function(){
+			},
+			success:function(result){
+				meshdata = [];
+				obj = JSON.parse(result);
+				for(var i=0;i<obj.length;i++)
+				{
+					if(obj[i].GetMeshNodeInfoResult == "OK")
+					{
+						meshdata[j] = obj[i];
+						j++;
+					}
+				}
+			}
+		});
+		t-=1;
+	}
+}
+function mesh_global_node_info()
+{
+	$("tr[id='device_list']").nextUntil("div").remove();
+	var i, j, url, localdata, global_obj, local_obj, meshlist;	
+
+	if ( meshdata !="")
+	{
+		global_obj = meshdata;
+		local_obj = meshdata;
+		for(j=0;j<global_obj.length ;j++)
+		{
+			if( global_obj[j].MeshDevice.MacAddress == "<%=myself_mac%>" )
+			{
+				for(i=0;i<global_obj[j].Neighbors.length;i++)
+				{
+					for(k=0;k<local_obj.length ;k++)
+					{
+						if( local_obj[k].MeshDevice.MacAddress == (global_obj[j].Neighbors[i].MAC).toUpperCase() )
+						{
+							document.getElementById('mesh_list').style.display = "";
+							document.getElementById('no_mesh_device').style.display = "none";
+	                        var s = String.format(
+	                            '<tr class="title-option"><td>%s</td><td>%s</td><td>%s</td></tr>',local_obj[k].MeshDevice.DeviceName,local_obj[k].MeshDevice.MacAddress,local_obj[k].MeshDevice.LANIPAddress
+	                        )
+	                        $("tr[id='device_list']").after(s);
+						}
+					}
+				}
+			}
+		}
+	}
+	if(document.getElementById('mesh_list').style.display == "none")
+	{
+		document.getElementById('no_mesh_device').style.display = "";
+	}
+}
+$(function(){
+	mesh_global_node_info();
+})
+function copyto()
+{
+	refreshLog();;//refreshLog();
+}
+//mesh_table();
+</script>
+<body onLoad="copyto();">
+<form name="wifi_mesh_status" action="<%=REQUEST_URI%>" method="post">
+<input type="hidden" name="mesh_action" value="1">
+<input type="hidden" name="deleteDevice" value="">
+<fieldset class="cbi-section">
+<div id="mesh_setting" class="cbi-page-actions">
+<table>
+	<tr>
+		<td colspan="2" style="padding-top: 30px;font-size: 18px;font-weight:bold;padding-left: 10px;color:#000000;	height: 31px;"><%:Status%></td>
+	</tr>
+	<tr style="display:none">
+		<td></td>
+	</tr>
+	<tr style="height:8px;font-size: 16px;color: #000000;vertical-align: middle;border-bottom: 1px solid #1B489C;">
+		<td style="width:30%"><%:Mesh Status %></td>
+		<td style="width:70%"><script>
+			if( "<%=mesh_disabled%>" == "1" )
+			{
+				dw('<%:Disabled%>');
+			}
+			else
+			{
+				dw('<%:Enabled%>');
+			}
+		</script>
+		</td>
+	</tr>	
+	<tr class="title-option">
+		<td style="width:30%"><%:Mesh Interface %></td>
+		<script>
+			if( "<%=mesh_disabled%>" == "1" )
+			{
+				dw('<td style="width:70%;color: #AAAAAA;">');
+				if("<%=band%>" == 0)
+					dw('<%:2.4GHz%>');
+				else if("<%=band_5g%>" == 0)
+					dw('<%:5GHz%>');
+				else if("<%=band_5g_2%>" == 0 && "<%=SUPPORT_WLAN5G_2%>" == 1)
+					dw('<%:5GHz-2%>');
+				dw('</td>');
+			}
+			else
+			{
+				dw('<td style="width:70%;">');
+				if("<%=band%>" == 0)
+					dw('<%:2.4GHz%>');
+				else if("<%=band_5g%>" == 0)
+					dw('<%:5GHz%>');
+				else if("<%=band_5g_2%>" == 0 && "<%=SUPPORT_WLAN5G_2%>" == 1)
+					dw('<%:5GHz-2%>');
+				dw('</td>');
+			}
+		</script>
+		
+	</tr>
+	<tr class="title-option">
+		<td style="width:30%"><%:Mesh ID%></td>
+		<script>
+			if( "<%=mesh_disabled%>" == "1")
+			{
+				dw('<td style="width:70%;color: #AAAAAA;">');
+				if("<%=band%>" == 0)
+					dw('<%=mesh_ID%>');
+				else if("<%=band_5g%>" == 0)
+					dw('<%=mesh_ID_5g%>');
+				else if("<%=band_5g_2%>" == 0 && "<%=SUPPORT_WLAN5G_2%>" == 1)
+					dw('<%=mesh_ID_5g_2%>');
+				dw('</td>');
+			}
+			else
+			{
+				dw('<td style="width:70%;">');
+				if("<%=band%>" == 0)
+					dw('<%=mesh_ID%>');
+				else if("<%=band_5g%>" == 0)
+					dw('<%=mesh_ID_5g%>');
+				else if("<%=band_5g_2%>" == 0 && "<%=SUPPORT_WLAN5G_2%>" == 1)
+					dw('<%=mesh_ID_5g_2%>');
+				dw('</td>');
+			}
+		</script>
+	</tr>
+	<tr class="title-option">
+		<td style="width:30%"><%:Mesh Channel %></td>
+		<script>
+			if( "<%=mesh_disabled%>" == "1")
+			{
+				dw('<td style="width:70%;color: #AAAAAA;">');
+				if("<%=band%>" == 0)
+					dw('<%=channel%>');
+				else if("<%=band_5g%>" == 0)
+					if ("<%=channel_5g%>" == 0)
+						dw('auto');
+					else
+						dw('<%=channel_5g%>');
+				else if("<%=band_5g_2%>" == 0 && "<%=SUPPORT_WLAN5G_2%>" == 1)
+					dw('<%=channel_5g_2%>');
+				dw('</td>');
+			}
+			else
+			{
+				dw('<td style="width:70%;">');
+				if("<%=band%>" == 0)
+					dw('<%=channel%>');
+				else if("<%=band_5g%>" == 0)
+					if ("<%=channel_5g%>" == 0)
+						dw('auto');
+					else
+						dw('<%=channel_5g%>');
+				else if("<%=band_5g_2%>" == 0 && "<%=SUPPORT_WLAN5G_2%>" == 1)
+					dw('<%=channel_5g_2%>');
+				dw('</td>');
+			}
+		</script>
+	</tr>
+	<tr class="title-option">
+		<td style="width:30%"><%:Mesh Type %></td>
+
+		<script>
+			if( "<%=mesh_disabled%>" == "1" )
+			{
+				dw('<td style="width:70%;color: #AAAAAA;">');
+				if("<%=mesh_type%>" == "client")
+					dw('<%:Mesh Node%>');
+				else
+					dw('<%:Root Node%>');
+				dw('</td>');
+			}
+			else
+			{
+				dw('<td style="width:70%;">');
+				if("<%=mesh_type%>" == "client")
+					dw('<%:Mesh Node%>');
+				else
+					dw('<%:Root Node%>');
+				dw('</td>');
+			}
+		</script>
+	</tr>
+</table>
+</div>
+<div id="no_mesh_device" class="cbi-page-actions" style="display:none">
+<table >
+	<tr>
+		<td colspan="6" class="title"><%:NO Mesh Device Connected....%></td>
+	</tr>
+</table>
+</div>
+<div id="mesh_list" class="cbi-page-actions"  style="display:none">
+<table>
+	<tr>
+		<td colspan="6" class="title"><%:Mesh Device List%></td>
+	</tr>
+	<tr class="title-option" id = "device_list" >
+		<td style="width:30%;"><%:Node%></td>
+		<td style="width:30%;"><%:MAC Address%></td>
+		<td style="width:40%;"><%:IP Address%></td>
+	</tr>
+</table>
+</div>
+</fieldset>
+<div id = "refresh" class="cbi-page-actions">
+	<input class="cbi-button cbi-button-save" onclick="refreshLog()" type="button" value="<%:Refresh%>" class="cbi-button cbi-button-save">
+</div>
+<div  id="collecting" style="display:none">
+<p style="font-size:20px "><%:Collecting data...%><img src="<%=resource%>/icons/loading.gif" alt="<%:Loading%>" style="vertical-align:middle" /></p>
+</div>
+<!--<div id = "save" class="cbi-page-actions">
+	<input class="cbi-button cbi-button-save" onclick="return savechanges(2)" type="submit" value="<%:Refresh%>" class="cbi-button cbi-button-save">
+	<input class="cbi-button cbi-button-save" onclick="return savechanges(1)" type="submit" value="<%:Delete Selected%>" class="cbi-button cbi-button-save">
+</div>-->
+</form>
+</body>
+<%+footer%>
+

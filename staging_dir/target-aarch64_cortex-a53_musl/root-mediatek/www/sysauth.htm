@@ -1,0 +1,213 @@
+<!DOCTYPE html
+	PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+
+<head>
+	<% new_hijack_flow_head() %>
+	<script src="script/md5.js"></script>
+	<script src="script/login.js"></script>
+</head>
+
+<body bgcolor="#ffffff">
+	<style>
+		#top {
+			height: 102px;
+			min-width: 750px;
+			background: #fff;
+			border-bottom: 1px solid #ccc;
+			background: url(image/header-bg.png) repeat-x left top !important;
+			padding: 0 20px;
+		}
+
+		#logo {
+			width: 471px;
+			margin: 15px 0px;
+			background: url(image/basic-logo.png) no-repeat;
+			float: left;
+		}
+
+		.align-right {
+			float: right;
+			margin-top: 10px;
+		}
+
+		.tnb-right {
+    		position: inherit;
+			margin-bottom: 13px;
+		}
+
+		ul:not(.browser-default) {
+			float: right;
+		}
+
+		form #firm_version {
+			position: inherit;
+		}
+
+		td,
+		th {
+			padding: 0px;
+		}
+
+		.install-card {
+			margin: 100px auto auto auto;
+		}
+
+		table span {
+			font-size: 16px;
+			padding: 0px;
+		}
+
+		.img-log {
+			margin-left: 28%;
+			margin-top: 15.5px;
+			margin-bottom: 14px;
+			width: 60%
+		}
+
+		.product-logo-business {
+			width: 340px;
+			height: auto;
+			padding-bottom: 20px;
+		}
+
+		body input[type="password"]:not(.browser-default):focus:not([readonly]),
+		body input[type="text"]:not(.browser-default):focus:not([readonly]) {
+			border: 2px solid #aaa;
+		}
+
+		body input[type="password"]:not(.browser-default),
+		body input[type="text"]:not(.browser-default) {
+			max-width: 540px;
+		}
+
+		input[type=text]:not(.browser-default),
+		input[type=password]:not(.browser-default) {
+			border: 2px solid #aaa;
+			border-radius: 5px;
+			padding: 6px 12px;
+			height: 40px;
+			font-size: 18px;
+		}
+
+		.btn {
+			width: 568px;
+			height: 50px;
+			font-size: 20px;
+		}
+	</style>
+	<script>
+		function myFunction() {
+			var x = document.getElementById("Demo");
+			if (x.className.indexOf("w3-show") == -1) {
+				x.className += " w3-show";
+			}
+			else {
+				x.className = x.className.replace(" w3-show", "");
+			}
+		}
+
+		function do_search() {
+			if ("1" == getTop(window).use_orbi_style_flag)
+				var key = document.forms[0].search.value.replace(/\'/g, "&apos;");
+			else
+				key = getTop(window)
+				.document.getElementsByTagName("input")[0]
+				.value.replace(/\'/g, "&apos;");
+			var url = "";
+			(url =
+				"" == key || "$ent_srh_item" == key
+				? "http://support.netgear.com/product/" + getTop(window).host_name
+				: "http://kb.netgear.com/app/answers/list/kw/" +
+					(key = key.replace(/ /g, "%20"))),
+				window.open(
+				url,
+				"_blank",
+				"width=960,height=800,menubar=yes,scrollbars=yes,toolbar=yes,status=yes,location=yes,resizable=yes"
+				);
+			}
+
+		function detectEnter(type, e) {
+			var keycode;
+			if (
+				("1" != getTop(window).r9000_router_flag &&
+				((form = document.forms[0]),
+				(form.hidden_lang_avi.value = form.language.value)),
+				window.event)
+			)
+				window.event, (keycode = window.event.keyCode);
+			else {
+				if (!e) return !0;
+				e, (keycode = e.which);
+			}
+			if ("num" != type) return !1;
+			13 == keycode && do_search();
+		}
+	</script>
+
+	<FORM method="post" name="formname">
+		<input type="hidden" name="username" value="">
+		<input type="hidden" name="password" value="">
+		<input type="hidden" name="agree" value="">
+		<input type="checkbox" name="agree_info" id="agree_info" hidden>
+		<div id="top">
+			<div id="logo"></div>
+			<div class="align-right">
+				<ul class="tnb-right" style="display: none;">
+					<li>
+						<div class="w3-dropdown-click">
+							<a onclick="myFunction()"><img id="search_icon" src="image/tnb-ico1.png" alt=""/></a>
+							<div id="Demo" class="w3-dropdown-content w3-bar-block tnb-submenu-bg">
+								<div id="search">
+									<input type="text" name="search" id="search_text" value="$ent_srh_item" onkeypress="detectEnter('num',event);" onfocus="this.value='';" onblur="(this.value=='')?(this.value='$ent_srh_item'):''" />
+									<input id="search_button" class="search_button" type="button" name="dosearch" value="$go_mark" onclick="do_search();">
+								</div>
+							</div>
+						</div>
+					</li>
+					<li><a href="javascript:;"><img id="doubt_icon" src="image/tnb-ico2.png" alt=""/></a>
+						<div class="tnb-submenu">
+							<a id="documentation" target="_blank" href="$doc_href" class="sublink">$docu_head</a>
+							<a id="online" target="_blank" href="$online_href" class="sublink">$oray_status_online</a>
+							<a id="router_faq" target="_blank" href="$download_href" class="sublink">$downloads</a>
+							<a id="gnu_gpl" target="_blank" href="$gpl_href" class="sublink">GNU GPL</a>
+						</div>
+					</li>
+					<li><a href="javascript:;"><img id="logout_icon" src="image/tnb-ico3.png" alt=""></a>
+						<!-- <div class="tnb-submenu">
+							<a href="javascript:;" class="sublink" id="logout" onclick="getTop(window).location.href='LGO_logout.htm';">$logout</a>
+						</div> -->
+					</li>
+				</ul>
+				<div id="firm_version" name="firm_version" style="margin-top: 55px;">$firmware_version <br class='el-hide'><% cat_file("/firmware_version") %></div>
+			</div>
+		</div>
+		<div class="install-card clearfix" style="width:100%; min-width: 750px">
+			<div style="margin-top: 11px; padding-bottom: 24px"><% hijack_logo_title() %></div>
+			<IMG class="product-logo-business" src="<% product_img_path() %>">
+			<div class="content">
+				<div class="w3-large" style="text-align:center"><font id="retry_msg" color="red"></font></div>
+				<label class="desc-text" style="visibility:hidden">$firmware_version : <% cat_file("/firmware_version") %></label>
+				<div id="username_part" hidden>
+					<input id="account" name="account" maxLength="12" type="text" size="35" placeholder="Username" myid="username" value="" />
+				</div>
+				<div>
+					<div class="desc-title w3-xlarge">
+						<script>document.write("$ap_login_password");</script>
+					</div>
+					<input id="password_plain_text" name="password_plain_text" type="password" myid="password" maxLength="32" size="35" placeholder="$enter_password" autocomplete="off" oninput="pwChange();"/>
+					<img hidden src="image/eye-slash.svg" id="password_eye" style="vertical-align:middle" title="" onclick="changeInputType('password_plain_text', 'password_eye')">
+				</div>
+				<div class="buttons">
+					<button onclick="saveChanges();" type="button" class="btn button-nav" id="login_button" myid="login" disabled>
+						<span>
+							<script>document.write("$Login");</script>
+						</span>
+					</button>
+				</div>
+			</div>
+		</div>
+	</FORM>
+</body>
+
+</html>

@@ -1,0 +1,12 @@
+prefix=/home2/caojingzhe/mtk7986_openwrt2/opt2102/staging_dir/host
+exec_prefix=/home2/caojingzhe/mtk7986_openwrt2/opt2102/staging_dir/host
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libelf
+Description: ELF object file access library
+Version: 0.8.13
+Requires:
+Conflicts:
+Libs: -L${libdir} -lelf
+Cflags: -I${includedir}/libelf -I${includedir}

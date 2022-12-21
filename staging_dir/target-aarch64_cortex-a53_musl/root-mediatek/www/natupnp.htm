@@ -1,0 +1,59 @@
+<%+header%>
+<script type="text/javascript">
+<%
+    local uci = luci.model.uci.cursor()
+%>
+
+function setFocus(field) {
+    field.value = field.defaultValue;
+    field.focus();
+    return;
+}
+
+function savechanges() {
+
+    ajax_setCsrf(); 
+    return true;
+}
+
+function copyto()
+{
+    $(':radio[name$="UPnPEnable"][value="'+<%=uci:get("upnpd","config","enable_upnp")%>+'"]').prop('checked', true).triggerHandler('click');
+    $(':radio[name$="UPnPcEnable"][value="'+<%=uci:get("nat-traversal","nattraversal","upnpc_enabled")%>+'"]').prop('checked', true).triggerHandler('click');
+}
+
+</script>
+<body onLoad="copyto();">
+<form name="natupnp" action="<%=REQUEST_URI%>" method="post">
+<fieldset class="cbi-section">
+<table>
+    <tr>
+        <td colspan="2" class="title"><%:Upnp Settings%></td>
+    </tr>
+    <tr class="title-option">
+        <td>-&nbsp;<%:UPnP%></td>
+        <td>
+            <input type="radio" name="UPnPEnable" value="1" id="UPnPEnable_enable">
+            <label for="UPnPEnable_enable"><%:Enable%></label>
+            <input type="radio" name="UPnPEnable" value="0" id="UPnPEnable_disable">
+            <label for="UPnPEnable_disable"><%:Disable%></label>
+        </td>
+    </tr>
+    <tr class="title-option">
+        <td>-&nbsp;<%:UPnP Traversal%></td>
+        <td>
+            <input type="radio" name="UPnPcEnable" value="1" id="UPnPcEnable_enable">
+            <label for="UPnPcEnable_enable"><%:Enable%></label>
+            <input type="radio" name="UPnPcEnable" value="0" id="UPnPcEnable_disable">
+            <label for="UPnPcEnable_disable"><%:Disable%></label>
+        </td>
+    </tr>
+</table>
+</fieldset>
+<br>
+<div class="cbi-page-actions">
+    <input class="cbi-button cbi-button-apply" onclick="savechanges()" type="submit" name="submitType" value="<%:Apply%>">&nbsp;<span class="btn_desc"><%:Apply saved settings to take effect%></span>
+</div>
+</form>
+</body>
+<%+footer%>

@@ -1,0 +1,88 @@
+diff --git a/libfstools/rootdisk.c b/libfstools/rootdisk.c
+index dc861a9..51d85cd 100644
+--- a/libfstools/rootdisk.c
++++ b/libfstools/rootdisk.c
+@@ -17,6 +17,7 @@
+ #include <sys/stat.h>
+ #include <sys/ioctl.h>
+ #include <sys/mount.h>
++#include <sys/param.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+@@ -107,6 +108,38 @@ static int get_squashfs(struct squashfs_super_block *sb)
+ 	return 0;
+ }
+ 
++static int get_dm_real_rootdev(void)
++{
++	static char buf[256];
++	char cmdline[512];
++	bool ret = false;
++	int i = -1;
++	char *ptr;
++	FILE *f;
++
++	f = fopen("/proc/cmdline", "r");
++	if (!f)
++		return ret;
++
++	if (fgets(cmdline, sizeof(cmdline), f) != NULL) {
++		if ((ptr = strstr(cmdline, "dm-mod.create=")) != NULL) {
++			if ((ptr = strstr(ptr, "/dev/")) != NULL) {
++				for (i = 0; *ptr != ' '; i++, ptr++)
++					buf[i] = *ptr;
++
++				buf[i] = '\0';
++				rootdev = buf;
++				ret = 0;
++				ULOG_INFO("real rootdev (%s)\n", rootdev);
++			}
++		}
++	}
++
++	fclose(f);
++
++	return ret;
++}
++
+ static bool rootdisk_use_f2fs(struct rootdev_volume *p)
+ {
+ 	uint64_t size = 0;
+@@ -125,6 +158,8 @@ static struct volume *rootdisk_volume_find(char *name)
+ {
+ 	struct squashfs_super_block sb;
+ 	struct rootdev_volume *p;
++	bool is_dm = false;
++	size_t dm_sz;
+ 
+ 	if (strcmp(name, "rootfs_data") != 0)
+ 		return NULL;
+@@ -136,6 +171,12 @@ static struct volume *rootdisk_volume_find(char *name)
+ 	if (!rootdev)
+ 		return NULL;
+ 
++	if (strstr(rootdev, "dm-")) {
++		is_dm = true;
++		if (get_dm_real_rootdev() != 0)
++			return NULL;
++	}
++
+ 	if (strstr(rootdev, "mtdblock") ||
+ 	    strstr(rootdev, "ubiblock"))
+ 		return NULL;
+@@ -151,6 +192,14 @@ static struct volume *rootdisk_volume_find(char *name)
+ 	p->v.name = "rootfs_data";
+ 
+ 	p->offset = le64_to_cpu(sb.bytes_used);
++
++#define DM_VERITY_BLK_SZ       4096
++	if (is_dm) {
++		dm_sz = roundup(p->offset / 128, DM_VERITY_BLK_SZ);
++		dm_sz += DM_VERITY_BLK_SZ * 2;
++		p->offset += dm_sz ;
++	}
++
+ 	p->offset = ((p->offset + (ROOTDEV_OVERLAY_ALIGN - 1)) &
+ 		     ~(ROOTDEV_OVERLAY_ALIGN - 1));
+ 

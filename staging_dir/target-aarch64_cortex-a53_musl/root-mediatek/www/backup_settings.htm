@@ -1,0 +1,122 @@
+<% http_header("style/cascade.css", "style/cascade2.css", "style/cascade-custom.css", "script/jquery-1.12.4.min.js", "script/cbi.js", "script/common.js", "script/backup_settings.js") %>
+<body onLoad="please_wait(false);" bgcolor="#ffffff">
+
+<style>
+/* The Modal (background) */
+.modal {
+	display: none; /* Hidden by default */
+	position: fixed; /* Stay in place */
+	z-index: 1; /* Sit on top */
+	padding-top: 100px; /* Location of the box */
+	left: 0;
+	top: 0;
+	width: 100%; /* Full width */
+	height: 100%; /* Full height */
+	overflow: auto; /* Enable scroll if needed */
+	background-color: rgb(0,0,0); /* Fallback color */
+	background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+/* Modal Content */
+.modal-content {
+	color: #ffffff;
+	margin: auto;
+	padding: 15%;
+	width: 80%;
+}
+
+/* The Close Button */
+.close {
+  color: #aaaaaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+  color: #000;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.form_table {
+	margin-bottom: 0px;
+}
+</style>
+
+<div id="Reset_to_Default_info" class="popbox">
+    <p>$reset_to_factory_default_setting</p>
+</div>
+<div id="Back_Up_Setting_as_Default_info" class="popbox">
+    <p>$backup_config_file</p>
+</div>
+<div id="Restore_to_User_Default_info" class="popbox">
+    <p>$restore_user_setting</p>
+</div>
+<fieldset class="cbi-section">
+	<fieldset class="cbi-section">
+		<form method="post">
+		<table>
+			<tr>
+				<td class="title" colspan="2">$reboot_device</td>
+			</tr>
+			<tr class="title-option">
+				<td colspan="2">
+					<span class="caution">$caution:</span> $pressing_reboot_button
+				</td>
+			</tr>
+			<tr class="title-option">
+				<td colspan="2">
+					<input type="button" class="cbi-button" id="reboot" name="reboot" myid="system_reset_reboot" value="$reboot_device">
+				</td>
+			</tr>
+		</table>
+		</form>
+	</fieldset>
+
+	<fieldset class="cbi-section" style="display: none">
+
+		<br/>
+
+		<form style="margin-bottom:0px;" method="post" action='<% action_url("backup.cgi", "backup_settings.htm") %>'>
+		<table style="margin-bottom:0px;">
+			<tr>
+				<td class="title" colspan="2">$backup/$restore_settings</td>
+			</tr>
+			<tr class="title-option">
+				<td colspan="2">$factory_setting</td>
+			</tr>
+			<tr class="title-option">
+				<td style="width: 35%; padding-left: 30px;">- $backup_setting<img class="popper" data-popbox="Back_Up_Setting_as_Default_info" src="image/icon_info_blue.png"></td>
+				<td><input class="cbi-button" type="button" onclick="backup_settings();" name="backup" value="$export_220"/></td>
+			</tr>
+		</table>
+		</form>
+		<form style="margin-bottom:0px;" method="post" id="restoreForm" enctype="multipart/form-data">
+		<table style="margin-bottom:0px;">
+			<tr class="title-option">
+				<td style="width: 35%; padding-left: 30px;">- $restore_new_setting</td>
+				<td><input type="file" name="archive" id="archive" style="background:#F0F0F0;"/>&nbsp;&nbsp;<input type="button" onclick="restore_new_setting();" class="cbi-button" name="restore" value="$import_220"/></td>
+			</tr>
+			<tr class="title-option" style="display:none" id="invalid_backup">
+				<td colspan="2" style="padding-left: 30px;"><span style="color:#FF0000;">$invalid_backup_configuration</span></td>
+			</tr>
+		</table>
+		</form>
+		<form style="margin-bottom:0px;" method="post" action='<% action_url("apply.cgi", "backup_settings.htm") %>'>
+		<table style="margin-bottom:0px;">
+			<tr class="title-option">
+				<td style="width: 35%; padding-left: 30px;">- $reset_to_default<img class="popper" data-popbox="Reset_to_Default_info" src="image/icon_info_blue.png"></td>
+				<td><input class="cbi-button" type="button" name="reset" value="$reset" /></td>
+			</tr>
+		</table>
+		<br/>
+		<table>
+		</table>
+		</form>
+	</fieldset>
+</fieldset>
+
+</body>
+

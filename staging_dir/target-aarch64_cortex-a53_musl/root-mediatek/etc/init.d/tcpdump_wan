@@ -1,0 +1,17 @@
+#!/bin/sh /etc/rc.common
+
+START=101
+STOP=01
+USE_PROCD=1
+
+start_service() {
+    local wandev
+    wandev=$(uci get network.wan_dev.name)
+    mkdir -p /var/log/netgear
+
+    procd_open_instance
+    procd_set_param command tcpdump -i $wandev -s 0 -W 1 -w /var/log/netgear/wan.pcap -C 5
+    procd_close_instance
+
+}
+

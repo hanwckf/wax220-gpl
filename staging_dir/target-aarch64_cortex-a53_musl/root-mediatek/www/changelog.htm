@@ -1,0 +1,105 @@
+<%#
+LuCI - Lua Configuration Interface
+Copyright 2010 Jo-Philipp Wich <xm@subsignal.org>
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+	http://www.apache.org/licenses/LICENSE-2.0
+
+$Id: changelog.htm 7924 2011-11-12 14:31:31Z jow $
+
+-%>
+
+<% export("uci_changelog", function(changes) -%>
+<fieldset class="cbi-section">
+	<strong><%:Legend:%></strong>
+	<div class="uci-change-legend">
+		<div class="uci-change-legend-label"><ins>&#160;</ins> <%:Section added%></div>
+		<div class="uci-change-legend-label"><del>&#160;</del> <%:Section removed%></div>
+		<div class="uci-change-legend-label"><var><ins>&#160;</ins></var> <%:Option changed%></div>
+		<div class="uci-change-legend-label"><var><del>&#160;</del></var> <%:Option removed%></div>
+		<br style="clear:both" />
+	</div>
+	<br />
+
+	<div class="uci-change-list"><%
+		function replaceStr(str)
+			str = string.lower(str)
+			str = string.gsub(str,"enjet","wifijet")
+			str = string.gsub(str,"senao","generic")
+			str = string.gsub(str,"engenius","generic")
+
+			return str
+		end
+		local util = luci.util
+		local ret = { }
+		for r, tbl in pairs(changes) do
+			for s, os in pairs(tbl) do
+				-- section add
+				if filterRadio and s==filterRadio then
+				else
+					if os['.type'] and os['.type'] ~= "" then
+						ret[#ret+1] = "<ins>%s.%s=<strong>%s</strong>" %{ replaceStr(r), replaceStr(s), replaceStr(os['.type']) }
+						for o, v in util.kspairs(os) do
+							if o:sub(1,1) ~= "." then
+								if type(v) == "table" then
+									local i
+									for i = 1, #v do
+										ret[#ret+1] = "<br />%s.%s.%s+=<strong>%s</strong>"
+											%{ replaceStr(r), replaceStr(s), replaceStr(o), replaceStr(util.pcdata(v[i])) }
+									end
+								else
+									ret[#ret+1] = "<br />%s.%s.%s=<strong>%s</strong>"
+										%{ replaceStr(r), replaceStr(s), replaceStr(o), replaceStr(util.pcdata(v)) }
+								end
+							end
+						end
+						ret[#ret+1] = "</ins><br />"
+
+					-- section delete
+					elseif os['.type'] and os['.type'] == "" then
+						ret[#ret+1] = "<del>%s.<strong>%s</strong></del><br />" %{ replaceStr(r), replaceStr(s) }
+
+					-- modifications
+					else
+						ret[#ret+1] = "<var>%s.%s<br />" %{ replaceStr(r), replaceStr(s) }
+						for o, v in util.kspairs(os) do
+							if o:sub(1,1) ~= "." then
+								if v and #v > 0 then
+									ret[#ret+1] = "<ins>"
+									if type(v) == "table" then
+										local i
+										for i = 1, #v do
+											ret[#ret+1] = "%s.%s.%s+=<strong>%s</strong><br />"
+												%{ replaceStr(r), replaceStr(s), replaceStr(o), replaceStr(util.pcdata(v[i])) }
+										end
+										
+									else
+										if string.len(util.pcdata(v)) > 100 then
+											util.pcdata(v):gsub("[^%s]+",function(c) 
+												ret[#ret+1] = "%s.%s.%s=<strong>%s</strong><br />"
+												%{ replaceStr(r), replaceStr(s), replaceStr(o), replaceStr(c) }
+											end)
+										else
+											ret[#ret+1] = "%s.%s.%s=<strong>%s</strong><br />"
+												%{ replaceStr(r), replaceStr(s), replaceStr(o), replaceStr(util.pcdata(v)) }
+										end
+									end
+									ret[#ret+1] = "</ins>"
+								else
+									ret[#ret+1] = "<del>%s.%s.<strong>%s</strong><br /></del>" %{ replaceStr(r), replaceStr(s), replaceStr(o) }
+								end
+							end
+						end
+					end
+					ret[#ret+1] = "</var><br />"
+				end
+			end
+		end
+
+		write(table.concat(ret))
+	%></div>
+</fieldset>
+<%- end) %>

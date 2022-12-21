@@ -1,0 +1,8 @@
+<html>
+     <%
+            local cbi = require "luci.cbi"
+            local tpl = require "luci.template"
+            local netId = luci.http.formvalue("netId")  
+            luci.cbi.load("admin_network/wifi_iface1",netId)[1]:render()
+    %>       
+</html>

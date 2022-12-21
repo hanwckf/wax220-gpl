@@ -1,0 +1,98 @@
+#!/bin/sh
+
+ip_first_three_byte()
+{
+    ipaddr=$1
+    
+    ip_byte_1=$(echo $ipaddr | awk -F'.' '{print $1}')
+    ip_byte_2=$(echo $ipaddr | awk -F'.' '{print $2}')
+    ip_byte_3=$(echo $ipaddr | awk -F'.' '{print $3}')
+    
+    echo "$ip_byte_1.$ip_byte_2.$ip_byte_3"
+}
+
+case "$pppd_action" in
+    ppp_down)
+        #switch batman-adv client->server
+        redis-cli -s /tmp/.redis.sock DEL wan_ppp
+        cat /proc/uptime >/tmp/pppdowntime
+        if [ -e /tmp/pppstarttime ];then
+            starttime=`cat /tmp/pppstarttime  |cut -d "." -f1`
+            uptime=`cat /proc/uptime  |cut -d "." -f1`
+            connecttime=0
+            if [ -e /tmp/pppconnectiontime ];then
+                connecttime=`cat /tmp/pppconnectiontime`
+            fi
+            connecttime=$(($connecttime+$uptime-$starttime))
+            echo $connecttime >/tmp/pppconnectiontime
+            rm /tmp/pppstarttime
+        fi
+    ;;
+    ppp_error)
+        redis-cli -s /tmp/.redis.sock HSET wan_ppp error_code "$ERROR"
+        redis-cli -s /tmp/.redis.sock HSET wan_ppp error_string "$errorstring"
+    ;;
+    ppp_up)
+        #wan ip change
+        redis-cli -s /tmp/.redis.sock HSET wan_ppp error_code ""
+        redis-cli -s /tmp/.redis.sock HSET wan_ppp error_string ""
+        redis-cli -s /tmp/.redis.sock HSET wan_ppp ipaddr "$IPLOCAL"
+        redis-cli -s /tmp/.redis.sock HSET wan_ppp subnet "255.255.255.255"
+        redis-cli -s /tmp/.redis.sock HSET wan_ppp serverid "$SERVERID"
+        redis-cli -s /tmp/.redis.sock HSET wan_ppp gateway "$IPREMOTE"
+        redis-cli -s /tmp/.redis.sock HSET wan_ppp dns_1 "$DNS1"
+        redis-cli -s /tmp/.redis.sock HSET wan_ppp dns_2 "$DNS2"
+        redis-cli -s /tmp/.redis.sock HSET wan_ppp uptime "$(cat /proc/uptime | cut -d" " -f1 | cut -d"." -f1)"
+
+        cur_lan_ip="$(uci get network.lan.ipaddr)"
+        if [ $(ip_first_three_byte $cur_lan_ip) = $(ip_first_three_byte $DNS1) ];then
+            find_conflict="true"
+        elif [ $(ip_first_three_byte $cur_lan_ip) = $(ip_first_three_byte $DNS2) ];then
+            find_conflict="true"
+        elif [ $(ip_first_three_byte $cur_lan_ip) = $(ip_first_three_byte $IPLOCAL) ];then
+            find_conflict="true"
+        else
+            find_conflict="false"
+        fi
+
+        gatewayNew=$(redis-cli -s /tmp/.redis.sock HGET wan_ppp gateway)
+        proto=$(uci get network.vpn.proto)
+        if [ "x$gatewayNew" != "x" ];then
+            if [ "$proto" = "l2tp" ];then
+                ifname="l2tp-vpn"
+            elif [ "$proto" = "pptp" ];then
+                ifname="pptp-vpn"
+            else
+                ifname="pppoe-wan"
+            fi
+            if [ "$find_conflict" = "false" ];then
+                update_static_route.sh $ifname $gatewayNew $(redis-cli -s /tmp/.redis.sock HGET wan_ppp subnet)
+            else
+                update_static_route.sh $ifname $gatewayNew $(redis-cli -s /tmp/.redis.sock HGET wan_ppp subnet) no_reload
+            fi
+        fi
+
+        if [ $find_conflict = "true" ];then
+            if [ "x" != "x$(echo $cur_lan_ip | grep "192\.168\.1\.")" ];then
+                uci set network.lan.ipaddr=10.0.0.1
+            elif [ "x" != "x$(echo $cur_lan_ip | grep "10\.0\.0\.")" ];then
+                uci set network.lan.ipaddr=172.16.0.1
+            else
+                uci set network.lan.ipaddr=192.168.1.1
+            fi
+            uci set network.lan.netmask=255.255.255.0
+            update_static_route.sh br-lan $(uci get network.lan.ipaddr) 255.255.255.0 no_reload
+            uci commit network
+            redis-cli -s /tmp/.redis.sock set wanLanIpConflict 1
+            /etc/init.d/network restart &
+        fi
+        if [ ! -f /tmp/ntp_sync_ok ]; then
+            /etc/init.d/sysntpd restart
+        fi
+        rm /tmp/pppdowntime
+        trafficMeter=$(uci get trafficMeter.@trafficMeter[0].enable 2> /dev/null)
+        if [ "$trafficMeter" == "1" ]; then
+            cat /proc/uptime > /tmp/pppstarttime
+        fi
+    ;;
+esac

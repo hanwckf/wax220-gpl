@@ -1,0 +1,57 @@
+<%+header%>
+<%
+local uci = require("luci.model.uci").cursor()
+local disp = require "luci.dispatcher"
+%>
+
+<script>
+if ("<%=menu%>"==0)
+	document.getElementById('menu_right_style').style.display = "none";
+$("#maincontent").removeClass();
+$("#maincontent").css('margin','auto');
+$("#maincontent").css('padding-top','30px');
+$("#maincontent").css('padding-bottom','50px');
+$("#maincontent").css('width','80%');
+
+var myinterval;
+var t = "<% if countdown then %><%=countdown%><% else %>60<% end %>";
+myinterval = setInterval("connect_checking()", 1000);
+
+function connect_checking()
+{
+	if(t == 0)
+	{
+		window.clearInterval(myinterval);
+		if ("<%=menu%>"==0)
+			location.href = '<%=luci.dispatcher.build_url("admin/network/wizard_mesh").."?menu=0"%>';
+		else
+			location.href = '<%=luci.dispatcher.build_url("admin/network/wizard_mesh").."?menu=1"%>';
+	}
+	document.getElementById("countdownString").innerHTML = String.format("Starting to Fine-tune your Mesh Network.....wait %d seconds.", t);
+	t -= 1;
+}
+
+function copyto()
+{
+
+}
+</script>
+
+<body onLoad="copyto();">
+<form name="wizard_meshkick" action="<%=REQUEST_URI%>" method="post">
+<div id="start_wizard" style="padding-left:20px;padding-right:20px">
+	<div id="meshkick">
+		<table>
+			<tr ><td>&nbsp;</td></tr>
+			<tr style="height: 8px;font-size: 22px;color: #000000;vertical-align: middle;background-color:#ffffff">
+				<td style="text-align:center;">
+					<p id="countdownString"></p><br><br>
+					<img src="<%=media%>/pictures/connect-cheking.gif" height="300">
+				</td>
+			</tr>
+		</table>
+	</div>
+</div>
+</form>
+</body>
+<%+footer%>

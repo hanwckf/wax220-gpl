@@ -1,0 +1,10 @@
+libc.so
+libgcc_s.so.1
+libmnl.so.0
+libmnl.so.0.2.0
+libnetfilter_log.so.1
+libnetfilter_log.so.1.2.0
+libnfnetlink.so.0
+libnfnetlink.so.0.2.0
+nfnetlink.ko
+nfnetlink_log.ko

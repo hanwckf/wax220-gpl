@@ -1,0 +1,61 @@
+<%
+local uci = require("luci.model.uci").cursor()
+%>
+<% export("cbi_apply_xhr", function(id, configs, redirect) -%>
+<% redirect = redirect or luci.dispatcher.build_url("admin", "status", "overview")%>
+<fieldset class="cbi-section" id="cbi-apply-<%=id%>">
+	<% if uci:get('functionlist','functionlist','SUPPORT_HIDDEN_CHANGES_OPTION') ~= '1' then %>
+	<legend><%:Applying changes%></legend>
+	<% end %>
+	<script type="text/javascript">//<![CDATA[
+		var apply_xhr = new XHR();
+
+		apply_xhr.get('<%=luci.dispatcher.build_url("servicectl", "restart", table.concat(configs, ","))%>', null,
+			function() {
+				var checkfinish = function() {
+					apply_xhr.get('<%=luci.dispatcher.build_url("servicectl", "status")%>', null,
+						function(x) {
+							if( x.responseText == 'finish' )
+							{
+								var e = document.getElementById('cbi-apply-<%=id%>-status');
+								if( e )
+								{
+									<% if uci:get('functionlist','functionlist','SUPPORT_HIDDEN_CHANGES_OPTION') ~= '1' then %>
+									e.innerHTML = '<%:Configuration applied.%>';
+									<% end %>
+									window.setTimeout(function() {
+										e.parentNode.style.display = 'none';
+										<% if uci:get('functionlist','functionlist','SUPPORT_APPLY_WITHOUT_DISPLAY_AND_REDIRECT') ~= '1' then %>
+										<% if redirect then %>location.href='<%=redirect%>';<% end %>
+										<% end %>
+									}, 1000);
+								}
+							}
+							else
+							{
+								var e = document.getElementById('cbi-apply-<%=id%>-status');
+								<% if uci:get('functionlist','functionlist','SUPPORT_HIDDEN_CHANGES_OPTION') ~= '1' then %>
+								if( e && x.responseText ) e.innerHTML = x.responseText;
+								<% end %>
+
+								window.setTimeout(checkfinish, 1000);
+							}
+						}
+					);
+				}
+
+				window.setTimeout(checkfinish, 1000);
+			}
+		);
+	//]]></script>
+
+	<% if uci:get('functionlist','functionlist','SUPPORT_HIDDEN_CHANGES_OPTION') == '1' then %>
+	<span id="cbi-apply-<%=id%>-status" style="font-size: 16px; color:black;"></span>
+	<span id="cbi-apply-redirect-status" style="display: none; font-size: 16px; color:black;"><%:Please wait for %><span id="redirect_sec" style="color: darkred">60</span> <%:seconds, browser will redirect to new address.%></span>
+	<% else %>
+		<img src="<%=resource%>/icons/loading.gif" alt="<%:Loading%>" style="vertical-align:middle" />
+		<span id="cbi-apply-<%=id%>-status" style="font-size: 16px; color:black;"><%:Waiting for changes to be applied...%></span>
+		<span id="cbi-apply-redirect-status" style="display: none; font-size: 16px; color:black;"><%:Please wait for %><span id="redirect_sec" style="color: darkred">60</span> <%:seconds, browser will redirect to new address.%></span>	
+	<% end %>
+</fieldset>
+<%-	end) %>

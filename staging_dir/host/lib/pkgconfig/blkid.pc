@@ -1,0 +1,11 @@
+prefix=/home2/caojingzhe/mtk7986_openwrt2/opt2102/staging_dir/host
+exec_prefix=/home2/caojingzhe/mtk7986_openwrt2/opt2102/staging_dir/host
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: blkid
+Description: Block device id library
+Version: 1.45.6
+Requires.private: uuid
+Cflags: -I${includedir}/blkid -I${includedir}
+Libs: -L${libdir} -lblkid

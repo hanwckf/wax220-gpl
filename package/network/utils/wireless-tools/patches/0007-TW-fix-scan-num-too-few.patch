@@ -1,0 +1,137 @@
+From d46dd40d89705c47b922fcbef83729ade1d074e4 Mon Sep 17 00:00:00 2001
+From: caojingzhe <caojingzhe@twsh.com>
+Date: Tue, 24 May 2022 15:41:44 +0800
+Subject: [PATCH] 2
+
+---
+ .../target-aarch64_cortex-a53_musl/wireless.14.h      | 2 +-
+ .../target-aarch64_cortex-a53_musl/wireless.15.h      | 2 +-
+ .../target-aarch64_cortex-a53_musl/wireless.16.h      | 2 +-
+ .../target-aarch64_cortex-a53_musl/wireless.17.h      | 2 +-
+ .../target-aarch64_cortex-a53_musl/wireless.18.h      | 2 +-
+ .../target-aarch64_cortex-a53_musl/wireless.19.h      | 2 +-
+ .../target-aarch64_cortex-a53_musl/wireless.20.h      | 2 +-
+ .../target-aarch64_cortex-a53_musl/wireless.21.h      | 2 +-
+ .../target-aarch64_cortex-a53_musl/wireless.22.h      | 2 +-
+ 9 files changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/wireless.14.h b/wireless.14.h
+index 226f540b..96c93450 100644
+--- a/wireless.14.h
++++ b/wireless.14.h
+@@ -374,7 +374,7 @@
+ #define IW_SCAN_ALL_RATE	0x0040	/* Scan all Bit-Rates */
+ #define IW_SCAN_THIS_RATE	0x0080	/* Scan only this Bit-Rate */
+ /* Maximum size of returned data */
+-#define IW_SCAN_MAX_DATA	4096	/* In bytes */
++#define IW_SCAN_MAX_DATA	(4096*8)	/* In bytes */
+ 
+ /****************************** TYPES ******************************/
+ 
+diff --git a/wireless.15.h b/wireless.15.h
+index bacf44b5..0d365a8e 100644
+--- a/wireless.15.h
++++ b/wireless.15.h
+@@ -399,7 +399,7 @@
+ #define IW_SCAN_ALL_RATE	0x0040	/* Scan all Bit-Rates */
+ #define IW_SCAN_THIS_RATE	0x0080	/* Scan only this Bit-Rate */
+ /* Maximum size of returned data */
+-#define IW_SCAN_MAX_DATA	4096	/* In bytes */
++#define IW_SCAN_MAX_DATA	(4096*8)	/* In bytes */
+ 
+ /* Max number of char in custom event - use multiple of them if needed */
+ #define IW_CUSTOM_MAX		256	/* In bytes */
+diff --git a/wireless.16.h b/wireless.16.h
+index 965a83b1..e3eadc0e 100644
+--- a/wireless.16.h
++++ b/wireless.16.h
+@@ -413,7 +413,7 @@
+ #define IW_SCAN_ALL_RATE	0x0040	/* Scan all Bit-Rates */
+ #define IW_SCAN_THIS_RATE	0x0080	/* Scan only this Bit-Rate */
+ /* Maximum size of returned data */
+-#define IW_SCAN_MAX_DATA	4096	/* In bytes */
++#define IW_SCAN_MAX_DATA	(4096*8)	/* In bytes */
+ 
+ /* Max number of char in custom event - use multiple of them if needed */
+ #define IW_CUSTOM_MAX		256	/* In bytes */
+diff --git a/wireless.17.h b/wireless.17.h
+index 794b94ab..68a7a80b 100644
+--- a/wireless.17.h
++++ b/wireless.17.h
+@@ -433,7 +433,7 @@
+ #define IW_SCAN_ALL_RATE	0x0040	/* Scan all Bit-Rates */
+ #define IW_SCAN_THIS_RATE	0x0080	/* Scan only this Bit-Rate */
+ /* Maximum size of returned data */
+-#define IW_SCAN_MAX_DATA	4096	/* In bytes */
++#define IW_SCAN_MAX_DATA	(4096*8)	/* In bytes */
+ 
+ /* Max number of char in custom event - use multiple of them if needed */
+ #define IW_CUSTOM_MAX		256	/* In bytes */
+diff --git a/wireless.18.h b/wireless.18.h
+index ae485f9c..06ef4b2b 100644
+--- a/wireless.18.h
++++ b/wireless.18.h
+@@ -503,7 +503,7 @@
+ #define IW_SCAN_TYPE_ACTIVE 0
+ #define IW_SCAN_TYPE_PASSIVE 1
+ /* Maximum size of returned data */
+-#define IW_SCAN_MAX_DATA	4096	/* In bytes */
++#define IW_SCAN_MAX_DATA	(4096*8)	/* In bytes */
+ 
+ /* Max number of char in custom event - use multiple of them if needed */
+ #define IW_CUSTOM_MAX		256	/* In bytes */
+diff --git a/wireless.19.h b/wireless.19.h
+index dab5afda..b5836c12 100644
+--- a/wireless.19.h
++++ b/wireless.19.h
+@@ -518,7 +518,7 @@
+ #define IW_SCAN_TYPE_ACTIVE 0
+ #define IW_SCAN_TYPE_PASSIVE 1
+ /* Maximum size of returned data */
+-#define IW_SCAN_MAX_DATA	4096	/* In bytes */
++#define IW_SCAN_MAX_DATA	(4096*8)	/* In bytes */
+ 
+ /* Max number of char in custom event - use multiple of them if needed */
+ #define IW_CUSTOM_MAX		256	/* In bytes */
+diff --git a/wireless.20.h b/wireless.20.h
+index 888de4d5..bf5adda3 100644
+--- a/wireless.20.h
++++ b/wireless.20.h
+@@ -522,7 +522,7 @@
+ #define IW_SCAN_TYPE_ACTIVE 0
+ #define IW_SCAN_TYPE_PASSIVE 1
+ /* Maximum size of returned data */
+-#define IW_SCAN_MAX_DATA	4096	/* In bytes */
++#define IW_SCAN_MAX_DATA	(4096*8)	/* In bytes */
+ 
+ /* Max number of char in custom event - use multiple of them if needed */
+ #define IW_CUSTOM_MAX		256	/* In bytes */
+diff --git a/wireless.21.h b/wireless.21.h
+index 3d46c1d7..127e8c5e 100644
+--- a/wireless.21.h
++++ b/wireless.21.h
+@@ -537,7 +537,7 @@
+ #define IW_SCAN_TYPE_ACTIVE 0
+ #define IW_SCAN_TYPE_PASSIVE 1
+ /* Maximum size of returned data */
+-#define IW_SCAN_MAX_DATA	4096	/* In bytes */
++#define IW_SCAN_MAX_DATA	(4096*8)	/* In bytes */
+ 
+ /* Max number of char in custom event - use multiple of them if needed */
+ #define IW_CUSTOM_MAX		256	/* In bytes */
+diff --git a/wireless.22.h b/wireless.22.h
+index 9a885db5..5eee8d15 100644
+--- a/wireless.22.h
++++ b/wireless.22.h
+@@ -543,7 +543,7 @@
+ #define IW_SCAN_TYPE_ACTIVE 0
+ #define IW_SCAN_TYPE_PASSIVE 1
+ /* Maximum size of returned data */
+-#define IW_SCAN_MAX_DATA	4096	/* In bytes */
++#define IW_SCAN_MAX_DATA	(4096*8)	/* In bytes */
+ 
+ /* Max number of char in custom event - use multiple of them if needed */
+ #define IW_CUSTOM_MAX		256	/* In bytes */
+-- 
+2.13.1
+

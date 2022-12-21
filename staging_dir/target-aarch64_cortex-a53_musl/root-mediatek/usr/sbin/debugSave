@@ -1,0 +1,108 @@
+#!/bin/sh /etc/rc.common
+
+TW_LOG_DIR_NAME=netgear
+TW_LOG_DIR=/var/log/netgear
+TW_LOG_FACTORY=/var/log/netgear/factoryCfg.txt
+TW_LOG_IFCONFIG=/var/log/netgear/ifconfig.txt
+TW_LOG_PS=/var/log/netgear/ps.txt
+TW_LOG_TOP=/var/log/netgear/top.txt
+TW_LOG_BRCTL=/var/log/netgear/brctl.txt
+TW_LOG_HIGHJACK=/var/log/netgear/highjack.txt
+TW_LOG_IWCONFIG=/var/log/netgear/iwconfig.txt
+DEBUG_LOG_TAR_FILE=debuginfo.tar.gz
+DEBUG_LOG_TAR_FILE_PATH=/var/log/debuginfo.tar.gz
+
+systeminfo()
+{
+	echo "# protest --restore -status" >> $TW_LOG_FACTORY
+	protest --restore -status >> $TW_LOG_FACTORY
+	echo "#" >> $TW_LOG_FACTORY
+	echo "# protest --model -r" >> $TW_LOG_FACTORY
+	protest --model -r >> $TW_LOG_FACTORY
+	echo "#" >> $TW_LOG_FACTORY
+	echo "# protest --region -r" >> $TW_LOG_FACTORY
+	protest --region -r >> $TW_LOG_FACTORY
+	echo "#" >> $TW_LOG_FACTORY
+	echo "# protest --sn -r" >> $TW_LOG_FACTORY
+	protest --sn -r >> $TW_LOG_FACTORY
+	echo "#" >> $TW_LOG_FACTORY
+	echo "# protest --mac -r" >> $TW_LOG_FACTORY
+	protest --mac -r >> $TW_LOG_FACTORY
+	echo "#" >> $TW_LOG_FACTORY
+	echo "# protest --software -r" >> $TW_LOG_FACTORY
+	protest --software -r >> $TW_LOG_FACTORY
+
+	echo "# ifconfig" >> $TW_LOG_IFCONFIG
+	ifconfig >> $TW_LOG_IFCONFIG
+
+	echo "# ps" >> $TW_LOG_PS
+	ps >> $TW_LOG_PS
+
+	echo "# top -n 1" >> $TW_LOG_TOP
+	top -n 1 >> $TW_LOG_TOP
+
+	echo "# brctl show" >> $TW_LOG_BRCTL
+	brctl show >> $TW_LOG_BRCTL
+	echo "#" >> $TW_LOG_BRCTL
+	echo "# brctl showmacs br-lan" >> $TW_LOG_BRCTL
+	brctl showmacs br-lan >> $TW_LOG_BRCTL
+
+	cat /proc/br_dns_hijack > $TW_LOG_HIGHJACK
+
+	echo "# iwconfig" >> $TW_LOG_IWCONFIG
+	iwconfig >> $TW_LOG_IWCONFIG
+}
+
+sysmtdoopinfo()
+{
+	if [ -f /usr/bin/mtdoops ]; then
+		logmtdid=$(cat /proc/mtd | grep LOG | cut -d ':' -f 1 | cut -b4-)
+		datetime=$(mtdoops $logmtdid 16384 time)
+		if [ -n $datetime ];then 
+			datetimeStr=$(date -d @${datetime})
+			echo $datetimeStr > $TW_LOG_DIR/mtdoops_datetime.txt
+		fi
+		mtdoops $logmtdid 16384 > $TW_LOG_DIR/mtdoops_info.txt
+	fi
+}
+
+wifiloginfo() {
+	wifi2gpre=$(uci get wireless.2g.ifName 2>/dev/null)
+	wifi5gpre=$(uci get wireless.5g.ifName 2>/dev/null)
+	wifistatfile="$TW_LOG_DIR/wifistat.txt"
+
+	/usr/sbin/debugStart stop
+	for i in $(seq 0 2); do
+		iwpriv $wifi2gpre$i stat >>  $wifistatfile
+		iwpriv $wifi5gpre$i stat >>  $wifistatfile
+		iwpriv $wifi2gpre$i show stainfo
+		iwpriv $wifi5gpre$i show stainfo
+		iwpriv $wifi2gpre$i show igmpinfo
+		iwpriv $wifi5gpre$i show igmpinfo
+		iwpriv $wifi2gpre$i show apcfginfo
+		iwpriv $wifi5gpre$i show apcfginfo
+	done
+}
+
+start() {
+	mkdir -p $TW_LOG_DIR
+	/etc/init.d/tcpdump_lan stop
+	/etc/init.d/tcpdump_wan stop
+	cp -a -r /etc/config $TW_LOG_DIR
+	cp /proc/mtketh/esw_cnt $TW_LOG_DIR
+	cp /sys/kernel/debug/hnat/hnat_entry $TW_LOG_DIR
+	cp /sys/kernel/debug/hnat/hnat_ppd_if $TW_LOG_DIR
+	wifiloginfo
+	systeminfo
+	sysmtdoopinfo
+	logread > $TW_LOG_DIR/logread.txt
+	dmesg  > $TW_LOG_DIR/dmesg.txt
+	cd /var/log
+	rm $DEBUG_LOG_TAR_FILE
+	tar -czf $DEBUG_LOG_TAR_FILE $TW_LOG_DIR_NAME
+}
+
+stop() {
+	rm -f $DEBUG_LOG_TAR_FILE_PATH
+	rm -rf $TW_LOG_DIR
+}

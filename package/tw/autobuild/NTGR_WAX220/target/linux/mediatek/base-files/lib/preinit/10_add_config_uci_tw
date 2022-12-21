@@ -1,0 +1,85 @@
+#
+# Copyright (C) 2009 OpenWrt.org
+#
+
+. /lib/mediatek.sh
+
+preinit_default_uci_init() {
+
+	#Create UUID for WPS
+	local wsc_uuid=$(uci -q get wireless.2g_5g.wscUUID 2> dev/null)
+	if [ "$wsc_uuid" = "" ]; then
+		local mac=$(uci -q get wireless.2g.macAddr | sed 's/://g' 2> dev/null)
+		if [ -n "$mac" ]; then
+			mac=`printf "%012X" "0x$mac"`
+			mac=${mac:0:12}
+			uci -q set "wireless.2g_5g.wscUUID=BC329E001DD811B28601$mac"
+			uci -q set "wireless.2g_5g.wscUUIDStr=BC329E00-1DD8-11B2-8601-$mac"
+			uci commit wireless
+			uci2dat
+		fi
+	fi
+
+	#disable 2.4G txBf
+	local model=$(envctl factory get model 2> /dev/null)
+	if [ "$model" = "WAX206" ]; then
+		local tx_bf_uci_flag=$(uci -q get wireless.2g.txbf 2> /dev/null)
+		local tx_bf_flag=$(datconf -f /etc/config/wirelessCfg/mediatek/mt7622.1.dat get ETxBfEnCond 2> /dev/null)
+
+		if [ $tx_bf_uci_flag != $tx_bf_flag ]; then
+			datconf -f /etc/config/wirelessCfg/mediatek/mt7622.1.dat set ETxBfEnCond $tx_bf_uci_flag
+		fi
+	fi
+
+	#run  dos script
+	local dosenable=$(uci -q get firewall.@defaults[0].syn_flood 2> /dev/null)
+	if [ "$dosenable" = "1" ]; then
+		local runscript=$(uci -q get firewall.DosAttack 2> /dev/null)
+		if [ "x$runscript" = "x" ]; then
+			uci set firewall.DosAttack=include
+			uci set firewall.DosAttack.type=script
+			uci set firewall.DosAttack.path=/sbin/security_ddos.sh
+			uci set firewall.DosAttack.family=any
+			uci set firewall.DosAttack.reload=1
+			uci commit firewall
+		fi
+	fi
+
+	#set ip6ifaceid
+	local ip6ifaceid_mode=$(uci -q get network.lan.ip6ifaceid_mode 2> /dev/null)
+	if [ "$ip6ifaceid_mode" = "static" -o "x$ip6ifaceid_mode" = "x" ]; then
+		uci set network.lan.ip6ifaceid=eui64
+	fi
+
+	#set DMZ
+	local dmz=$(uci -q get firewall.dmz 2> /dev/null)
+	local portforwarding=$(uci -q get firewall.portforwarding 2> /dev/null)
+	if [ "x$dmz" != "x" ];then
+		if [ "$dmz" = "redirect" ];then
+			uci set firewall.dmz=dmz
+			uci set firewall.dmzudp=dmzudp
+			uci commit firewall
+		fi
+
+		if [ "x$portforwarding" = "x" ];then
+			uci set firewall.portforwarding=include
+			uci set firewall.portforwarding.type=script
+			uci set firewall.portforwarding.path=/sbin/init_portforward.sh
+			uci set firewall.portforwarding.family=any
+			uci set firewall.portforwarding.reload=1
+			uci commit firewall
+		fi
+	fi
+       
+       #change igmpproxy to omcproxy
+       local igmpproxy_enabled=$(uci -q get igmpproxy.enabled 2> /dev/null)
+       if [ "$igmpproxy_enabled" = "1" ]; then
+               uci set igmpproxy.enabled=0
+               uci set omcproxy.enabled=1
+               uci commit igmpproxy
+               uci commit omcproxy
+       fi
+       
+}
+
+ boot_hook_add preinit_main preinit_default_uci_init

@@ -1,0 +1,297 @@
+#!/bin/sh
+echo "******** wan type detect start *********"
+
+wan_type="noWan"
+detect_done=0
+old_vpn_proto=$(uci get network.vpn.proto 2> /dev/null)
+old_wan_type=`uci get network.wan.proto`
+wanport_status=`tw_vty -c "show port status 0" 2> /dev/null | grep "Port 0" | cut -d ' ' -f 4`
+wan_ifname=`uci get network.wan.ifname`
+dhcp_det_result=1
+hostname=`uci get system.@system[0].hostname`
+clone_mac=`/usr/bin/redis-cli -s /tmp/.redis.sock get curOpenWebGuiPcMac`
+dhcp_type_detected=0
+
+# clear the old detWanStatus
+/usr/bin/redis-cli -s /tmp/.redis.sock hdel network_status detWanStatus 2> /dev/null
+
+[ "x$clone_mac" = "x" ] && echo "can't get the PC's mac from (redis-cli -s /tmp/.redis.sock get curOpenWebGuiPcMac)"
+
+check_wan_port_status()
+{
+    if [ "$wanport_status" = "0" ];then
+        echo "wan port link down, wan type is nowan"
+        /usr/bin/redis-cli -s /tmp/.redis.sock hset network_status detWanStatus $wan_type > /dev/null
+        detect_done=1
+        exit
+    fi
+}
+
+# check the wan port status
+check_wan_port_status
+
+uci_set_dhcp_wan_type()
+{
+    uci set network.wan.proto=dhcp
+    uci set network.wan.ipassign=0
+    uci set network.wan.nettype=1
+    uci -q delete network.vpn
+    uci delete network.wan.ipaddr 2> /dev/null
+    uci delete network.wan.netmask 2> /dev/null
+    uci delete network.wan.gateway 2> /dev/null
+    uci delete network.wan.dns 2> /dev/null
+    uci delete network.wan.netppptype 2> /dev/null
+    uci delete network.wan.vlan 2> /dev/null
+    uci delete network.wan.priority 2> /dev/null
+    uci delete network.wan.macclone 2> /dev/null
+    uci delete network.wan.peerdns 2> /dev/null
+    uci delete network.wan.mtu 2> /dev/null
+    uci delete network.wan.username 2> /dev/null
+    uci delete network.wan.password 2> /dev/null
+    uci delete network.wan.service 2> /dev/null
+    uci delete network.wan.pppdod 2> /dev/null
+    uci delete network.wan.defaultroute 2> /dev/null
+}
+
+check_default_proto_wan_type()
+{
+    local wan_ip_addr
+    local result
+    local current_proto
+
+    current_proto=`uci get network.wan.proto`
+    if [ "$current_proto" = "dhcp" ];then
+        wan_ip_addr=`ifconfig $wan_ifname | grep -r "inet addr" | awk -F: '{print $2}' | awk -F' ' '{print $1}'`
+        if [ "x$wan_ip_addr" != "x" ];then
+            echo "wan has IP address $wan_ip_addr, begain check the dns"
+            ping -c 2 -W 3 www.netgear.com > /tmp/ping_netgear_result_tmp 2> /dev/null
+            result=`cat /tmp/ping_netgear_result_tmp | grep "ttl="`
+            if [ "x$result" = "x" ];then
+                echo "the current default wan IP detect failed"
+            else
+                wan_type=$current_proto
+                detect_done=1
+                echo "the default wan type dhcp is good"
+                /usr/bin/redis-cli -s /tmp/.redis.sock hset network_status detWanStatus $wan_type > /dev/null
+                return
+            fi
+        fi
+    fi
+}
+
+check_dhcp_result()
+{
+    local result
+    local bigPond
+    local dhcp_obtain
+
+    [ -f /tmp/wan_det_dhcp ] || return
+    if [ $dhcp_type_detected -eq 0 ];then
+        #/usr/bin/redis-cli del wan_dhcp 2> /dev/null
+        result=`cat /tmp/wan_det_dhcp | grep -r "Type Detect Done"`
+        if [ "x$result" != "x" ];then
+            result=`cat /tmp/wan_det_dhcp | grep -r "Route Mac"`
+            if [ "x$result" != "x" ];then
+                # dhcp route mac
+                dhcp_type_detected=1
+            else
+                # dhcp clone mac
+                dhcp_type_detected=2
+                uci set network.wan.macclone=1
+                uci set network.wan_dev.macaddr=$clone_mac
+            fi
+
+            /usr/bin/redis-cli -s /tmp/.redis.sock HDEL wan_dhcp ipaddr 2> /dev/null
+            if [ "$old_wan_type" = "dhcp" -a "x$old_vpn_proto" = "x" ];then
+                if [ $dhcp_type_detected -eq 1 ];then
+                    echo "old wan type is dhcp and the mac is route mac, so just try again"
+                    #dhcp_det_result=0
+                    #return
+                    killall -SIGUSR1 udhcpc
+                else
+                    echo "old wan type is dhcp, just restart the udhcpc"
+                    uci_set_dhcp_wan_type
+                    ubus call network reload
+                fi
+            else
+                echo "start udhcpc"
+                uci_set_dhcp_wan_type
+                ubus call network reload
+            fi
+        fi
+
+        bigPond=`cat /tmp/wan_det_dhcp | grep -r "BigPond"`
+        if [ "x$bigPond" != "x" ];then
+            echo "wan type is BigPond"
+            wan_type="dhcp"
+            /usr/bin/redis-cli -s /tmp/.redis.sock hset network_status detWanStatus $wan_type > /dev/null
+            detect_done=1
+            return
+        fi
+
+        result=`cat /tmp/wan_det_dhcp | grep -r "Detect Failed"`
+        if [ "x$result" != "x" ];then
+            echo "dhcp Detect Failed for route mac and clone mac"
+            dhcp_det_result=0
+        fi
+    else
+        echo "waiting for udhcpc get new ip address"
+        dhcp_obtain=`/usr/bin/redis-cli -s /tmp/.redis.sock HGET wan_dhcp ipaddr`
+        if [ "x$dhcp_obtain" != "x" ];then
+            echo "$dhcp_obtain"
+            route add 10.0.0.138 dev $wan_ifname 2> /dev/null
+            echo "Do dns lookup"
+            i=1
+            dns_check=`nslookup www.netgear.com 2> /dev/null | grep -r "Address 1:"`
+            while [ $i -lt 3 ] && [ "x$dns_check" = "x" ]
+            do
+                dns_check=`nslookup www.netgear.com 2> /dev/null | grep -r "Address 1:"`
+                echo "Do dns lookup"
+                i=$(($i+1))
+            done
+
+            if [ "x$dns_check" = "x" ];then
+                dhcp_det_result=0
+                echo "dns lookup failed, dhcp detect failed"
+                return
+            fi
+            echo "wan type is dhcp"
+            wan_type="dhcp"
+            /usr/bin/redis-cli -s /tmp/.redis.sock hset network_status detWanStatus $wan_type > /dev/null
+            detect_done=1
+        fi
+    fi
+}
+
+check_pppoe_result()
+{
+    local pppoe_det
+    pppoe_det=`cat /tmp/wan_det_pppoe` 2> /dev/null
+    if [ "$pppoe_det" = "pppoe" ];then
+        echo "wan type is pppoe"
+        wan_type="pppoe"
+        /usr/bin/redis-cli -s /tmp/.redis.sock hset network_status detWanStatus $wan_type > /dev/null
+        detect_done=1
+    fi
+}
+
+check_pptp_result()
+{
+    local pptp_det
+    pptp_det=`cat /tmp/wan_det_pptp` 2> /dev/null
+    if [ "$pptp_det" = "pptp" ];then
+        echo "wan type is pptp"
+        wan_type="pptp"
+        /usr/bin/redis-cli -s /tmp/.redis.sock hset network_status detWanStatus $wan_type > /dev/null
+        detect_done=1
+    fi
+}
+
+# if pppoe, the wan if will down/up, it will bring problem to wan detect
+# so we init the network wan to static mode
+if [ "$old_wan_type" = "pppoe" -o "$old_vpn_proto" = "pptp" -o "$old_vpn_proto" = "l2tp" ];then
+    uci -q delete network.vpn 2> /dev/null 
+    uci set network.wan.ipaddr='10.0.0.140'
+    uci set network.wan.netmask='255.255.255.0'
+    uci set network.wan.gateway='10.0.0.1'
+    uci set network.wan.ipassign='1'
+    uci set network.wan.dns='10.0.0.1'
+    uci set network.wan.proto='static'
+    ubus call network reload
+fi
+
+# if try again, remove the process files
+[ -f /tmp/wan_det_dhcp ] && rm -fr /tmp/wan_det_dhcp
+[ -f /tmp/wan_det_pppoe ] && rm -fr /tmp/wan_det_pppoe
+[ -f /tmp/wan_det_pptp ] && rm -fr /tmp/wan_det_pptp
+
+# enable the det mode for pppoe and pptp
+touch /tmp/wan_det_pppoe
+touch /tmp/wan_det_pptp
+
+# check the default dhcp mode
+[ "$detect_done" = "0" ] && check_default_proto_wan_type
+
+# background det the dhcp route mac and clone mac, if the route mac obtain the offer
+# we will try to check the route mac dhcp, or we will check the clone mac dhcp
+[ "$detect_done" = "0" ] && wan-dhcp-det $clone_mac $wan_ifname &
+
+# background det the pppoe
+libpppoe=$(find /usr/lib/pppd/ -name "*pppoe*.so")
+[ "$detect_done" = "0" ] && /usr/sbin/pppd nodetach ipparam wan ifname pppoe-wan +ipv6 set AUTOIPV6=1 set PEERDNS=1 nodefaultroute usepeerdns maxfail 1 ip-up-script /lib/netifd/ppp-up ipv6-up-script /lib/netifd/ppp6-up ip-down-script /lib/netifd/ppp-down ipv6-down-script /lib/netifd/ppp-down mtu 1492 mru 1492 plugin $libpppoe nic-$wan_ifname &
+
+# background det the pptp
+libpptp=$(find /usr/lib/pppd/ -name "*pptp*.so")
+if [ "$detect_done" = "0" ];then
+    route add 10.0.0.138 dev $wan_ifname 2> /dev/null
+    /usr/sbin/pppd nodetach ipparam vpn ifname pptp-vpn nodefaultroute usepeerdns persist maxfail 3 holdoff 4 ip-up-script /lib/netifd/ppp-up ipv6-up-script /lib/netifd/ppp-up ip-down-script /lib/netifd/ppp-down ipv6-down-script /lib/netifd/ppp-down plugin $libpptp pptp_server 10.0.0.138 file /etc/ppp/options.pptp &
+fi
+
+# check dhcp det status
+checktimes=1
+while [ $checktimes -le 9 -a $detect_done -ne 1 ]
+do
+    sleep 1
+    if [ "$dhcp_det_result" = "1" ];then
+        check_dhcp_result
+    else
+        break
+    fi
+    checktimes=$(($checktimes+1))
+done
+
+# if dhcp det failed, try to check pptp det status
+if [ $detect_done -ne 1 ];then
+    check_pptp_result
+    uci revert network    # if dhcp det failed, we revert the uci set
+else
+    echo "set uci to dhcp"
+    uci_set_dhcp_wan_type
+    uci commit network
+fi
+
+while [ $checktimes -le 9 -a $detect_done -ne 1 ]
+do
+    sleep 1
+    check_pptp_result
+    checktimes=$(($checktimes+1))
+done
+
+# if dhcp det and pptp det failed, try to check pppoe det status
+if [ $detect_done -ne 1 ];then
+    check_pppoe_result
+fi
+
+while [ $checktimes -le 9 -a $detect_done -ne 1 ]
+do
+    sleep 1
+    check_pppoe_result
+    checktimes=$(($checktimes+1))
+done
+
+# or the static detected
+if [ $detect_done -ne 1 ];then
+    echo "wan type is static"
+    wan_type="static"
+    /usr/bin/redis-cli -s /tmp/.redis.sock hset network_status detWanStatus $wan_type  > /dev/null
+    uci set network.wan.proto=$old_wan_type
+    detect_done=1
+fi
+
+detWanType=`/usr/bin/redis-cli -s /tmp/.redis.sock hget network_status detWanStatus`
+if [ "x$detWanType" = "x" ];then
+    echo "something wrong with redis, try to set the wan type again to be static"
+    /usr/bin/redis-cli -s /tmp/.redis.sock hset network_status detWanStatus static
+    uci set network.wan.proto=$old_wan_type
+fi
+
+# clean the process files
+route del 10.0.0.138 2> /dev/null
+pptp_pid=`ps | grep pptp-vpn | grep pppd | awk -F' ' '{print $1}'` 2> /dev/null
+[ "x$pptp_pid" != "x" ] && kill -9 $pptp_pid
+[ -f /tmp/wan_det_dhcp ] && rm -fr /tmp/wan_det_dhcp
+[ -f /tmp/wan_det_pppoe ] && rm -fr /tmp/wan_det_pppoe
+[ -f /tmp/wan_det_pptp ] && rm -fr /tmp/wan_det_pptp
+echo "******** wan type detect end *********"
+exit 0
+

@@ -1,0 +1,6 @@
+./
+./host
+./usr
+./usr/include
+./usr/include/ssk
+./usr/include/ssk/ssk_public.h

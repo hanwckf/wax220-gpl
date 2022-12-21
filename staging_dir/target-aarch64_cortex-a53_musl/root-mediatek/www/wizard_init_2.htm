@@ -1,0 +1,59 @@
+<%+header%>
+<%
+local uci = require("luci.model.uci").cursor()
+local disp = require "luci.dispatcher"
+%>
+<script>
+$("#maincontent").removeClass();
+$("#maincontent").css('margin','auto');
+$("#maincontent").css('padding-top','30px');
+$("#maincontent").css('padding-bottom','50px');
+$("#maincontent").css('width','80%');
+
+var search = "<%=search%>";
+
+function gotomeshsetting()
+{
+	location.href="<%=disp.build_url('admin/network/wireless_mesh')%>";
+}
+
+function copyto()
+{
+
+}
+</script>
+
+<body onLoad="copyto();">
+<form name="wizard_init_2" action="<%=luci.dispatcher.build_url("admin/network/wizard_init_2")%>" method="post">
+<div id="start_wizard" style="padding-left:20px;padding-right:20px">
+	<div id="setup">
+		<table>
+			<tr><td>&nbsp;</td></tr>
+			<tr style="height: 8px;font-size: 16px;color: #000000;vertical-align: middle;background-color:#ffffff">
+				<td>
+					&nbsp;&nbsp;&nbsp;Put the Managed EWS1025CAM by other Mesh Devices.<br><br>
+					<script>
+						if(search ==2)
+							dw('&nbsp;&nbsp;&nbsp;Re-Power on or push device reset button, waiting for powered up of other mesh devices, then click “Search” button to send IE packet.<br>');
+						else
+							dw('&nbsp;&nbsp;&nbsp;Power on and wait until the Blue LED Indicator start blinking in 0.5 second intervals.<br>');
+					</script>
+					<img src="<%=media%>/pictures/mesh_indicator.png" style="margin-left: 25%;" height="300">
+				</td>
+			</tr>
+			<tr><td>&nbsp;</td></tr>
+		</table>
+		<table>
+			<tr>
+				&nbsp;&nbsp;&nbsp;<font size="3">Click on “Search” to build connection</font><br><br>
+				<div class="cbi-page-actions">
+					&nbsp;&nbsp;&nbsp;<input class="cbi-button cbi-button-save" type="button" myid="" onclick="gotomeshsetting();" value="Prev"/>
+					&nbsp;&nbsp;&nbsp;<input class="cbi-button cbi-button-apply" type="submit" name="submitType" value="Search">
+				</div>
+			</tr>
+		</table>
+	</div>
+</div>
+</form>
+</body>
+<%+footer%>

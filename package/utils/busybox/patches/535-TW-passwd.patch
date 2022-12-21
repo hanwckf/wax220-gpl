@@ -1,0 +1,157 @@
+--- a/loginutils/passwd.c
++++ b/loginutils/passwd.c
+@@ -23,7 +23,7 @@
+ //config:	With this option passwd will refuse new passwords which are "weak".
+ 
+ //applet:/* Needs to be run by root or be suid root - needs to change /etc/{passwd,shadow}: */
+-//applet:IF_PASSWD(APPLET(passwd, BB_DIR_BIN, BB_SUID_REQUIRE))
++//applet:IF_PASSWD(APPLET(passwd, BB_DIR_USR_BIN, BB_SUID_REQUIRE))
+ 
+ //kbuild:lib-$(CONFIG_PASSWD) += passwd.o
+ 
+@@ -40,46 +40,55 @@
+ #include "libbb.h"
+ #include <syslog.h>
+ 
++const char *opt_passwd = "";
++
+ static char* new_password(const struct passwd *pw, uid_t myuid, const char *algo)
+ {
+-	char salt[MAX_PW_SALT_LEN];
++	char salt[MAX_PW_SALT_LEN] = {0};
+ 	char *orig = NULL;
+ 	char *newp = NULL;
+ 	char *cp = NULL;
+ 	char *ret = NULL; /* failure so far */
+ 
+-	if (myuid != 0 && pw->pw_passwd[0]) {
+-		char *encrypted;
++	if ('\0' == opt_passwd[0])
++	{
++		if (myuid != 0 && pw->pw_passwd[0]) {
++			char *encrypted;
+ 
+-		orig = bb_ask_noecho_stdin("Old password: "); /* returns malloced str */
+-		if (!orig)
++			orig = bb_ask_noecho_stdin("Old password: "); /* returns malloced str */
++			if (!orig)
++				goto err_ret;
++			encrypted = pw_encrypt(orig, pw->pw_passwd, 1); /* returns malloced str */
++			if (strcmp(encrypted, pw->pw_passwd) != 0) {
++				syslog(LOG_WARNING, "incorrect password for %s", pw->pw_name);
++				pause_after_failed_login();
++				puts("Incorrect password");
++				goto err_ret;
++			}
++			if (ENABLE_FEATURE_CLEAN_UP)
++				free(encrypted);
++		}
++		newp = bb_ask_noecho_stdin("New password: "); /* returns malloced str */
++		if (!newp)
+ 			goto err_ret;
+-		encrypted = pw_encrypt(orig, pw->pw_passwd, 1); /* returns malloced str */
+-		if (strcmp(encrypted, pw->pw_passwd) != 0) {
+-			syslog(LOG_WARNING, "incorrect password for %s", pw->pw_name);
+-			pause_after_failed_login();
+-			puts("Incorrect password");
++		if (ENABLE_FEATURE_PASSWD_WEAK_CHECK
++		&& obscure(orig, newp, pw) /* NB: passing NULL orig is ok */
++		&& myuid != 0
++		) {
++			goto err_ret; /* non-root is not allowed to have weak passwd */
++		}
++
++		cp = bb_ask_noecho_stdin("Retype password: ");
++		if (!cp)
++			goto err_ret;
++		if (strcmp(cp, newp) != 0) {
++			puts("Passwords don't match");
+ 			goto err_ret;
+ 		}
+-		if (ENABLE_FEATURE_CLEAN_UP)
+-			free(encrypted);
+-	}
+-	newp = bb_ask_noecho_stdin("New password: "); /* returns malloced str */
+-	if (!newp)
+-		goto err_ret;
+-	if (ENABLE_FEATURE_PASSWD_WEAK_CHECK
+-	 && obscure(orig, newp, pw) /* NB: passing NULL orig is ok */
+-	 && myuid != 0
+-	) {
+-		goto err_ret; /* non-root is not allowed to have weak passwd */
+ 	}
+-
+-	cp = bb_ask_noecho_stdin("Retype password: ");
+-	if (!cp)
+-		goto err_ret;
+-	if (strcmp(cp, newp) != 0) {
+-		puts("Passwords don't match");
+-		goto err_ret;
++	else
++	{
++		newp = (char *)opt_passwd;
+ 	}
+ 
+ 	crypt_make_pw_salt(salt, algo);
+@@ -100,6 +109,24 @@ static char* new_password(const struct p
+ 	return ret;
+ }
+ 
++static int show_password(const struct passwd *pw, char *input_pw, const char *algo)
++{
++    char salt[MAX_PW_SALT_LEN] = {0};
++    char *show_pw = NULL;
++
++    if(NULL == input_pw || '\0' == input_pw[0] || '\0' == pw->pw_passwd[0])
++    {
++        return -1;
++    }
++
++    memcpy(salt, pw->pw_passwd, MAX_PW_SALT_LEN-1);
++
++    /* pw_encrypt returns malloced str */
++    show_pw = pw_encrypt(input_pw, salt, 1);
++    printf("%s", show_pw);
++    return 0;
++}
++
+ int passwd_main(int argc, char **argv) MAIN_EXTERNALLY_VISIBLE;
+ int passwd_main(int argc UNUSED_PARAM, char **argv)
+ {
+@@ -126,10 +153,11 @@ int passwd_main(int argc UNUSED_PARAM, c
+ 	struct spwd spw;
+ 	char buffer[256];
+ #endif
++	const char *show_passwd = "";
+ 
+ 	logmode = LOGMODE_BOTH;
+ 	openlog(applet_name, 0, LOG_AUTH);
+-	opt = getopt32(argv, "a:lud", &opt_a);
++	opt = getopt32(argv, "a:ludp:s:", &opt_a, &opt_passwd, &show_passwd);
+ 	//argc -= optind;
+ 	argv += optind;
+ 
+@@ -148,6 +176,12 @@ int passwd_main(int argc UNUSED_PARAM, c
+ 		bb_error_msg_and_die("%s can't change password for %s", myname, name);
+ 	}
+ 
++    if('\0' != show_passwd[0])
++    {
++        show_password(pw, show_passwd, opt_a);
++        return 0;
++    }
++
+ #if ENABLE_FEATURE_SHADOWPASSWDS
+ 	{
+ 		/* getspnam_r may return 0 yet set result to NULL.
+@@ -187,10 +221,6 @@ int passwd_main(int argc UNUSED_PARAM, c
+ 		if (!newp) {
+ 			logmode = LOGMODE_STDIO;
+ 			bb_error_msg_and_die("password for %s is unchanged", name);
+-		} else if (newp[0] == 0) {
+-			logmode = LOGMODE_STDIO;
+-			free(newp);
+-			bb_perror_msg_and_die("password encryption failed");
+ 		}
+ 	} else if (opt & OPT_lock) {
+ 		if (!c)

@@ -1,0 +1,1919 @@
+
+<html>
+<%+functionlist%>
+<%
+    local cbi = require "luci.cbi"
+    local tpl = require "luci.template"
+    local ntm = require "luci.model.network"
+    local uci = require "luci.model.uci".cursor()
+    ntm.init(uci)
+    local netId = luci.http.formvalue("netId")  or netid
+    local networkName = (ntm:get_wifinet(netId)):name()
+    local opmode = luci.http.formvalue("tmpOpmode") or ""
+    local device = luci.http.formvalue("device") or ""
+
+    local MAX_WLAN_MAC_FILTER_NUMBER = uci:get('functionlist','vendorlist','MAX_WLAN_MAC_FILTER_NUMBER') or 32
+%>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="<%=media%>/cascade.css">
+<link rel="stylesheet" href="<%=media%>/cascade-custom.css">
+<script src="/luci-static/web_NTGR/jquery-1.12.4.min.js"></script>
+<script src="/luci-static/web_NTGR/common.js"></script>
+<script type="text/javascript" src="/luci-static/resources/cbi.js"></script>
+<STYLE type="text/css">
+* {
+    margin: 0;
+    padding: 0;
+}
+form {
+    font-family: helvetica,arial,verdana,sans-serif;
+}
+table {
+    border-collapse: collapse;
+    text-align: center;
+}
+input {
+    font-family: sans-serif;
+    font-size: 16px;
+    color : black;
+}
+input[type="button"] {
+    margin-left: 1px;
+    margin-right: 9px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+input[type="submit"] {
+    margin-left: 1px;
+    margin-right: 9px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+input[type="file"] {
+    background-color: #F0F0F0;
+    margin-left: 1px;
+    margin-right: 9px;
+    padding-right: 10px;
+}
+input[type="checkbox"] {
+    margin-left: 3px;
+    margin-right: 9px;
+}
+input[type="radio"] {
+    margin-right: 3px;
+}
+.radio_en {
+    margin-left: 3px;
+    margin-right: 3px;
+}
+.radio_en_label {
+    margin-right: 9px;
+}
+input[type="text"] {
+    border: 1px solid #D0D0D0;
+    margin-left: 2px;
+    margin-right: 6px;
+    padding: 2px;
+}
+
+input[type="text"][readonly="readonly"] {
+    border: 0 none #D0D0D0;
+    font-size: 16px;
+    margin-right: 6px;
+}
+input[type="password"] {
+    border: 1px solid #D0D0D0;
+    margin-left: 2px;
+    margin-right: 6px;
+    padding: 2px;
+}
+textarea {
+    margin: 2px;
+    padding: 2px;
+}
+select {
+    border: 1px solid #D0D0D0;
+    font-size: 16px;
+    margin: 2px 6px 2px 2px;
+     color : black;
+}
+a {
+    outline: medium none;
+}
+.msg_type_mark {
+    color: red;
+    font-size: 16px;
+    font-weight: bold;
+    margin-right: 9px;
+}
+.outer-bg {
+    background-color: #F5F5F5;
+}
+.inner-bg {
+    background-color: #FFFFFF;
+}
+.banner .ban_logo {
+    width: 1202px;
+}
+.banner .ban_info {
+    width: 1202px;
+}
+.banner .banner_shadow {
+    width: 1202px;
+}
+.ban_logo {
+    background: url("pictures/banner_logo.png") repeat scroll 0 0 transparent;
+    height: 71px;
+}
+.ban_info {
+    background-color: #1B489C;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+    border-collapse: separate;
+    border-spacing: 0;
+    height: 41px;
+}
+.model {
+    background-color: #1B489C;
+    border-radius: 12px 12px 12px 12px;
+    color: #FFFFFF;
+    font-size: 20px;
+    text-align: center;
+    width: 181px;
+}
+.padding {
+    background-color: #1B489C;
+    width: 30px;
+}
+.description {
+    background-color: #1B489C;
+    color: #FFFFFF;
+    font-weight: bold;
+    text-align: left;
+    width: 750px;
+}
+.buttons {
+    background-color: #F1F1F1;
+    border-bottom: 1px solid #1B489C;
+    border-left: 1px none #1B489C;
+    border-right: 1px solid #1B489C;
+    border-style: none solid solid none;
+    color: #000000;
+    font-weight: bold;
+    padding: 10px;
+    width: 12%;
+}
+.buttons:nth-child(4) {
+    border-top-left-radius: 10px;
+}
+.buttons:last-child {
+    border-top-right-radius: 10px;
+}
+.buttons:nth-child(4) {
+    border-bottom-left-radius: 10px;
+}
+.buttons:last-child {
+    border-bottom-right-radius: 10px;
+}
+.buttons:nth-child(4) {
+    border-left-style: solid;
+}
+.buttons img {
+    cursor: pointer;
+}
+.buttons:hover {
+    background-color: #9FDCFF;
+    cursor: pointer;
+}
+.banner_shadow {
+    background: url("pictures/banner_shadow.png") no-repeat scroll 0 0 transparent;
+    height: 20px;
+}
+.function .menu {
+    width: 1202px;
+}
+.function {
+    background-color: white;
+    border-color: #1B489C;
+    border-left: 1px solid #1B489C;
+    border-radius: 12px 12px 12px 12px;
+    border-right: 1px solid #1B489C;
+    border-style: solid;
+    border-top: 1px solid #1B489C;
+    width: 1202px;
+}
+.menu_blank {
+    height: 34px;
+    width: 195px;
+}
+.menu_bg {
+    height: 486px;
+    text-align: left;
+    vertical-align: top;
+}
+.menu_major {
+    background-color: #1B489C;
+    font-size: 16px;
+    font-weight: 600;
+    height: auto;
+    padding-bottom: 6px;
+    padding-left: 15px;
+    padding-top: 6px;
+}
+.menu_major_on {
+    color: #FFFFFF;
+}
+.menu_major_off {
+    color: #FFFFFF;
+}
+.menu_minor {
+    border-bottom: 1px solid #9FDCFF;
+    font-size: 16px;
+    padding-left: 45px;
+}
+.menu_minor:hover {
+    background-color: #9FDCFF;
+    cursor: pointer;
+}
+.datahighlight {
+    background-color: #9FDCFF;
+    cursor: pointer;
+}
+.menu_minor_on {
+    background-color: #9FDCFF;
+    color: #000000;
+    height: auto;
+    padding-bottom: 4px;
+    padding-top: 4px;
+}
+.menu_minor_off {
+    background-color: #FFFFFF;
+    color: #000000;
+    height: auto;
+    padding-bottom: 4px;
+    padding-top: 4px;
+}
+.ctx-container {
+    border-left: 1px solid #1B489C;
+    text-align: left;
+    vertical-align: top;
+}
+.ctx-iframe {
+    height: 540px;
+    overflow: auto;
+    width: 100%;
+}
+.ctx-merge-iframe {
+    height: 350px;
+    overflow: auto;
+    width: 100%;
+}
+.ctx-head-padding {
+    height: 20px;
+    width: 100%;
+}
+.ctx-head {
+    height: 12px;
+}
+.ctx-body {
+    padding-left: 40px;
+    padding-right: 38px;
+}
+.ctx-blank {
+    height: 45px;
+}
+.ctx-foot {
+    height: 20px;
+}
+.bottommargin {
+    margin-bottom: 20px;
+}
+.ecm-tbl {
+    width: 100%;
+}
+.ecm-tbl div {
+    display: inline;
+}
+.ecm-tbl th {
+    font-size: 18px;
+    font-weight: normal;
+    height: 40px;
+    padding-left: 10px;
+    text-align: left;
+}
+.ecm-tbl .onepx {
+    border-right: 1px solid #FFFFFF;
+}
+.ecm-tbl .tbl-name {
+    padding-left: 10px;
+    text-align: left;
+    padding-top:0px;
+    padding-bottom:0px;
+    vertical-align : middle;
+}
+.ecm-tbl .tbl-value {
+    padding-left: 10px;
+    text-align: left;
+    padding-top:0px;
+    padding-bottom:0px;
+    vertical-align : middle;
+}
+.ecm-tbl .tbl-grey {
+    background-color: #EEEEEE;
+    padding-left: 6px;
+    vertical-align : middle;
+}
+.ecm-tbl .tbl-grey-15px {
+    background-color: #EEEEEE;
+    padding-left: 6px;
+}
+.ecm-tbl .tbl-middle {
+    padding-left: 6px;
+}
+.ecm-tbl .margin-indent {
+    margin-left: 1em;
+}
+.ecm-tbl .margin-indent:before {
+    content: "- ";
+}
+.ecm-tbl .margin-indent1_4 {
+    margin-left: 1.4em;
+}
+.ecm-tbl .margin-indent1_6 {
+    margin-left: 1.6em;
+}
+.ecm-tbl .margin-indent3 {
+    margin-left: 2.5em;
+}
+.ecm-tbl .margin-indent3:before {
+    content: "- ";
+}
+.ecm-tbl .float-align {
+    float: right;
+}
+.tbl-blank {
+    border-top: 1px solid #1B489C;
+    height: 0px;
+}
+.tbl-name {
+    border-bottom: 1px solid #EEEEEE;
+    color: #000000;
+    font-size: 16px;
+    height: 27px;
+}
+.tbl-value {
+    border-bottom: 1px solid #EEEEEE;
+    color: #000000;
+    font-size: 16px;
+    height: 27px;
+}
+.tbl-grey {
+    border-bottom: 1px solid #EEEEEE;
+    color: #000000;
+    font-size: 16px;
+    height: 27px;
+}
+.tbl-grey-15px {
+    border-bottom: 1px solid #EEEEEE;
+    color: #000000;
+    font-size: 15px;
+    height: 27px;
+    line-height: 19px;
+}
+.tbl-middle {
+    border-bottom: 1px solid #EEEEEE;
+    color: #000000;
+    font-size: 16px;
+    height: 27px;
+}
+.tbl-alighTop {
+    border-bottom: 1px solid #EEEEEE;
+    padding-left: 8px;
+    text-align: left;
+    vertical-align: top;
+}
+.striped {
+    background-color: #F0F0F0;
+}
+.caution_padding {
+    padding-left: 10px;
+}
+.button1 {
+    background: url("./images/overlay.png") repeat-x scroll left center #00AFF0;
+    border: 1px solid #63CEF6;
+    border-radius: 4px 4px 4px 4px;
+    box-shadow: 0 0 0 rgba(22, 142, 199, 0.5) inset;
+    color: #FFFFFF;
+    cursor: pointer;
+    font: 16px tahoma,arial,sans-serif;
+    height: 30px;
+    margin: 10px 20px 20px 0;
+    min-width: 100px;
+    padding: 3px 8px 6px;
+    width: 100px;
+}
+.buttonPM {
+    background: url("./images/overlay.png") repeat-x scroll left center #00AFF0;
+    border: 1px solid #63CEF6;
+    border-radius: 4px 4px 4px 4px;
+    box-shadow: 0 0 0 rgba(22, 142, 199, 0.5) inset;
+    color: #FFFFFF;
+    cursor: pointer;
+    font: 16px tahoma,arial,sans-serif;
+    height: 30px;
+    min-width: 100px;
+    padding: 3px 8px 6px;
+    width: 100px;
+}
+.button1:hover {
+    background: url("./images/but_mouseover.png") repeat-x scroll center top #00AFF0;
+    border: 1px solid #3E97CE;
+    color: #FFFFFF;
+}
+.button1:active {
+    background: url("./images/but_mouseover2.png") repeat-x scroll center top #00AFF0;
+    border: 1px solid #3E97CE;
+    color: #FFFFFF;
+    position: relative;
+    top: 0;
+}
+.button2 {
+    background: url("./images/overlay.png") repeat-x scroll left center #00AFF0;
+    border: 1px solid #63CEF6;
+    border-radius: 4px 4px 4px 4px;
+    box-shadow: 0 0 0 rgba(22, 142, 199, 0.5) inset;
+    color: #FFFFFF;
+    cursor: pointer;
+    font: 16px tahoma,arial,sans-serif;
+    height: 30px;
+    margin: 10px 20px 20px 0;
+    min-width: 100px;
+    padding: 3px 8px 6px;
+    width: 200px;
+}
+.desc_style {
+    font-size: 12px;
+    text-align: center;
+    vertical-align: middle;
+}
+.div1 {
+    display: inline;
+}
+.quater_Smaller {
+    font-size: 80%;
+}
+.popbox {
+    background: none repeat scroll 0 0 #EEEFEB;
+    box-shadow: 0 0 5px 0 #A4A4A4;
+    color: #000000;
+    display: none;
+    margin: 0;
+    padding: 10px;
+    position: absolute;
+    width: 400px;
+    z-index: 99999;
+}
+.input-disabled{
+    background-color:black;
+    border:1px solid #ABADB3;
+    padding:2px 1px;
+}
+
+ select:disabled {
+    background-color : #CDCDCD;
+    color : gray;
+}
+
+ input:disabled {
+    background-color : #CDCDCD;
+    color : gray;
+}
+
+</STYLE>
+
+<script type="text/javascript">
+var is_form_submit = "0";
+var titleSetting, titleSec;
+var netId = '<%=netId%>'
+
+<%
+if uci:get('functionlist','functionlist','SUPPORT_WLAN5G_2') == '1' then --[[ #### WLAN5G_2 feature ### --]]
+    WLAN5G_2="1"
+end --[[ #### WLAN5G_2 feature ### --]]
+%>
+
+switch(netId.split('.')[0]){
+    case 'wifi0':
+        titleSetting = "<%:Wireless Setting - 2.4GHz%>";
+        titleSec = "<%:Wireless Security - 2.4GHz%>";
+        break;
+    case 'wifi1':
+<% if WLAN5G_2=="1" then --[[ #### WLAN5G_2 feature ### --]] %>
+        titleSetting = "<%:Wireless Setting - 5GHz - 1%>";
+        titleSec = "<%:Wireless Security - 5GHz - 1%>";
+<% else %>
+        titleSetting = "<%:Wireless Setting - 5GHz%>";
+        titleSec = "<%:Wireless Security - 5GHz%>";
+<% end --[[ #### WLAN5G_2 feature end ### --]] %>
+        break;
+    case 'wifi2':
+        titleSetting = "<%:Wireless Setting - 5GHz - 2%>";
+        titleSec = "<%:Wireless Security - 5GHz - 2%>";
+        break;
+}
+
+var checkRule= (function(){
+    var checkResult = true,
+    isReg = function(type,data){
+        var reg;
+        switch(type){
+            case "port":
+                        reg = /^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$/;
+                        break;
+            case "host":
+                        reg = /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/;
+                        break;
+            case "range1-64":
+                        reg = /\b([1-9]|[1-5][0-9]|6[0-4])\b/;
+                        break;
+            case "range1-999":
+                        reg = /\b[1-9][0-9]{0,2}\b/;
+                        break;
+            case "range30-3600":
+                        reg = /\b([3-9][0-9]|[1-9][0-9]{2}|[12][0-9]{3}|3[0-5][0-9]{2}|3600)\b/;
+                        break;
+            case "range60-600":
+                        reg = /\b([6-9][0-9]|[1-5][0-9]{2}|600)\b/;
+                        break;
+            case "wepkey":
+                        reg = /^([0-9a-fA-F]{10})$|^(.{5})$|^([0-9a-fA-F]{26})$|^(.{13})$|^([0-9a-fA-F]{32})$|^(.{16})$/;
+                    break;
+            case "wpakey":
+                        reg = /^([0-9a-fA-F]{64})$|^(.{8,63})$/ ;
+                    break;
+            case "secret":
+                        reg = /^([\S\s]{1,64})$/ ;
+                    break
+        }
+        return reg.test(data);
+    },
+    statrtCheck = function(){
+
+    if(wpsCheck()&&wep_key_check()&&bssid_check()&&text_check()){
+        is_form_submit = "1";
+        $('form').submit();
+
+    }
+        return false;
+
+    },
+    wpsCheck = function(){
+        <%
+        netName_ap = {}
+        netName_wds_ap={}
+        local flag = "0"
+        local k = 1
+if uci:get('functionlist','functionlist','SUPPORT_AP_MODE_ONLY') == '1' then -----#### SUPPORT_AP_MODE_ONLY START ###
+            for i, dev in ipairs(ntm:get_wifidevs()) do
+                 netName_ap[i] = ntm:get_wifinet_index(dev:name(),"ap",tonumber(1)):name()
+            end
+else
+        while (flag == "0") do
+            for i, dev in ipairs(ntm:get_wifidevs()) do
+                netName_ap[i] = ntm:get_wifinet_index(dev:name(),"ap",tonumber(1)):name()
+
+                local wds_ap = ntm:get_wifinet_index(dev:name(),"wds_ap",tonumber(k)):name()
+                local nawds = uci:get("wireless",wds_ap,"nawds")
+                if(nawds == "0") then
+                    for j, p in ipairs(ntm:get_wifidevs()) do
+                    netName_wds_ap[j] = ntm:get_wifinet_index(p:name(),"wds_ap",tonumber(k)):name()
+                    end
+                    flag = "1"
+                end
+                k = k+1
+            end
+        end
+end-----####  SUPPORT_AP_MODE_ONLY END ####
+        local wnet = ntm:get_wifinet(netId)
+        local flag2 = "1"
+        for i=1,2 do
+            if wnet.sid == netName_ap[i] then
+                if uci:get("wireless",netName_ap[i],"wps_pbc") == "1" then
+        %>
+                    if ($("select[name$='encryption']").val() != "none" && $("select[name$='encryption']").val() != "psk2"){
+                            alert("<%:WPS only support Disable security or WPA pre-shared key with WPA2-PSK(AES) encryption%>");
+                            return false;
+                        }
+                    if($("select[name$='encryption']").val() == "psk2"){
+                        if($("select[name$='cipher']").val() != "ccmp"){
+                            alert("<%:WPS only support Disable security or WPA pre-shared key with WPA2-PSK(AES) encryption%>");
+                            return false;
+                        }
+                    }
+                <%end%>
+        <%
+            elseif wnet.sid == netName_wds_ap[i] then
+                if uci:get("wireless",netName_wds_ap[i],"wps_pbc") == "1" then
+        %>
+                    // console.log($("select[name$='encryption']").val());
+                    if ($("select[name$='encryption']").val() != "none" && $("select[name$='encryption']").val() != "psk2"){
+                            alert("<%:WPS only support Disable security or WPA pre-shared key with WPA2-PSK(AES) encryption%>");
+                            return false;
+                        }
+                    if($("select[name$='encryption']").val() == "psk2"){
+                        if($("select[name$='cipher']").val() != "ccmp"){
+                            alert("<%:WPS only support Disable security or WPA pre-shared key with WPA2-PSK(AES) encryption%>");
+                            return false;
+                        }
+                    }
+                <%end%>
+        <%
+            end
+
+        end
+
+        %>
+        return true;
+    },
+    text_check = function(){
+        $(':text:enabled:visible').each(function(){
+            if (!$(this).attr('name').match(".key"))
+                $(this).val($(this).val().trim());
+        });
+        var str='<%:%s%s value is out of range %s%>', str2='<%:Key%d: only hex digits allowed [0-9,a-f,A-F]%>';
+        if($('input:enabled[name$="auth_port"]').length>0){
+            if($('input:enabled[name$="auth_port"]').val()<=0 || isReg("port",$('input:enabled[name$="auth_port"]').val())==false || !isNumber($('input:enabled[name$="auth_port"]').val())){
+                alert(String.format(str, "<%:Radius Port%>", ":", "[1 - 65535]"));
+                return false;
+            }
+        }
+        if($('input:enabled[name$="nasid"]').length>0){
+            var nasid_length = $('input:enabled[name$="nasid"]').val().length||0;
+            if(nasid_length<3||nasid_length>32){
+                alert("<%:NAS-ID: length must between 3 and 32!%>");
+                return false;
+            }
+            else{
+                if(isFullwidth($('input:enabled[name$="nasid"]').val()) || isChinese($('input:enabled[name$="nasid"]').val()) || !isPattern2($('input:enabled[name$="nasid"]').val())){
+                    alert("<%=translatef('NAS-ID: %s (Space) are invalid characters.','# ` \\\' \\\" : ; \\\\ / [ ] &')%>");
+                    return false;
+                }
+            }
+        }
+        if($('input:enabled[name$="nasport"]').length>0){
+            if(isReg("port",$('input:enabled[name$="nasport"]').val())==false || !isNumber($('input:enabled[name$="nasport"]').val())){
+                alert(String.format(str, "<%:NAS-PORT%>", ":", "[0 - 65535]"));
+                return false;
+            }
+        }
+        if($('input:enabled[name$="nasip"]').length>0){
+            if(!isIpaddr($('input:enabled[name$="nasip"]').val())){
+			alert("<%:Invalid value of NAS-IP Address%>");
+                return false;
+	    }
+	    if(isMulticast($('input:enabled[name$="nasip"]').val())){
+			alert("<%:The NAS-IP cannot be a multicast ip address.%>");
+		return false;
+	    }
+	    if(isLinklocal($('input:enabled[name$="nasip"]').val())){
+			alert("<%:The NAS-IP cannot be a linklocal ip address.%>");
+		return false;
+	    }
+	    if(isLoopback($('input:enabled[name$="nasip"]').val())){
+			alert("<%:The NAS-IP address cannot be a loopback ip address.%>");
+		return false;
+	    }
+        }
+        if($('input:enabled[name$="acct_port"]').length>0){
+            if($('input:enabled[name$="acct_port"]').val()<=0 || isReg("port",$('input:enabled[name$="acct_port"]').val())==false || !isNumber($('input:enabled[name$="acct_port"]').val())){
+                alert(String.format(str, "<%:Radius Accounting Port%>", ":", "[1 - 65535]"));
+                return false;
+            }
+        }
+        if($('input:enabled[name$="auth_server"]').length>0){
+            if(isReg("host",$('input:enabled[name$="auth_server"]').val())==false){
+                alert("<%:Invalid radius server ip address. Please enter again.%>");
+                return false;
+            }
+            if(isMulticast($('input:enabled[name$="auth_server"]').val())){
+                alert("<%:Invalid radius server ip address. Please enter again.%>");
+                return false;
+            }
+            if(isLinklocal($('input:enabled[name$="auth_server"]').val())){
+                alert("<%:Invalid radius server ip address. Please enter again.%>");
+                return false;
+            }
+            if(isLoopback($('input:enabled[name$="auth_server"]').val())){
+                alert("<%:Invalid radius server ip address. Please enter again.%>");
+                return false;
+            }
+
+            if(!isIpaddr($('input:enabled[name$="auth_server"]').val())){
+                alert("<%:Invalid radius server ip address. Please enter again.%>");
+                return false;
+            }
+        }
+        if($('input:enabled[name$="acct_server"]').length>0){
+            if(isReg("host",$('input:enabled[name$="acct_server"]').val())==false){
+                alert("<%:Invalid radius accounting server ip address. Please enter again.%>");
+                return false;
+            }
+            if(isMulticast($('input:enabled[name$="acct_server"]').val())){
+                 alert("<%:Invalid radius accounting server ip address. Please enter again.%>");
+                return false;
+            }
+            if(isLinklocal($('input:enabled[name$="acct_server"]').val())){
+                 alert("<%:Invalid radius accounting server ip address. Please enter again.%>");
+                return false;
+            }
+            if(isLoopback($('input:enabled[name$="acct_server"]').val())){
+                 alert("<%:Invalid radius accounting server ip address. Please enter again.%>");
+                return false;
+            }
+            if(!isIpaddr($('input:enabled[name$="acct_server"]').val())){
+                 alert("<%:Invalid radius accounting server ip address. Please enter again.%>");
+                return false;
+            }
+        }
+
+        if($('input:enabled[name$=".key"]').length>0){
+            //I use SUPPORT_ATKK_FW_VERSION define to determine the ATKK products
+            if(isReg("wpakey",$('input:enabled[name$=".key"]').val())==false || ( functionlist.SUPPORT_ATKK_FW_VERSION == 1 && !isPattern1($('input:enabled[name$=".key"]').val()))){
+                alert("<%:Passphras: only hex 64 digits allowed [0-9, a-f, A-F] or 8-63 ASCII characters!%>");
+                return false;
+            }
+        }
+
+        for(var i=1;i<=4;i=i+1){
+            var this_wepkey = $('input:enabled[name$=".key'+i+'"]');
+            if(this_wepkey.length>0 && this_wepkey.val()!=""){
+                if(isReg("wepkey",this_wepkey.val())==false){
+                    alert(String.format(str2, i));
+                    return false;
+                }
+            }
+        }
+
+        if($('input:enabled[name$="wpa_group_rekey"]').length>0){
+            if($('input:enabled[name$="wpa_group_rekey"]').val()<0 || isReg("range30-3600",$('input:enabled[name$="wpa_group_rekey"]').val())==false || !isNumber($('input:enabled[name$="wpa_group_rekey"]').val())){
+                alert(String.format(str, "<%:Group Key Update Interval%>", ":", "[30 - 3600]"));
+                return false;
+            }
+        }
+
+        if($('input:enabled[name$="acct_interval"]').length>0){
+            if($('input:enabled[name$="acct_interval"]').val()<0 || isReg("range60-600",$('input:enabled[name$="acct_interval"]').val())==false || !isNumber($('input:enabled[name$="acct_interval"]').val())){
+                alert(String.format(str, "<%:Interim Accounting Interval%>", ":", "[60 - 600]"));
+                return false;
+            }
+        }
+
+        if($('input:enabled[name$="auth_secret"]').length>0){
+            if(isReg("secret",$('input:enabled[name$="auth_secret"]').val())==false){
+                alert("<%:Radius secret: length must between 1 and 64!%>");
+                return false;
+            }
+        }
+
+        if($('input:enabled[name$="acct_secret"]').length>0){
+            if(isReg("secret",$('input:enabled[name$="acct_secret"]').val())==false){
+                alert("<%:Radius accounting secret: length must between 1 and 64!%>");
+                return false;
+            }
+        }
+
+        if($('input:enabled[name$="tc_downlimit"]').length>0){
+            if($('input:enabled[name$="tc_downlimit"]').val()<=0 || isReg("range1-999",$('input:enabled[name$="tc_downlimit"]').val())==false || !isNumber($('input:enabled[name$="tc_downlimit"]').val())){
+                alert(String.format(str, "<%:Download Limit%>", ":", "[1 - 999]"));
+                return false;
+            }
+        }
+
+        if($('input:enabled[name$="tc_uplimit"]').length>0){
+            if($('input:enabled[name$="tc_uplimit"]').val()<=0 || isReg("range1-999",$('input:enabled[name$="tc_uplimit"]').val())==false || !isNumber($('input:enabled[name$="tc_uplimit"]').val())){
+                alert(String.format(str, "<%:Upload Limit%>", ":", "[1 - 999]"));
+                return false;
+            }
+        }
+        return true;
+    },
+    wep_key_check = function(){
+        if($('select[name$="encryption"]').val()=="wep"){
+            var input_type =  $('select[name$="input_type"]').val();
+            var key_length =  $('select[name$="key_length"]').val();
+            var key_id =  $('select[name$="key_id"]').val();
+            var key_value =  $('input[name$=\"key'+key_id+'\"]').val().replace(/^([s][:])/,"");
+
+            if(key_value.length != (input_type=="hex"?key_length:key_length/2)){
+                alert("<%:Please fill the key match the selected input type and key length!%>");
+                return false;
+            }
+        }
+        return true;
+    },
+    bssid_check = function(){
+     if($('input[name$="bssid"]').length>0){
+        //var reg  = /^([0-9A-F]{2}[:-]){5}([0-9A-F]{2})$/ ;
+        var reg = /^([0-9A-F][0,2,4,6,8,A,C,E][:-])([0-9A-F]{2}[:-]){4}([0-9A-F]{2})$/;
+        var bssid_str = "";
+            $('#bssid_span').children().each(function(){
+                 bssid_str += bssid_str==""?$(this).val():":"+$(this).val();
+            });
+
+            if(bssid_str!=""&&reg.test(bssid_str.toUpperCase())==false){
+                alert("<%:Wrong MAC address!%>"+"   "+bssid_str);
+                return false;
+            }
+
+        }
+           return true;
+
+    },
+    acl_check = function(){
+    if($('select[name$="macfilter"]').length>0){
+        // var reg  = /^([0-9A-F]{2}[:-]){5}([0-9A-F]{2})$/ ;
+        var reg = /^([0-9A-F][0,2,4,6,8,A,C,E][:-])([0-9A-F]{2}[:-]){4}([0-9A-F]{2})$/;
+        var aclid_str = "";
+            $('#acl_span').children(':text').each(function(){
+                 aclid_str += aclid_str==""?$(this).val():":"+$(this).val();
+            });
+            if((aclid_str!="" && reg.test(aclid_str.toUpperCase())==false) || aclid_str=="00:00:00:00:00:00" ){
+                alert("<%:Wrong MAC address!%>"+"   "+aclid_str);
+                return false;
+            }
+
+        }
+           return aclid_str.toUpperCase();
+
+    };
+
+    return{
+        check : statrtCheck,
+        acl_check : acl_check
+    };
+
+
+}());
+var bssid = (function(){
+    var init = function(){
+    /*handle bssid copyto*/
+    if($('input[name$="bssid"]').length>0){
+        $('#bssid_span').show().insertBefore($('input[name$="bssid"]'));
+        $('#bssid_span').children().each(function(){
+             $(this).css('width',"60px");
+        });
+         $('input[name$="bssid"]').hide();
+        var bssid_value = $('input[name$="bssid"]').val()||"";
+        if(bssid_value!=""){
+
+        var bssid_array = bssid_value.split(":");
+            for(var i = 0 ;i<bssid_array.length;i=i+1){
+                $('input[name$="bssid'+i+'"]').val(bssid_array[i]);
+            }
+        }
+
+        $('input[name$="preferbssid_enable"]').click(function(){
+            var flag = this.checked?false:true;
+                $('input[name$="bssid"]').attr("disabled",flag);
+                 $('#bssid_span').children().each(function(){
+                 $(this).attr("disabled",flag);
+                });
+        });
+
+        $('input[name$="preferbssid_enable"]').each(function(){
+            $(this).closest("tr").hide();
+            // $(this).insertBefore($('input[name$="bssid"]'));
+            $(this).insertBefore($('#bssid_span'));
+            $(this).triggerHandler("click");
+         });
+     }
+ },
+ save = function(){
+    if($('input[name$="bssid"]').length>0){
+        var bssid_str = "";
+            $('#bssid_span').children().each(function(){
+                 bssid_str += bssid_str==""?$(this).val():":"+$(this).val();
+            });
+        $('input[name$="bssid"]').val(bssid_str.toUpperCase());
+    }
+ };
+
+
+
+        return{
+        init : init,
+        save : save
+    };
+}());
+
+var acl_table = (function(){
+    var maclist={},this_macfilter,max_size = <%=MAX_WLAN_MAC_FILTER_NUMBER%>,
+
+    init = function(){
+
+    var allow_str = '<%=uci:get("wireless",networkName,"allowmaclist")%>';
+    var deny_str = '<%=uci:get("wireless",networkName,"denymaclist")%>';
+    maclist.dut_mac = [];
+<%
+    local dut_mac = luci.util.split(luci.util.exec("ifconfig | grep HWaddr | awk '{print $1}'"))
+    for n = 1 ,#dut_mac do
+%>
+    maclist.dut_mac.push('<%=ntm:get_mac(dut_mac[n])%>');
+<%
+    end
+%>
+    maclist.allow = (allow_str.length == 0)?[]:allow_str.split(" ");
+    maclist.deny = (deny_str.length == 0)?[]:deny_str.split(" ");
+
+       if($('select[name$="macfilter"]').length>0){
+         this_macfilter = $('select[name$="macfilter"]');
+           $tmp = '<tr class="title-option" keep="keep"><td width="30%"></td><td width="70%" id ="acl_id_field"></td></tr>' +
+		           '<tr class="title-option" keep="keep"><td width="30%">No.</td><td width="70%"><%:MAC Address%></td></tr>';
+           $('#tbl_macfilter').append($tmp);
+            $('#acl_span').show().appendTo($('#acl_id_field'));
+
+            $('#acl_span').children().each(function(){
+                 $(this).css('width',"60px");
+            });
+
+
+
+            $('select[name$="macfilter"]').change(function(){
+                var flag = $(this).val()== ""?true:false;
+                     $('#acl_span').children().each(function(){
+                     $(this).attr("disabled",flag);
+                    });
+
+            });
+
+            $('#acl_btn').click(function(){
+                var result = checkRule.acl_check();
+                if(result != false){
+                    add(this_macfilter.val(),result);
+                   this_macfilter.triggerHandler('change');
+                   this_macfilter.triggerHandler('change');
+                }
+
+            });
+       }
+
+    },
+    isFull = function(list_name){
+        return maclist[list_name].length >= max_size ;
+    },
+    inArray = function(list_name,element){
+      return  jQuery.inArray( element, maclist[list_name])>-1?true:false;
+    },
+    lanCheck = function(element){
+      return  jQuery.inArray( element, maclist.dut_mac)>-1?true:false;
+    },
+    add = function(list_name,element){
+        var str='<%:Duplicate MAC address in %s list.%>', str2='<%:Table is full! The %s table allow %d sets of MAC Address at most.%>';
+        var list_str;
+        list_str = (list_name=="allow")?"<%:allow%>":"<%:deny%>";
+        if(inArray(list_name,element)){
+            alert(String.format(str, list_str));
+        }else if(lanCheck(element)){
+            alert("<%:Duplicate LAN MAC address%>");
+        }else if(isFull(list_name)){
+            alert(String.format(str2, list_str, max_size));
+        }
+        else{
+            maclist[list_name].push(element);
+        }
+
+    },
+    del = function(list_name,index){
+
+        maclist[list_name].splice(index,1);
+        this_macfilter.triggerHandler('change');
+        this_macfilter.triggerHandler('change');
+    },
+    drawTable = function(list_name){
+
+        $table = $('#tbl_macfilter');
+
+        for(var i in maclist[list_name]){
+            var j;
+            var $tr = $(document.createElement('tr'));
+	        $tr.addClass("title-option");
+            $tr.appendTo($table);
+
+            var $num = $(document.createElement('td'));
+            var $mac = $(document.createElement('td'));
+            var $mac_text = $("<span />", {
+             text: maclist[list_name][i]+"  "
+            });
+            var $button = $('<button/>', {
+              type: 'button',
+            'class': 'cbi-button',
+              id: list_name+"_"+i,
+              text: '<%:Delete%>'
+            });
+                $num.text(parseInt(i)+1);
+                j=parseInt(i)+1;
+                $num.appendTo($tr);
+                $num.attr("myid",wifiRadio+"_aclmac_no"+j);
+                $mac.appendTo($tr);
+                $mac.append($mac_text);
+                $mac_text.appendTo($mac);
+                $mac_text.attr("myid",wifiRadio+"_aclmac_list"+j);
+                $button.appendTo($mac);
+
+             $('#'+list_name+"_"+i).bind('click',function(){
+                var tmp = $(this).attr("id").split("_");
+                    del(tmp[0],tmp[1]);
+             });
+
+        }
+
+    },
+    save = function(){
+        if($('select[name$="macfilter"]').length>0){
+            var networkName = '<%=networkName%>';
+
+
+            var allow_str = (maclist["allow"].length==0)?"":maclist["allow"].join(" ");
+            var deny_str = (maclist["deny"].length==0)?"":maclist["deny"].join(" ");
+            switch(this_macfilter.val()){
+                case "allow":
+                        $('input[name$="allowmaclist"]').val(allow_str);
+                        $("form").append('<input type="hidden"  name="cbid.wireless.'+networkName+'.denymaclist" value="'+deny_str+'">');
+                        break;
+                case "deny":
+                        $('input[name$="denymaclist"]').val(deny_str);
+                        $("form").append('<input type="hidden"  name="cbid.wireless.'+networkName+'.allowmaclist" value="'+allow_str+'">');
+                        break;
+            }
+        }
+    };
+
+    return {
+        init :init,
+        add: add,
+        del:del,
+        drawTable : drawTable,
+        save : save
+    };
+
+}());
+
+	$(function() {
+
+    var max = 230;
+    var tbl_id ;
+       $('#cbi_set div').each(function(){
+         var type = this.type ? this.type : this.nodeName.toLowerCase();
+         var className = $(this).attr("class")||"";
+
+            if(className.indexOf("cbi-value")>-1){
+                var id = $(this).attr("id")||"";
+                var title = $(this).find("label").first().text()||"";
+                var label = $(this).find("label").attr("for")||"";
+                 $(this).find("label").each(function(){
+                    if($(this).attr("for").indexOf("enabled1")==-1 && $(this).attr("for").indexOf("fastroamingEnable1")==-1){
+                        $(this).css({
+                            'color': '#fff',
+                            'font-size': '1px',
+                            'height': '1px',
+                            'float':'left',
+                            'display':'block',
+                            'margin-right':'1px',
+                            'width':"1px"
+                        });
+                    }
+                 });
+             //   $(this).find("label").remove();
+                $(this).find("div").removeClass("cbi-value-field");
+                if(id!=""&&title!=""){
+                    var tail_id = id.split(/-/g)[3]||"";
+                    $tmp = '<tr id="'+tail_id+'_row" class="title-option"><td width="30%" myid='+idchangeArray_for[label]+'>'+title+'</td><td width="70%"><div id ="'+id+'_field"></div></td></tr>';
+
+                    if(tail_id.indexOf("ssid")>-1){
+                        tbl_id = "tbl_ssid";
+                    }else if(tail_id.indexOf("encryption")>-1){
+                        tbl_id = "tbl_security";
+                    }else if(tail_id.indexOf("maclist")>-1){
+                        tbl_id = "tbl_macfilter";
+                    }else if(tail_id.indexOf("adv_search")>-1){
+                        tbl_id = "tbl_fastroaming";
+                    }else if(tail_id.indexOf("macfilter")>-1){
+                        tbl_id = "tbl_macfilter";
+                    }else if(tail_id.indexOf("tc_")>-1){
+                        tbl_id = "tbl_tc";
+                    }else if(tail_id.indexOf("roaming")>-1){
+                        tbl_id = "tbl_fastroaming";
+                    }else if(tail_id.indexOf("acct_")>-1){
+                        if (functionlist.SUPPORT_ALL_ENCRYPTION_HAS_RADIUS_ACCOUNTING  == 1){
+                            tbl_id = "tbl_radius_acctounting";
+                        }
+                    }else{
+                        tbl_id = "tbl_security";
+                    }
+                    $('#'+tbl_id).append($tmp);
+                    $('#'+id+'_field').replaceWith($('#'+id));
+                    if(functionlist.SUPPORT_Protected_Management_Frames==1){
+                        if(tail_id.indexOf("ieee80211w")>-1){
+                            $( "#"+tail_id+"_row" ).insertAfter("#cipher_row");
+                        }
+                    }
+                   // $($('#'+id)).triggerHandler("change");
+                   // $($('#'+id)).triggerHandler("click");
+                }
+
+            }
+
+        });
+
+    $('table').each(function(){
+        if($(this).find('tr').length <2){
+            $(this).hide();
+        }
+
+    });
+
+<%if opmode == "sta_ap" then%>
+    $('form').change(function(){
+        $('select[name$="encryption"] option[value="wpa"]').remove();
+        $('select[name$="encryption"] option[value="wpa2"]').remove();
+    });
+<% end %>
+
+    $('select[name$="encryption"]').change(function(){
+        var  fastroaming_available = ((functionlist.SUPPORT_FAST_ROAMING_ONLY_ENTERPRISE  == 1)?($(this).val()=="wpa-mixed"||$(this).val()=="wpa2"):($(this).val()=="wpa2"||$(this).val()=="wpa-mixed"||$(this).val()=="psk2"||$(this).val()=="psk-mixed"));
+
+<% if uci:get('functionlist','functionlist','SUPPORT_FAST_ROAMING_SETTING') == '1' then %>
+        if($('#tbl_fastroaming').find('tr').length >1&&fastroaming_available){
+            if($('#tbl_fastroaming').find('tr').length >1&&($('select[name$="cipher"]').val()=="ccmp"||$('select[name$="cipher"]').val()=="tkip+ccmp")){
+                        $('#tbl_fastroaming').show();
+                        $('#tbl_fastroaming').find("*").attr("disabled",false);
+            }
+            else{
+                $('input[type="radio"][name$="fastroamingEnable"][value="0"]').prop("checked",true);
+                $('#tbl_fastroaming').hide();
+                //$('#tbl_fastroaming').find("*").attr("disabled",true);
+            }
+        }
+        else{
+            $('input[type="radio"][name$="fastroamingEnable"][value="0"]').prop("checked",true);
+            $('#tbl_fastroaming').hide();
+            //$('#tbl_fastroaming').find("*").attr("disabled",true);
+        }
+<% end %>    
+    $('select[name$="cipher"]').unbind("change",cipherChange);
+    $('select[name$="cipher"]').bind("change",cipherChange);
+    });
+
+    var cipherChange = function(){
+        $('select[name$="encryption"]').trigger("change");
+    }
+
+    bssid.init();
+    acl_table.init();
+
+    var isEmpty=false;
+    $('input[name^="aclid"]').each(function(){
+        $(this).keyup(function(e){
+            var thisAclid=$(this);
+            //console.log(e.keyCode);
+            //console.log($(this).val().length);
+            if ($(this).val().length==2)
+            {
+                if(((e.keyCode>=96)&&(e.keyCode<=105))||((e.keyCode>=65)&&(e.keyCode<=70))) // 0~9 A~F
+                    $(this).next().focus();
+            }
+            if ($(this).val().length==0 && isEmpty)
+            {
+                if(e.keyCode == 8) // backspace
+                    $(this).prev().focus();
+            }
+            if ($(this).val().length>0)
+                isEmpty=false;
+            else
+                isEmpty=true;
+        });
+        $(this).click(function(){
+           if ($(this).val().length>0)
+                isEmpty=false;
+            else
+                isEmpty=true;
+        });
+        $(this).focus(function(){
+           if ($(this).val().length>0)
+                isEmpty=false;
+            else
+                isEmpty=true;
+        });
+    });
+    var acct_enabled_handler =function(){
+    $(':text[name$="acct_server"] ,:text[name$="acct_port"] ,input[name$="acct_secret"] ,:text[name$="acct_interval"]').attr("disabled",$(this).val()==0?true:false);
+    };
+
+
+    var changelayout = function() {
+        var max = 230;
+        var eventTrigger = $(this).attr("name").indexOf("macfilter")>-1?true:false;
+        // if($(this).attr("name").indexOf("input_type")>-1||$(this).attr("name").indexOf("key_length")>-1){
+        //     $(this).change(wep_maxlength_func);
+        // }
+        $(this).closest("tr").nextAll("tr").each(function(){
+            if($(this).find("td:empty").length>0||eventTrigger){
+              if($(this).attr("keep")!="keep"){
+                 $(this).remove();
+              }
+
+            }
+
+        });
+
+        /*refresh element*/
+        $('#cbi_set div').each(function(){
+        var type = this.type ? this.type : this.nodeName.toLowerCase();
+        var className = $(this).attr("class")||"";
+            if(className.indexOf("cbi-value")>-1){
+                var id = $(this).attr("id")||"";
+                var tail_id = id.split(/-/g)[3]||"";
+
+                    if(tail_id.indexOf("ssid")>-1){
+                        tbl_id = "tbl_ssid";
+                    }else if(tail_id.indexOf("encryption")>-1){
+                        tbl_id = "tbl_security";
+                    }else if(tail_id.indexOf("maclist")>-1){
+                        tbl_id = "tbl_macfilter";
+                    }else if(tail_id.indexOf("adv_search")>-1){
+                        tbl_id = "tbl_fastroaming";
+                    }else if(tail_id.indexOf("macfilter")>-1){
+                        tbl_id = "tbl_macfilter";
+                    }else if(tail_id.indexOf("tc_")>-1){
+                        tbl_id = "tbl_tc";
+                    }else if(tail_id.indexOf("roaming")>-1){
+                        tbl_id = "tbl_fastroaming";
+                    }else if(tail_id.indexOf("acct_")>-1){
+                        if (functionlist.SUPPORT_ALL_ENCRYPTION_HAS_RADIUS_ACCOUNTING  == 1){
+                            tbl_id = "tbl_radius_acctounting";
+                        }
+                    }else{
+                        tbl_id = "tbl_security";
+                    }
+
+                var title = $(this).find("label").first().text()||"";
+                var label = $(this).find("label").attr("for")||""
+                 $(this).find("label").each(function(){
+                    if($(this).attr("for").indexOf("adv_search1")==-1 && $(this).attr("for").indexOf("enabled1")==-1){
+                        $(this).css({
+                            'color': '#fff',
+                            'font-size': '1px',
+                            'height': '1px',
+                            'float':'left',
+                            'display':'block',
+                            'margin-right':'1px',
+                            'width':"1px"
+                        });
+                    }
+                 });
+                $(this).find("div").removeClass("cbi-value-field");
+
+                $(this).find('select').change(changelayout);
+                // $(this).find('select').each(function(){$(this).unbind('change',changelayout);$(this).bind('change',changelayout);});
+
+                if(id!=""&&title!=""){
+                    $tmp = '<tr id="'+tail_id+'_row" class="title-option"><td width="30%" myid='+idchangeArray_for[label]+'>'+title+'</td><td width="70%"><div id ="'+id+'_field"></div></td></tr>';
+                    $('#'+tbl_id).append($tmp);
+                    $('#'+id+'_field').replaceWith($('#'+id));
+                    if(functionlist.SUPPORT_Protected_Management_Frames==1){
+                        if(tail_id.indexOf("ieee80211w")>-1){
+                            $( "#"+tail_id+"_row" ).insertAfter("#cipher_row");
+                        }
+                    }
+                }
+
+                if(tbl_id == "tbl_macfilter"){
+                    $('#'+id).closest("tr").hide();
+                    if(id.indexOf("allowmaclist")>-1){
+                        acl_table.drawTable("allow");
+                    }
+                     if(id.indexOf("denymaclist")>-1){
+                        acl_table.drawTable("deny");
+                    }
+                }
+
+            }
+        });
+
+    };
+
+    var wep_maxlength_func = function(){
+        var type = $('select[name$="input_type"]').val();
+        var length = parseInt($('select[name$="key_length"]').val());
+         length = (type == "hex")? length : length/2;
+
+        for(var i=1;i<=4;i=i+1){
+            $('input:enabled[name$=".key'+i+'"]').attr('maxlength',length);
+        }
+
+    };
+
+    $('select[name$="encryption"]').change(function(){
+        if((functionlist.SUPPORT_ALL_ENCRYPTION_HAS_RADIUS_ACCOUNTING  == 1) ||$(this).val()=="wpa"||$(this).val()=="wpa2"||$(this).val()=="wpa-mixed"){
+             $('select[name$="acct_enabled"]').change(acct_enabled_handler);
+             $('select[name$="acct_enabled"]').triggerHandler("change");
+        }
+        $('div .cbi-value').each(function()
+        {
+            $(this).css("margin-bottom", "0");
+        });
+        $('.cbi-value-title').each(function()
+        {
+            $(this).css("line-height", "0");
+        });
+
+        if($(this).val()=="wep"){
+            $('select[name$="key_length"]').change(wep_maxlength_func);
+            $('select[name$="input_type"]').change(wep_maxlength_func);
+            $('select[name$="key_length"]').triggerHandler("change");
+            $('select[name$="input_type"]').triggerHandler("change");
+        }
+    });
+     $( 'select[name$="encryption"], select[name$="macfilter"]').change(changelayout);
+     $( 'input:radio[name$="wifi0.fastroamingEnable"],input:radio[name$="wifi1.fastroamingEnable"] ' ).click(changelayout);
+
+        $("form").submit(function() {
+
+            $('input:text[name$="maclist"]').each(function(){
+                $(this).attr("name",$(this).attr("id"));
+            });
+
+
+            $('input').each(function(){
+                var type = $(this).attr("type");
+                if(type=="checkbox" && !this.checked && !$(this).attr("disabled")){
+
+                    $(this).prev("input:hidden").attr("name",$(this).attr("name"));
+                    $(this).prev("input:hidden").val($(this).val()=='0'?'1':'0');
+
+                }
+
+            });
+
+            var encr = $('select[name$="encryption"]').val();
+            var cipher = $('select[name$="cipher"]').val();
+            var encr_name = $('select[name$="encryption"]').attr("name");
+
+            if(encr=="wep"){
+                var wep_str = $('select[name$="encryption"]').val()+"-"+$('select[name$="auth_type"]').val();
+                $('select[name$="auth_type"]').attr("disabled",true);
+                $('select[name$="input_type"]').attr("disabled",true);
+                $('select[name$="key_length"]').attr("disabled",true);
+
+
+                for(var i=1;i<=4;i=i+1){
+
+                   var key_value =  $('input[name$=\"key'+i+'\"]').val().replace(/^([s][:])/,"");
+
+                   if(key_value.length == 5 || key_value.length == 13 || key_value.length == 16){
+                    key_value = "s:"+key_value;
+                   }
+                   $('input[name$=\"key'+i+'\"]').val(key_value);
+                }
+
+                 $("form").append('<input type="hidden"  name="'+encr_name+'" value="'+wep_str+'">');
+                  $('select[name$="encryption"]').attr("disabled",true);
+
+            }
+
+            if(encr!="undefined"&&encr!=""&&(cipher=="tkip"||cipher=="ccmp"||cipher=="tkip+ccmp")){
+                    encr = encr+"+"+cipher;
+                $("form").append('<input type="hidden"  name="'+encr_name+'" value="'+encr+'">');
+                $('select[name$="cipher"]').attr("disabled",true);
+                $('select[name$="encryption"]').attr("disabled",true);
+            }
+            else if (encr!="undefined"&&encr!=""&&(encr!="wep")){
+                $("form").append('<input type="hidden"  name="'+encr_name+'" value="'+encr+'">');
+                $('select[name$="encryption"]').attr("disabled",true);
+            }
+
+            bssid.save();
+            acl_table.save();
+        });
+		$(':radio ,:checkbox').each(function()
+		{
+			$(this).css({
+				'width':"24px",
+				"border":"0"
+			});
+		});
+		$(':button').each(function()
+		{
+			if($(this)[0].id != "encryption_submit")
+			{
+				$(this).css({
+					'height':'30px',
+					'width':"100px"
+				});
+			}
+		});
+        $('select[name$="encryption"]').triggerHandler("change");
+         $('select[name$="macfilter"]').triggerHandler("change");
+         $('select[name$="macfilter"]').triggerHandler("change");
+        $('input[name$="tc_enabled"]').click(function(){
+            $('input[name$="limit"]').attr("disabled",$(this).val()==0?true:false);
+            $('input[name$="upperuser"]').attr("disabled",$(this).val()==0?true:false);
+            $('input[name$="downperuser"]').attr("disabled",$(this).val()==0?true:false);
+        });
+
+        $('input:checked[name$="tc_enabled"]').triggerHandler("click");
+if(functionlist.SUPPORT_ALL_ENCRYPTION_HAS_RADIUS_ACCOUNTING  == 1){
+        $('input[name$="nasid_enable_gui"]').click(function(){
+            $('input[name$="nasid_enable"]').val(this.checked?"1":"0");
+            $('input[name$="nasid"]').attr("disabled",!this.checked?true:false);
+        }).triggerHandler('click');
+         $('input[name$="nasport_enable_gui"]').click(function(){
+            $('input[name$="nasport_enable"]').val(this.checked?"1":"0");
+            $('input[name$="nasport"]').attr("disabled",!this.checked?true:false);
+        }).triggerHandler('click');
+}
+if(functionlist.SUPPORT_NAS_IP_ADDR  == 1){
+	$('input[name$="nasip_enable_gui"]').click(function(){
+        $('input[name$="nasip_enable"]').val(this.checked?"1":"0");
+        $('input[name$="nasip"]').attr("disabled",!this.checked?true:false);
+    }).triggerHandler('click');
+}
+    });
+
+    function getEncryptionText(){
+        var encr_value = $('select[name$="encryption"]').val();
+        if(encr_value=="wep"){
+            var auth_type = $('select[name$="auth_type"]').val();
+            return "wep-"+auth_type;
+        }
+        else if(encr_value == "none"){
+            return "none";
+        }
+        else{
+             return $(':hidden[name$="encryption"]').val();
+        }
+
+    };
+
+    function submitClose()
+    {
+        if(is_form_submit=="1"){
+		<% if uci:get('functionlist','functionlist','SUPPORT_AP_RP_SETUP_WIZARD') == "1" and uci:get("system","firmware","first_login") == "1" then %>
+			window.opener.redirReboot();
+		<% else %>
+            window.opener.updateChanges();
+            window.opener.updateOption('<%=networkName%>',"encryption",getEncryptionText());
+            <%if opmode == "sta_ap" and device ~= "" then%>
+            window.opener.updateOption('<%=ntm:get_wifinet_index(device,opmode,"1")["sid"]%>', "encryption", getEncryptionText());
+            <%end%>
+            if($('input:enabled[name$=".ssid"]').length>0){
+                window.opener.updateOption('<%=networkName%>',"ssid",$('input:enabled[name$=".ssid"]').val());
+                <%if opmode == "sta_ap" and device ~= "" then%>
+                window.opener.updateOption('<%=ntm:get_wifinet_index(device,opmode,"1")["sid"]%>', "ssid", $('input:enabled[name$=".ssid"]').val());
+                <%end%>
+            }
+           <% end %> 
+	   window.close();
+        }
+        window.close();
+    }
+
+    window.addEventListener("pagehide",submitClose,false)
+
+   /*
+    $(window).unload(function()
+    {
+        if(is_form_submit=="1"){
+            window.opener.updateChanges();
+            window.opener.updateOption('<%=networkName%>',"encryption",getEncryptionText());
+            <%if opmode == "sta_ap" and device ~= "" then%>
+            window.opener.updateOption('<%=ntm:get_wifinet_index(device,opmode,"1")["sid"]%>', "encryption", getEncryptionText());
+            <%end%>
+            if($('input:enabled[name$=".ssid"]').length>0){
+                window.opener.updateOption('<%=networkName%>',"ssid",$('input:enabled[name$=".ssid"]').val());
+                <%if opmode == "sta_ap" and device ~= "" then%>
+                window.opener.updateOption('<%=ntm:get_wifinet_index(device,opmode,"1")["sid"]%>', "ssid", $('input:enabled[name$=".ssid"]').val());
+                <%end%>
+            }
+            window.close();
+        }
+	    window.close();
+    });
+*/
+
+<%
+local wnet = ntm:get_wifinet(netId)
+local tc_enabled=uci:get("wireless",wnet.sid,"tc_enabled") or "0"
+local downperuser=uci:get("wireless",wnet.sid,"tc_downperuser") or "0"
+local upperuser=uci:get("wireless",wnet.sid,"tc_upperuser") or "0"
+%>
+
+// Yolin: add upperuser and downperuser
+$(function() {
+    $('input[name$=tc_downlimit]').after('<input value="1" id="downperuser" name="downperuser" type="checkbox" <%if downperuser == "1" then %>checked<% end %>  /> <%:Per User%>');
+});
+    switch(netId.split('.')[0]){
+        case 'wifi0':
+            wifiRadio = "wifi24"; break;
+        case 'wifi1':
+            wifiRadio = "wifi5"; break;
+        case 'wifi2':
+            wifiRadio = "wifi5_1"; break;
+    }
+var idchangeArray ={
+"cbid.wireless.<%=wnet.sid%>.encryption":""+wifiRadio+"_securitymode",
+"cbid.wireless.<%=wnet.sid%>.macfilter":""+wifiRadio+"_macfilter",
+"aclid0":""+wifiRadio+"_aclmac1",
+"aclid1":""+wifiRadio+"_aclmac2",
+"aclid2":""+wifiRadio+"_aclmac3",
+"aclid3":""+wifiRadio+"_aclmac4",
+"aclid4":""+wifiRadio+"_aclmac5",
+"aclid5":""+wifiRadio+"_aclmac6",
+"acl_btn":""+wifiRadio+"_aclmac_add",
+"cbid.wireless.<%=wnet.sid%>.tc_enabled1_enable":""+wifiRadio+"_tc_enable",
+"cbid.wireless.<%=wnet.sid%>.tc_enabled1_disable":""+wifiRadio+"_tc_disable",
+"cbid.wireless.<%=wnet.sid%>.tc_downlimit":""+wifiRadio+"_tc_downlimit",
+"downperuser":""+wifiRadio+"_tc_downlimit_peruser",
+"cbid.wireless.<%=wnet.sid%>.tc_uplimit":""+wifiRadio+"_tc_uplimit",
+"upperuser":""+wifiRadio+"_tc_uplimit_peruser",
+"encryption_submit":"button_save",
+"cbid.wireless.<%=wnet.sid%>.auth_type":""+wifiRadio+"_auth_type",
+"cbid.wireless.<%=wnet.sid%>.input_type":""+wifiRadio+"_input_type",
+"cbid.wireless.<%=wnet.sid%>.key_length":""+wifiRadio+"_key_length",
+"cbid.wireless.<%=wnet.sid%>.key_id":""+wifiRadio+"_key_id",
+"cbid.wireless.<%=wnet.sid%>.key1":""+wifiRadio+"_key1",
+"cbid.wireless.<%=wnet.sid%>.key2":""+wifiRadio+"_key2",
+"cbid.wireless.<%=wnet.sid%>.key3":""+wifiRadio+"_key3",
+"cbid.wireless.<%=wnet.sid%>.key4":""+wifiRadio+"_key4",
+"cbid.wireless.<%=wnet.sid%>.cipher":""+wifiRadio+"_encrypt",
+"cbid.wireless.<%=wnet.sid%>.key":""+wifiRadio+"_key",
+"cbid.wireless.<%=wnet.sid%>.wpa_group_rekey":""+wifiRadio+"_wpa_group_rekey",
+"cbid.wireless.wifi0.fastroamingEnable1_enable":""+wifiRadio+"_fastroaming_enable",
+"cbid.wireless.wifi0.fastroamingEnable1_disable":""+wifiRadio+"_fastroaming_disable",
+"cbid.wireless.<%=wnet.sid%>.auth_server":""+wifiRadio+"_auth_server",
+"cbid.wireless.<%=wnet.sid%>.auth_port":""+wifiRadio+"_auth_port",
+"cbid.wireless.<%=wnet.sid%>.auth_secret":""+wifiRadio+"_auth_secret",
+"cbid.wireless.<%=wnet.sid%>.acct_enabled":""+wifiRadio+"_acct_enabled",
+"cbid.wireless.<%=wnet.sid%>.acct_server":""+wifiRadio+"_acct_server",
+"cbid.wireless.<%=wnet.sid%>.acct_port":""+wifiRadio+"_acct_port",
+"cbid.wireless.<%=wnet.sid%>.acct_secret":""+wifiRadio+"_acct_secret",
+"cbid.wireless.<%=wnet.sid%>.acct_interval":""+wifiRadio+"_acct_interval",
+"cbid.wireless.<%=wnet.sid%>.preferbssid_enable":""+wifiRadio+"_preferbssid_enable",
+"cbid.wireless.<%=wnet.sid%>.bssid1":""+wifiRadio+"_preferbssid_mac1",
+"cbid.wireless.<%=wnet.sid%>.bssid2":""+wifiRadio+"_preferbssid_mac2",
+"cbid.wireless.<%=wnet.sid%>.bssid3":""+wifiRadio+"_preferbssid_mac3",
+"cbid.wireless.<%=wnet.sid%>.bssid4":""+wifiRadio+"_preferbssid_mac4",
+"cbid.wireless.<%=wnet.sid%>.bssid5":""+wifiRadio+"_preferbssid_mac5",
+"cbid.wireless.<%=wnet.sid%>.bssid6":""+wifiRadio+"_preferbssid_mac6",
+"cbid.wireless.<%=wnet.sid%>.ssid":""+wifiRadio+"_ssid",
+"cbid.wireless.<%=wnet.sid%>.eap_type":""+wifiRadio+"_eap_type",
+"cbid.wireless.<%=wnet.sid%>.auth":""+wifiRadio+"_eap_auth",
+"cbid.wireless.<%=wnet.sid%>.identity":""+wifiRadio+"_identity",
+"cbid.wireless.<%=wnet.sid%>.password":""+wifiRadio+"_password",
+"nasid_enable_gui":""+wifiRadio+"_NASID_enable",
+"nasport_enable_gui":""+wifiRadio+"_NASPORT_enable",
+"nasip_enable_gui":""+wifiRadio+"_NASIP_enable",
+"cbid.wireless.<%=wnet.sid%>.nasid":""+wifiRadio+"_NASID",
+"cbid.wireless.<%=wnet.sid%>.nasport":""+wifiRadio+"_NASPORT",
+"cbid.wireless.<%=wnet.sid%>.nasip":""+wifiRadio+"_NASIP"
+};
+
+var idchangeArray_for = {
+    "cbid.wireless.<%=wnet.sid%>.macfilter":"title_"+wifiRadio+"_macfilter",
+    "cbid.wireless.<%=wnet.sid%>.bssid":"title_"+wifiRadio+"_preferbssid",
+    "cbid.wireless.<%=wnet.sid%>.ssid":"title_"+wifiRadio+"_ssid",
+    "cbid.wireless.<%=wnet.sid%>.encryption":"title_"+wifiRadio+"_securitymode",
+    "cbid.wireless.<%=wnet.sid%>.cipher":"title_"+wifiRadio+"_encrypt",
+    "cbid.wireless.<%=wnet.sid%>.key":"title_"+wifiRadio+"_key",
+    "cbid.wireless.<%=wnet.sid%>.eap_type":"title_"+wifiRadio+"_eap_type",
+    "cbid.wireless.<%=wnet.sid%>.auth":"title_"+wifiRadio+"_eap_auth",
+    "cbid.wireless.<%=wnet.sid%>.identity":"title_"+wifiRadio+"_identity",
+    "cbid.wireless.<%=wnet.sid%>.password":"title_"+wifiRadio+"_password",
+    "cbid.wireless.<%=wnet.sid%>.auth_type":"title_"+wifiRadio+"_auth_type",
+    "cbid.wireless.<%=wnet.sid%>.input_type":"title_"+wifiRadio+"_input_type",
+    "cbid.wireless.<%=wnet.sid%>.key_length":"title_"+wifiRadio+"_key_length",
+    "cbid.wireless.<%=wnet.sid%>.key_id":"title_"+wifiRadio+"_key_id",
+    "cbid.wireless.<%=wnet.sid%>.key1":"title_"+wifiRadio+"_key1",
+    "cbid.wireless.<%=wnet.sid%>.key2":"title_"+wifiRadio+"_key2",
+    "cbid.wireless.<%=wnet.sid%>.key3":"title_"+wifiRadio+"_key3",
+    "cbid.wireless.<%=wnet.sid%>.key4":"title_"+wifiRadio+"_key4",
+    "cbid.wireless.<%=wnet.sid%>.tc_enabled":"title_"+wifiRadio+"_tc",
+    "cbid.wireless.<%=wnet.sid%>.tc_downlimit":"title_"+wifiRadio+"_tc_downlimit",
+    "cbid.wireless.<%=wnet.sid%>.tc_uplimit":"title_"+wifiRadio+"_tc_uplimit",
+    "cbid.wireless.<%=wnet.sid%>.wpa_group_rekey":"title_"+wifiRadio+"_wpa_group_rekey",
+    "cbid.wireless.<%=wnet.sid%>.auth_server":"title_"+wifiRadio+"_auth_server",
+    "cbid.wireless.<%=wnet.sid%>.auth_secret":"title_"+wifiRadio+"_auth_secret",
+    "cbid.wireless.<%=wnet.sid%>.acct_enabled":"title_"+wifiRadio+"_acct",
+    "cbid.wireless.<%=wnet.sid%>.acct_port":"title_"+wifiRadio+"_acct_port",
+    "cbid.wireless.<%=wnet.sid%>.auth_port":"title_"+wifiRadio+"_auth_port",
+    "cbid.wireless.<%=wnet.sid%>.acct_server":"title_"+wifiRadio+"_acct_server",
+    "cbid.wireless.<%=wnet.sid%>.acct_secret":"title_"+wifiRadio+"_acct_secret",
+    "cbid.wireless.<%=wnet.sid%>.acct_interval":"title_"+wifiRadio+"_acct_interval",
+    "cbid.wireless.wifi0.fastroamingEnable":"title_"+wifiRadio+"_fastroaming",
+    "cbid.wireless.wifi1.fastroamingEnable":"title_"+wifiRadio+"_fastroaming"
+}
+<% if uci:get('functionlist','functionlist','SUPPORT_MYID') == '1' then %>
+for(i=0;i< <%=MAX_WLAN_MAC_FILTER_NUMBER%>;i++)
+{
+    if(wifiRadio=="wifi24")
+        idchangeArray["allow_"+i+""]="wifi24_mac_delete"+(i+1)+""
+    else
+        idchangeArray["allow_"+i+""]="wifi5_mac_delete"+(i+1)+""
+};
+
+var changeMyId = (function(){
+    SetMyId = function(){
+         //---------Add myid attribute for test-----------------------
+        $('form :input').each(function(){
+            var orgId = ($(this).attr('id')||$(this).attr('name')||$(this).attr('for')||"");
+
+            if($(this).attr('type')=="radio"){
+                orgId = ($(this).val()=="1") ? orgId+"_enable" : orgId+"_disable";
+                $(this).attr("myid",idchangeArray[orgId]);
+            }
+            else{
+                $(this).attr("myid",idchangeArray[orgId]);
+            }
+        });
+    },
+
+    SecurityChange = function(){
+        $('select[name$="encryption"]').change(function(){
+            SetMyId();
+        })
+    },
+
+    macfilterChange =function(){
+        $('input[name="acl_btn"]').click(function(){
+            SetMyId();
+            $('button[id^="allow_"]').click(function(){
+            SetMyId();
+            });
+        });
+
+    },
+
+    changeMyId =function(){
+        SetMyId();
+        SecurityChange();
+        macfilterChange();
+    }
+
+    return{
+        changeMyId:changeMyId
+    };
+
+}());
+<% end %>
+<% if uci:get('functionlist','functionlist','SUPPORT_WIRELESS_TRAFFIC_SHAPING') == '1' then %>
+$(function() {
+    $('input[name$=tc_uplimit]').after('<input value="1" id="upperuser" name="upperuser" type="checkbox" <%if upperuser == "1" then %>checked<% end %> /> <%:Per User%>');
+});
+
+$('input[name$="tc_downlimit"]').ready(function(){
+    $('input[name$="downperuser"]').attr("disabled", <%=(tc_enabled or 0)%>==0?true:false);
+});
+$('input[name$="upperuser"]').ready(function(){
+    $('input[name$="upperuser"]').attr("disabled", <%=(tc_enabled or 0)%>==0?true:false);
+});
+ // $(function() {console.log(functionlist);console.log(vendorlist)});
+<% end %>
+
+$(function() {
+<% if uci:get('functionlist','functionlist','SUPPORT_MYID') == '1' then %>
+    changeMyId.changeMyId();
+<% end %>
+});
+
+$(function(){
+    $('form').trigger("change");
+})
+
+$(function(){
+    EAP_Setting();
+    $('select[name$="encryption"]').change(function(){
+        $('select[name$="eap_type"]').change(function(){
+            EAP_Setting();
+        });
+    });
+    $('select[name$="eap_type"]').change(function(){
+            EAP_Setting();
+    });
+})
+
+function EAP_Setting(){
+    if($('select[name$="eap_type"]').val() == "peap"){
+        $('select[name$="auth"] option[value="MSCHAP"]').hide();
+        $('select[name$="auth"]')[0].value = "MSCHAPV2";
+    }
+    else{
+        $('select[name$="auth"] option[value="MSCHAP"]').show();
+    }
+}
+</script>
+</head>
+<body>
+<div id="Fast_Roaming_info" class="popbox">
+    <p><%:Can be enabled to facilitate client roaming, across AP under the same ESS WLAN. This option is available, upon choosing: WPA2-PSK, WPA-PSK Mixed, WPA2-Enterprise, or WPA Mixed-Enterprise.%></p>
+</div>
+<form method="post" name="guestNetworkEncryption"  action='<%=luci.dispatcher.build_url("admin/network/wireless_device")%>' enctype="multipart/form-data" onreset="return cbi_validate_reset(this)" onsubmit="return cbi_validate_form(this, 'Some fields are invalid, cannot save values!')">
+<input type="hidden" name="fromEncr" value="<%=luci.http.formvalue("netId") or netid%>" />
+
+    <div id = "cbi_set" style="display:none" >
+     <%
+    local checkData = {
+        select_hwmode  = luci.http.formvalue("select_hwmode") or ""
+    }
+
+        luci.cbi.load("admin_network/wifi_iface2",netId,data,checkData)[1]:render()
+        for _, dev in ipairs(ntm:get_wifidevs()) do
+            local netId_ap = ""
+            local netId_wds_ap = ""
+            local netId_ap = ntm:get_wifinet_index(dev:name(),"ap",tonumber(1)):id()
+
+if uci:get('functionlist','functionlist','SUPPORT_AP_MODE_ONLY') == '1' then -----#### SUPPORT_AP_MODE_ONLY START ###
+else
+            local netId_wds_ap = ntm:get_wifinet_index(dev:name(),"wds_ap",tonumber(1)):id()
+end-----####  SUPPORT_AP_MODE_ONLY END ####
+
+if uci:get('functionlist','functionlist','SUPPORT_FAST_ROAMING_SETTING') == '1' then --#### SUPPORT_FAST_ROAMING_SETTING START ###
+    if uci:get('functionlist','functionlist','SUPPORT_FAST_ROAMING_PER_SSID') == '1' then --# support fast roaming for per ssid
+                if ( luci.http.formvalue("select_opmode") == "ap" or luci.http.formvalue("select_opmode") == "wds_ap" ) and not string.find(networkName, "guest") then
+                    luci.cbi.load("admin_network/guestNetwork_IpSetting","fast_roaming",netId,data)[1]:render()
+                    break
+                end
+    else
+                if netId == netId_ap or netId == netId_wds_ap then
+                    luci.cbi.load("admin_network/guestNetwork_IpSetting","fast_roaming",netId,data)[1]:render()
+                    break
+                end
+    end --# SUPPORT_FAST_ROAMING_PER_SSID END #
+end --# SUPPORT_FAST_ROAMING_SETTING END #
+        end
+	%>
+    </div>
+    <input type="hidden" name="opmode" value="<%=opmode%>"/>
+    <input type="hidden" name="device" value="<%=device%>"/>
+    <div class="ctx-head"></div>
+    <div class="ctx-body">
+	<div id="tbl_1" class="table bottommargin"></div>
+        <table class="ecm-tbl" id="tbl_ssid">
+			<tr>
+				<th width="30%" colspan="2" class="title"><script type="text/javascript">document.write(titleSetting)</script></th>
+			</tr>
+        </table>
+	</div>
+	<div class="ctx-body">
+	<div id="tbl_2" class="table bottommargin"></div>
+        <table class="ecm-tbl" id="tbl_security">
+			<tr>
+				<th width="30%" colspan="2" class="title"><script type="text/javascript">document.write(titleSec)</script></th>
+			</tr>
+			<tr style="display:none;">
+				<td class="tbl-blank" width="30%" colspan="2"></td>
+			</tr>
+        </table>
+	</div>
+<%
+if uci:get('functionlist','functionlist','SUPPORT_ALL_ENCRYPTION_HAS_RADIUS_SETTING') == '1' then -----#### SUPPORT_ALL_ENCRYPTION_HAS_RADIUS_SETTING START ###
+    if (wnet:get("mode_display") == "ap") and not string.find(networkName, "guest") then
+
+    local nasid = luci.util.repSpec(tostring(uci:get('wireless',networkName,'nasid') or ""))
+%>
+<script>
+$(function() {
+    var nasid = repSpec("<%=nasid%>");
+    $('input[name$="nasid"]').val(nasid);
+});
+</script>
+<%
+local nasid_enable_status=""
+local nasport_enable_status=""
+local nasip_enable_status=""
+if uci:get('wireless',networkName,'nasid_enable') == '1' then
+    nasid_enable_status = "checked"
+end
+if  uci:get('wireless',networkName,'nasport_enable') == '1' then
+    nasport_enable_status = "checked"
+end
+if  uci:get('wireless',networkName,'nasip_enable') == '1' then
+    nasip_enable_status = "checked"
+end
+%>
+    <div class="ctx-body">
+    <div  class="table bottommargin"></div>
+        <table class="ecm-tbl" id="tbl_radius_settings">
+            <tr>
+                <th width="30%" colspan="2" class="title"><%:Radius Settings%></th>
+            </tr>
+             <tr  class="title-option">
+
+                <td width="30%"><input type="checkbox" name="nasid_enable_gui" <%= nasid_enable_status %> ><input type="hidden" name="cbid.wireless.<%=networkName%>.nasid_enable"><%:NAS-ID%></td>
+                <td><input type="text" maxlength="32" name="cbid.wireless.<%=networkName%>.nasid" ></td>
+            </tr>
+            <tr  class="title-option">
+                <td width="30%"><input type="checkbox" name="nasport_enable_gui" <%= nasport_enable_status %> ><input type="hidden" name="cbid.wireless.<%=networkName%>.nasport_enable"><%:NAS-PORT%></td>
+                <td><input type="text" maxlength="5" name="cbid.wireless.<%=networkName%>.nasport" value="<%=uci:get('wireless',networkName,'nasport')%>">(0 ~ 65535)</td>
+            </tr>
+<%
+if uci:get('functionlist','functionlist','SUPPORT_NAS_IP_ADDR') == '1' then
+%>
+            <tr  class="title-option">
+                <td width="30%"><input type="checkbox" name="nasip_enable_gui" <%= nasip_enable_status %> ><input type="hidden" name="cbid.wireless.<%=networkName%>.nasip_enable"><%:NAS-IP%></td>
+                <td><input type="text" maxlength="39" name="cbid.wireless.<%=networkName%>.nasip" value="<%=uci:get('wireless',networkName,'nasip')%>"></td>
+            </tr>
+        </table>
+    </div>
+
+<%
+end
+    end
+end -----#### SUPPORT_ALL_ENCRYPTION_HAS_RADIUS_SETTING END ###
+%>
+<%
+if uci:get('functionlist','functionlist','SUPPORT_ALL_ENCRYPTION_HAS_RADIUS_SETTING') == '1' then -----#### SUPPORT_ALL_ENCRYPTION_HAS_RADIUS_ACCOUNTING START ###
+%>
+    <div class="ctx-body">
+    <div  class="table bottommargin"></div>
+        <table class="ecm-tbl" id="tbl_radius_acctounting">
+            <tr>
+                <th width="30%" colspan="2" class="title"><%:Radius Accounting%></th>
+            </tr>
+        </table>
+    </div>
+<%
+end -----#### SUPPORT_ALL_ENCRYPTION_HAS_RADIUS_ACCOUNTING END ###
+%>
+<%
+if uci:get('functionlist','functionlist','SUPPORT_FAST_ROAMING_SETTING') == '1' then -----#### SUPPORT_FAST_ROAMING_SETTING START ###
+%>
+    <div class="ctx-body">
+	<div id="tbl_3" class="table bottommargin"></div>
+        <table class="ecm-tbl" id="tbl_fastroaming">
+			<tr>
+				<th width="30%" colspan="2" class="title"><%:Fast Roaming%><img class="popper" data-popbox="Fast_Roaming_info" src="<%=media%>/pictures/icon_info_blue.png"></th>
+			</tr>
+        </table>
+    </div>
+<%
+end -----#### SUPPORT_FAST_ROAMING_SETTING END ###
+%>
+    <div class="ctx-body">
+	    <div id="tbl_4" class="table bottommargin"></div>
+	    <table class="ecm-tbl" id="tbl_macfilter">
+		    <tr>
+			    <th width="30%" colspan="2" class="title"><%:Wireless MAC Filter%></th>
+		    </tr>
+	    </table>
+    </div>
+	<div class="ctx-body">
+    <div id="tbl_5" class="table bottommargin"></div>
+<%
+if uci:get('functionlist','functionlist','SUPPORT_WIRELESS_TRAFFIC_SHAPING') == '1' then -----#### SUPPORT_WIRELESS_TRAFFIC_SHAPING START ###
+%>
+         <table class="ecm-tbl" id="tbl_tc">
+                <tr>
+                    <th width="30%" colspan="2" class="title"><%:Wireless Traffic Shaping%></th>
+                </tr>
+        </table>
+<%
+end -----#### SUPPORT_WIRELESS_TRAFFIC_SHAPING END ###
+%>
+		<div class="cbi-page-actions">
+			<!--input class="cbi-button cbi-button-apply" type="submit" name="cbi.apply" value="Save &#38; Apply" /-->
+			<input style="width:auto;" class="cbi-button cbi-button-save" id="encryption_submit" type="button" onclick='checkRule.check()' value="<%:Save%>"/>&nbsp;<span class="btn_desc"><%:Save current setting(s)%></span>
+			<!--input class="cbi-button cbi-button-reset" type="reset" value="Reset" /-->
+		</div>
+    </div>
+</form>
+<script type="text/javascript">cbi_d_update();</script>
+<span id="bssid_span" style="display:none">
+                            <input id='cbid.wireless.<%=wnet.sid%>.bssid1' type="text" name='<%="bssid".."0"%>' maxlength="2" size="2" disabled>
+                            :
+                            <input id='cbid.wireless.<%=wnet.sid%>.bssid2' type="text" name='<%="bssid".."1"%>' maxlength="2" size="2" disabled>
+                            :
+                            <input id='cbid.wireless.<%=wnet.sid%>.bssid3' type="text" name='<%="bssid".."2"%>' maxlength="2" size="2" disabled>
+                            :
+                            <input id='cbid.wireless.<%=wnet.sid%>.bssid4' type="text" name='<%="bssid".."3"%>' maxlength="2" size="2" disabled>
+                            :
+                            <input id='cbid.wireless.<%=wnet.sid%>.bssid5' type="text" name='<%="bssid".."4"%>' maxlength="2" size="2" disabled>
+                            :
+                            <input id='cbid.wireless.<%=wnet.sid%>.bssid6' type="text" name='<%="bssid".."5"%>' maxlength="2" size="2" disabled>
+</span>
+<span id="acl_span" style="display:none">
+                            <input id='<%="aclid".."0"%>' type="text" name='<%="aclid".."0"%>' maxlength="2" size="2" disabled>
+                            :
+                            <input id='<%="aclid".."1"%>' type="text" name='<%="aclid".."1"%>' maxlength="2" size="2" disabled>
+                            :
+                            <input id='<%="aclid".."2"%>' type="text" name='<%="aclid".."2"%>' maxlength="2" size="2" disabled>
+                            :
+                            <input id='<%="aclid".."3"%>' type="text" name='<%="aclid".."3"%>' maxlength="2" size="2" disabled>
+                            :
+                            <input id='<%="aclid".."4"%>' type="text" name='<%="aclid".."4"%>' maxlength="2" size="2" disabled>
+                            :
+                            <input id='<%="aclid".."5"%>' type="text" name='<%="aclid".."5"%>' maxlength="2" size="2" disabled>
+                            <input class="cbi-button" id="acl_btn" name="acl_btn" type="button" value="<%:Add%>" disabled>
+</span>
+</body>
+</html>

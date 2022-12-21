@@ -1,0 +1,866 @@
+<%
+	require "luci.fs"
+	require "luci.tools.status"
+	local uci = require "luci.model.uci".cursor()
+	local ntm = require "luci.model.network".init()
+	local disp = require "luci.dispatcher"
+	local firmwareVersion = luci.util.trim(luci.util.exec("cat /etc/version | grep Firmware | awk '{print $4}'"))
+	local capwap_firmwareVersion = luci.util.trim(luci.util.exec("cat /etc/version_capwap")) or "?"
+	local lan_proto = uci:get("network", "lan", "proto")
+	local lan_ip = luci.util.trim(luci.util.exec("ifconfig br-lan | grep \"inet addr\" | awk -F \" \" '{print $2}' | awk -F \":\" '{print $2}'"))
+	local ipcamip = uci:get('xrelayd','xrelayd','conn_sec_ip') or "192.168.99.99"
+	local mesh, ssid, channel, passwd, encryption, deviceName
+	local mesh_5g, ssid_5g, channel_5g, passwd_5g, encryption_5g, deviceName_5g
+	local WLANVLANEnable = uci:get("network", "sys", "WLANVLANEnable")
+	local managementVlanId = uci:get("network", "sys", "ManagementVLANID") or 0
+	local ManagementVLANID_MAX_VALUE = tonumber(uci:get("functionlist", "vendorlist", "ManagementVLANID_MAX_VALUE") or 4094)
+
+	mesh = uci:get("wireless","wifi0_mesh","disabled")
+	passwd = uci:get("wireless","wifi0_mesh","aeskey")
+	ssid = uci:get("wireless","wifi0_mesh","ssid")
+	channel = uci:get("wireless","wifi0","channel")
+	encryption = uci:get("wireless","wifi0_mesh","nawds_encr")
+	deviceName = uci:get("wireless","wifi0_mesh","MeshDeviceName")
+	connectType = uci:get("wireless","wifi0_mesh","MeshConnectType")
+	passwd_type = uci:get("wireless","wifi0_mesh","aeskey_type")
+	mesh_ID = uci:get("wireless","wifi0_mesh","Mesh_id")
+	mesh_ID_5g = uci:get("wireless","wifi1_mesh","Mesh_id")
+	mesh_5g = uci:get("wireless","wifi1_mesh","disabled")
+	passwd_5g = uci:get("wireless","wifi1_mesh","aeskey")
+	ssid_5g = uci:get("wireless","wifi1_mesh","ssid")
+	channel_5g = uci:get("wireless","wifi1","channel")
+	encryption_5g = uci:get("wireless","wifi1_mesh","nawds_encr")
+	deviceName_5g = uci:get("wireless","wifi1_mesh","MeshDeviceName")
+	connectType_5g = uci:get("wireless","wifi1_mesh","MeshConnectType")
+	passwd_type_5g = uci:get("wireless","wifi1_mesh","aeskey_type")
+	auto_Config = uci:get("wireless","wifi0_mesh","MeshEzBroCast")
+
+	local opmode = uci:get("wireless","wifi0","opmode")
+	local opmode_5g = uci:get("wireless","wifi1","opmode")
+	local ssid_wifi = luci.util.repSpec(tostring(uci:get("wireless","wifi0_ssid_1","ssid")))
+	local ssid_wifi_5g = luci.util.repSpec(tostring(uci:get("wireless","wifi1_ssid_1","ssid")))
+	local enc_wifi = uci:get("wireless","wifi0_ssid_1","encryption")
+	local enc_wifi_5g = uci:get("wireless","wifi1_ssid_1","encryption")
+	local key_wifi, key_wifi_5g, key_id, key_id_5g, key_str, key_str_5g
+
+	if enc_wifi=="none" then
+		key_wifi = "Disable"
+	elseif enc_wifi=="wep-open" then
+		key_id = uci:get("wireless","wifi0_ssid_1","key_id")
+		key_str = "key"..key_id
+		key_wifi = uci:get("wireless","wifi0_ssid_1",key_str)
+	else
+		key_wifi = uci:get("wireless","wifi0_ssid_1","key")
+	end
+
+	if enc_wifi_5g=="none" then
+		key_wifi_5g = "Disable"
+	elseif enc_wifi_5g=="wep-open" then
+		key_id_5g = uci:get("wireless","wifi1_ssid_1","key_id")
+		key_str_5g = "key"..key_id_5g
+		key_wifi_5g = uci:get("wireless","wifi1_ssid_1",key_str_5g)
+	else
+		key_wifi_5g = uci:get("wireless","wifi1_ssid_1","key")
+	end
+
+	local wifi_disabled = uci:get("wireless","wifi0","disabled")
+	local wifi_disabled_5g = uci:get("wireless","wifi1","disabled")
+	
+	local dev
+	local devices = { }
+	for _, dev in luci.util.vspairs(luci.sys.net.devices()) do
+		if dev ~= "lo" and not ntm:ignore_interface(dev) then
+			devices[#devices+1] = dev
+		end
+	end
+
+	local wifi_info = {}
+	local wifi_info_dhcp = {}
+	local wifi_info_length=0
+	local wifi_info_tmp = {}
+	local wifi_info_tmp_24g = {}
+	local wifi_info_tmp_5g = {}
+	local m
+	local n=1
+	--[[
+	for _, dev in ipairs(devices) do
+		if string.find(dev, "ath") then
+			wifi_info_tmp = luci.util.split(luci.util.trim(luci.util.exec("cat /tmp/fingerprint_status_list_"..dev.."")), "\n")
+			-- luci.util.exec("echo \""..string.len(wifi_info_dhcp[1]).."\" >/dev/console")
+		end
+
+		if wifi_info_tmp[1]~=nil and string.len(wifi_info_tmp[1])~=0 then
+			for m = 1, table.getn(wifi_info_tmp) do
+				wifi_info_dhcp[n] = wifi_info_tmp[m]
+				n=n+1
+			end
+			wifi_info_tmp = {}
+		end
+	end
+
+	if wifi_info_dhcp[1]~=nil then
+		if string.len(wifi_info_dhcp[1])==0 then
+			wifi_info_length = 0
+		else
+			wifi_info_length = table.getn(wifi_info_dhcp)
+		end
+	end
+	]]--
+
+	luci.util.exec("sh /usr/sbin/wifi_list 0 sta")
+	luci.util.exec("sh /usr/sbin/wifi_list 1 sta")
+	wifi_info_tmp_24g = luci.util.split(luci.util.trim(luci.util.exec("cat /tmp/client_list_24g")), "\n")
+	wifi_info_tmp_5g = luci.util.split(luci.util.trim(luci.util.exec("cat /tmp/client_list_5g")), "\n")
+	if wifi_info_tmp_24g~=nil and string.len(wifi_info_tmp_24g[1])~=0 then
+		wifi_info_tmp = wifi_info_tmp_24g
+	end
+
+	n=1
+	if wifi_info_tmp_5g~=nil and string.len(wifi_info_tmp_5g[1])~=0 then
+		for m = table.getn(wifi_info_tmp)+1, table.getn(wifi_info_tmp)+table.getn(wifi_info_tmp_5g) do
+			wifi_info_tmp[m] = wifi_info_tmp_5g[n]
+			n=n+1
+		end
+	end
+
+	n=1
+	if wifi_info_tmp[1]~=nil and string.len(wifi_info_tmp[1])~=0 then
+		for m = 1, table.getn(wifi_info_tmp) do
+			wifi_info[n] = wifi_info_tmp[m]
+			n=n+1
+		end
+		wifi_info_tmp = {}
+	end
+
+	if wifi_info[1]~=nil and string.len(wifi_info[1])~=0 then
+		if wifi_info_length==nil then
+			wifi_info_length = table.getn(wifi_info)
+		else
+			wifi_info_length = wifi_info_length + table.getn(wifi_info)
+		end
+	end
+	local resolution_1 = ""
+	local framerate_1 = ""
+	local bitrate_1 = ""
+	local resolution_2 = ""
+	local framerate_2 = ""
+	local bitrate_2 = ""
+	if uci:get("functionlist","functionlist","SUPPORT_DEMO_APPLY") == "1" then
+		resolution_1 = 1
+		framerate_1 = 2
+		bitrate_1 = 3
+		resolution_2 = 4
+		framerate_2 = 5
+		bitrate_2 = 6
+	else
+		resolution_1 = luci.util.trim(luci.util.exec("app_client -m POST -i "..ipcamip.." -a GetVideoStreamSettingsByID -e 1 -d 0 1 -p \"{'StreamID':1}\" | awk -F \",\" '{print $5}' | awk -F \":\" '{print $2}'"))
+		framerate_1 = luci.util.trim(luci.util.exec("app_client -m POST -i "..ipcamip.." -a GetVideoStreamSettingsByID -e 1 -d 0 1 -p \"{'StreamID':1}\" | awk -F \",\" '{print $6}' | awk -F \":\" '{print $2}'"))
+		bitrate_1 = luci.util.trim(luci.util.exec("app_client -m POST -i "..ipcamip.." -a GetVideoStreamSettingsByID -e 1 -d 0 1 -p \"{'StreamID':1}\" | awk -F \",\" '{print $8}' | awk -F \":\" '{print $2}'"))
+		resolution_2 = luci.util.trim(luci.util.exec("app_client -m POST -i "..ipcamip.." -a GetVideoStreamSettingsByID -e 1 -d 0 1 -p \"{'StreamID':2}\" | awk -F \",\" '{print $5}' | awk -F \":\" '{print $2}'"))
+		framerate_2 = luci.util.trim(luci.util.exec("app_client -m POST -i "..ipcamip.." -a GetVideoStreamSettingsByID -e 1 -d 0 1 -p \"{'StreamID':2}\" | awk -F \",\" '{print $6}' | awk -F \":\" '{print $2}'"))
+		bitrate_2 = luci.util.trim(luci.util.exec("app_client -m POST -i "..ipcamip.." -a GetVideoStreamSettingsByID -e 1 -d 0 1 -p \"{'StreamID':2}\" | awk -F \",\" '{print $8}' | awk -F \":\" '{print $2}'"))
+	end
+
+	local md5_mac = luci.util.split(luci.util.exec("sh /usr/sbin/check_code.sh"), "\n")
+
+	local myself_mac = luci.util.trim(luci.util.exec("/sbin/mesh.sh get_myselfmac"))
+	local meshlist = luci.util.trim(luci.util.exec('cat /tmp/mesh_global_node_info'))
+	local connectedNode = luci.util.trim(luci.util.exec('batctl o -H | grep -v "No batman" | wc -l'))
+
+	local wifi_down_24g = luci.util.trim(luci.util.exec("iwconfig | grep \"ath29\""))
+	local wifi_down_5g = luci.util.trim(luci.util.exec("iwconfig | grep \"ath59\""))
+	local wifi_wds_down_24g_0 = uci:get("wireless","wifi0_wds_0","WLANWDSPeer");
+	local wifi_wds_down_24g_1 = luci.util.trim(luci.util.exec("iwconfig | grep \"ath20\""))
+	local wifi_wds_down_24g_2 = luci.util.trim(luci.util.exec("iwconfig | grep \"ath21\""))
+	local wifi_wds_down_24g_3 = luci.util.trim(luci.util.exec("iwconfig | grep \"ath22\""))
+	local wifi_wds_down_24g_4 = luci.util.trim(luci.util.exec("iwconfig | grep \"ath23\""))
+	local wifi_wds_down_5g_0 = uci:get("wireless","wifi1_wds_0","WLANWDSPeer");
+	local wifi_wds_down_5g_1 = luci.util.trim(luci.util.exec("iwconfig | grep \"ath50\""))
+	local wifi_wds_down_5g_2 = luci.util.trim(luci.util.exec("iwconfig | grep \"ath51\""))
+	local wifi_wds_down_5g_3 = luci.util.trim(luci.util.exec("iwconfig | grep \"ath52\""))
+	local wifi_wds_down_5g_4 = luci.util.trim(luci.util.exec("iwconfig | grep \"ath53\""))
+
+	local mesh_disabled = uci:get("mesh","wifi","disabled")
+	local mesh_operation_mode = uci:get("mesh","wifi","mode")
+%>
+
+<%+header%>
+<script type="text/javascript">
+	document.getElementById('menu_right_style').style.display = "none";
+	$("#maincontent").removeClass();
+	$("#maincontent").css('margin','auto');
+	$("#maincontent").css('padding-top','0');
+	$("#maincontent").css('width','100%');
+
+	var hostname_mesh=new Array(), mac_mesh=new Array(), ip_mesh=new Array(), hostname_wifi=new Array(), mac_wifi=new Array(), ip_wifi=new Array();
+	var connectedNode = "<%=connectedNode%>";
+	var wifi_devnum = 0;
+	var meshdata = [];
+	var wifi_down_24g = 0, wifi_down_5g = 0;
+	var resolution_1, bitrate_1, resolution_2, bitrate_2 = "";
+	if ( "<%=uci:get('functionlist','functionlist','SUPPORT_DEMO_APPLY')%>" == "1")
+	{
+		resolution_1 = "1280*720";
+		bitrate_1 = "6M"
+		resolution_2 = "640*360";
+		bitrate_2 = "3M"
+	}
+	else
+	{
+		<%if(resolution_1~="") then%>
+			resolution_1 = <%=resolution_1%>;
+			bitrate_1 = <%=bitrate_1%>;
+			resolution_1 = resolution_1.split("\"");
+			bitrate_1 = bitrate_1.split("\"");
+		<%end%>
+		<%if(resolution_2~="") then%>
+			resolution_2 = <%=resolution_2%>;
+			bitrate_2 = <%=bitrate_2%>;
+			resolution_2 = resolution_2.split("\"");
+			bitrate_2 = bitrate_2.split("\"");
+		<%end%>
+	}
+	<% if opmode=="ap" and wifi_down_24g~="" then %>
+		wifi_down_24g = 1;
+	<% elseif opmode=="wds_ap" and wifi_wds_down_24g_1=="" and wifi_wds_down_24g_2=="" and wifi_wds_down_24g_3=="" and wifi_wds_down_24g_4=="" then %>
+		<% if wifi_wds_down_24g_0~="" then %>
+			if("<%=wifi_wds_down_24g_0%>".indexOf("v")==-1)
+				wifi_down_24g = 1;
+		<% else %>
+			wifi_down_24g = 1;
+		<% end %>
+	<% end %>
+
+	<% if opmode_5g=="ap" and wifi_down_5g~="" then %>
+		wifi_down_5g = 1;
+	<% elseif opmode_5g=="wds_ap" and wifi_wds_down_5g_1=="" and wifi_wds_down_5g_2=="" and wifi_wds_down_5g_3=="" and wifi_wds_down_5g_4=="" then %>
+		<% if wifi_wds_down_5g_0~="" then %>
+			if("<%=wifi_wds_down_5g_0%>".indexOf("v")==-1)
+				wifi_down_5g = 1;
+		<% else %>
+			wifi_down_5g = 1;
+		<% end %>
+	<% end %>
+
+	function mesh_table()
+	{
+		var i, obj;
+		var j=0;
+
+		if('<%=meshlist%>' != "")
+		{
+			obj = JSON.parse('<%=meshlist%>');
+			for(i=0;i<obj.length;i++)
+			{
+				if(obj[i].GetMeshNodeInfoResult == "OK")
+				{
+					meshdata[j] = obj[i];
+					j++;
+				}
+			}
+		}
+	}
+
+	function mesh_global_node_info()
+	{
+		var i, j, url, localdata, global_obj, local_obj, meshlist;
+		var l = 0;
+
+		if ( meshdata !="")
+		{
+			global_obj = meshdata;
+			local_obj = meshdata;
+			for(j=0;j<global_obj.length ;j++)
+			{
+				if( global_obj[j].MeshDevice.MacAddress == "<%=myself_mac%>" )
+				{
+					for(i=0;i<global_obj[j].Neighbors.length;i++)
+					{
+						for(k=0;k<local_obj.length ;k++)
+						{
+							if( local_obj[k].MeshDevice.MacAddress == (global_obj[j].Neighbors[i].MAC).toUpperCase() )
+							{
+								
+								l++;
+								hostname_mesh[l] = local_obj[k].MeshDevice.DeviceName;
+								mac_mesh[l] = local_obj[k].MeshDevice.MacAddress;
+								ip_mesh[l] = local_obj[k].MeshDevice.LANIPAddress;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	function getwifidev()
+	{
+		var wifi_info = new Array();
+		var wifi_info_dhcp = new Array();
+		var wifi_devlist;
+		var index = 0;
+		var str="";
+
+		<%
+		if wifi_info_length~=nil then
+		%>
+			wifi_devnum = <%=wifi_info_length%>;
+		<%
+			end
+		%>
+		/*
+		<%
+		if table.getn(wifi_info_dhcp)~=nil and table.getn(wifi_info_dhcp)~=0 then
+			for i = 1, table.getn(wifi_info_dhcp) do
+		%>
+				if("<%=wifi_info_dhcp[i]%>" && "<%=wifi_info_dhcp[i]%>"!="")
+				{
+					wifi_info_dhcp[<%=i%>] = "<%=wifi_info_dhcp[i]%>";
+				}
+		<%
+			end
+		%>
+			for(var i=1;i<=wifi_info_dhcp.length-1;i++)
+			{
+				if("<%=wifi_info_dhcp[1]%>" && wifi_info_dhcp[i]!="")
+				{
+					wifi_devlist = wifi_info_dhcp[i].split("|");
+					hostname_wifi[i] = wifi_devlist[3];
+					mac_wifi[i] = wifi_devlist[0];
+					ip_wifi[i] = wifi_devlist[1];
+				}
+				index = i;
+			}
+		<%
+		end
+		%>
+		*/
+		<%
+		if table.getn(wifi_info)~=nil and table.getn(wifi_info)~=0 then
+			for i = 1, table.getn(wifi_info) do
+		%>
+				if("<%=wifi_info[i]%>" && "<%=wifi_info[i]%>"!="")
+				{
+					wifi_info[<%=i%>] = "<%=wifi_info[i]%>";
+				}
+		<%
+			end
+		%>
+	<%
+	if uci:get('functionlist','functionlist','SUPPORT_DEMO_APPLY') == '1' then
+	%>
+		mac_wifi[1] = "88:DC:96:88:99:32";
+		hostname_wifi[1] = "EWS1025"
+		ip_wifi[1] = "192.168.0.202"
+		mac_wifi[2] = "88:DC:96:88:99:34";
+		hostname_wifi[2] = "EWS360"
+		ip_wifi[2] = "192.168.0.203"
+		mac_wifi[3] = "88:DC:96:88:99:36";
+		hostname_wifi[3] = "EWS370"
+		ip_wifi[3] = "192.168.0.204"
+	<%else%>
+			var j = 1;
+			for(var i=index+1;i<=wifi_devnum;i++)
+			{
+				if("<%=wifi_info[1]%>" && wifi_info[j]!="")
+				{
+					wifi_devlist = wifi_info[j].split("|");
+					mac_wifi[i] = wifi_devlist[0];
+					if(wifi_devlist.length>21)
+					{
+						hostname_wifi[i] = wifi_devlist[22];
+						ip_wifi[i] = wifi_devlist[20];
+					}
+					else
+					{
+						hostname_wifi[i] = wifi_devlist[20];
+						ip_wifi[i] = wifi_devlist[18];
+					}
+					j++;
+				}
+			}
+	<%end%>
+		<%
+		end
+		%>
+	}
+
+	mesh_table();
+
+	$(function(){
+		mesh_global_node_info();
+	})
+
+	function copyto()
+	{
+
+	}
+
+	dw('<body onload="copyto()">');
+		dw('<form name="form1" action="<%=REQUEST_URI%>" method="post">');
+		dw('<input type="hidden" name="page" value="home_info">');
+		dw('<input type="hidden" name="selectedPage" value="">');
+		dw('<input type="hidden" name="preDateNum" value="">');
+		dw('<input type="hidden" name="wanStatus" value="">');
+		dw('<input type="hidden" name="conStatus" value="">');
+		dw('<input type="hidden" name="wireStatus" value="">');
+		dw('<div id="g_main" style="overflow: hidden;">');
+		dw('<table>');
+		dw('<tr><td width="36%">');
+
+			XHR.poll(3, '<%=luci.dispatcher.build_url("admin", "status", "overview")%>', { status:1 },
+			function(x, info){
+				if(x.responseText)
+				{
+					var str ="", lan_proto, lan_ip;
+					var firmwareVersion = '<%=firmwareVersion or "?"%>';
+					var applicationVer ="";
+					str+='&nbsp;';
+
+					str+='<table align="center" width="100%" border="0" cellpadding="1" cellspacing="1"><tbody>';
+<%
+if (uci:get('functionlist','functionlist','SUPPORT_CAPWAP_CONTROL') == '1')  then -----#### SUPPORT_CAPWAP_CONTROL START ###
+%>
+	(firmwareVersion == "?")?"?":(applicationVer="v"+firmwareVersion.substring(0, firmwareVersion.lastIndexOf('.'))+"_c<%=capwap_firmwareVersion%>");
+<%
+else -----####  SUPPORT_CAPWAP_CONTROL ELSE ####
+%>
+	(firmwareVersion == "?")?"?":(applicationVer=firmwareVersion.substring(0, firmwareVersion.lastIndexOf('.')));
+<%
+end-----####  SUPPORT_CAPWAP_CONTROL END ####
+%>
+					str+='<tr class="title-option"><td><%:Application Version%></td><td>'+applicationVer+'</td></tr>';
+					str+='<tr class="title-option"><td><%:Serial Number%></td><td><%=luci.util.trim(luci.util.exec("setconfig -g 0"))%></td></tr>';
+
+<%
+if uci:get('functionlist','functionlist','SUPPORT_DEMO_APPLY') == '1' then -----#### SUPPORT_DEMO_APPLY START ###
+%>
+					str+='<tr class="title-option"><td><%:MAC Address%></td><td><%:88:DC:96:88:99:30%></td></tr>';
+<%
+else -----#### SUPPORT_DEMO_APPLY ELSE ###
+%>
+					str+='<tr class="title-option"><td><%:MAC Address%></td><td><%=ntm:get_mac("br-lan")%></td></tr>';
+<%
+end -----#### SUPPORT_DEMO_APPLY END ###
+%>
+
+					
+					if("<%=lan_proto%>"=="") lan_proto="---"; else lan_proto="<%=lan_proto%>";
+					if(lan_proto=="dhcp")
+						str+='<tr class="title-option"><td><%:Attain IP Protocol%></td><td><%:DHCP%></td></tr>';
+					else if (lan_proto=="static")
+						str+='<tr class="title-option"><td><%:Attain IP Protocol%></td><td><%:Static IP%></td></tr>';
+					else
+						str+='<tr class="title-option"><td><%:Attain IP Protocol%></td><td>'+lan_proto+'</td></tr>';
+					if("<%=lan_ip%>"=="") lan_ip="---"; else lan_ip="<%=lan_ip%>";
+
+<%
+if uci:get('functionlist','functionlist','SUPPORT_DEMO_APPLY') == '1' then -----#### SUPPORT_DEMO_APPLY START ###
+%>
+					str+='<tr class="title-option"><td><%:IP Address%></td><td><%:192.168.1.1%></td></tr>';
+<%
+else -----#### SUPPORT_DEMO_APPLY ELSE ###
+%>
+					str+='<tr class="title-option"><td><%:IP Address%></td><td>'+lan_ip+'</td></tr>';
+<%
+end -----#### SUPPORT_DEMO_APPLY END ###
+%>
+
+					str+='<tr class="title-option"><td><%:IP Address%></td><td>'+lan_ip+'</td></tr>';
+					str+='<tr class="title-option"><td><%:Current Local Time%></td><td><%=os.date()%></td></tr>';
+					str+='<tr class="title-option"><td><%:Uptime%></td><td>'+String.format("%t","<%=luci.sys.uptime()%>")+'</td></tr>';
+					str+='<tr class="title-option"><td><%:Management VLAN ID%></td>';
+					if(<%=WLANVLANEnable%>==0 || (<%=tonumber(managementVlanId)%> > <%=ManagementVLANID_MAX_VALUE%>) || (<%=tonumber(managementVlanId)%> < 1))
+					{
+						str+='<td id="mg_vlan_id" myid="VLAN_id_text"><%:Untagged%></td>';
+					}
+					else
+					{
+						str+='<td id="mg_vlan_id" myid="VLAN_id_text"><%=managementVlanId%></td>';
+					}
+					str+='</tr>';
+<% if (uci:get('functionlist','functionlist','SUPPORT_ENGENIUS_DDNS') == '1')  or (uci:get('functionlist','functionlist','OMIT_ENGENIUS_DDNS') == '0') then --[[ #### SUPPORT ENGENIUSS DDNS or OMIT_ENGENIUS_DDNS ### --]] %>
+					str+='<tr class="title-option"><td myid="title_ddns_text"><%:UID%></td><td myid="wan_ipaddr_text"><%=luci.util.trim(luci.util.exec("setconfig -g 35"))%></td></tr>';
+					str+='<tr class="title-option"><td myid="title_wan_ipaddr_text"><%:DDNS%></td><td myid="wan_ipaddr_text"><%=luci.util.trim(luci.util.exec("setconfig -g 35"))%><%:.%><%=luci.util.trim(luci.util.exec("setconfig -g 37"))%></td></tr>';										
+<% end %>
+					str+='<tr class="title-option"><td myid="title_check_code"><%:Check Code%></td><td myid="check_code"><%=md5_mac[1]%></td></tr><tr style="background-color:white;"><td><br></td></tr>';
+					str+='<tr style="background-color:white;"><td><br></td></tr>';
+					
+
+					str+='<tr class="title"><td colspan="3"><i><%:Wireless LAN 2.4GHz :%></i></td></tr>';
+					var opmode;
+					if(<%=mesh_disabled%>==1  || (<%=mesh_disabled%>==0 && <%=mesh%>==1))
+					{
+						switch("<%=opmode%>")
+						{
+							case 'ap':
+								opmode = "Access Point";
+								str+='<tr class="title-option"><td><%:Operation Mode%></td><td>'+opmode+'</td></tr>';
+								str+='<tr class="title-option"><td><%:WiFi(SSID) Name%></td><td>'+repSpecHTML("<%=ssid_wifi%>")+'</td></tr>';
+								str+='<tr style="background-color:white;"><td><br></td></tr>';
+								// str+='<tr class="title-option"><td><%:Password%></td><td><%=key_wifi%></td></tr><tr><td><br></td></tr>';
+								break;
+							case 'sta':
+								opmode = "Client Bridge";
+								str+='<tr class="title-option"><td><%:Operation Mode%></td><td>'+opmode+'</td></tr>';
+						
+								var wireless24g, t_idx, is_assoc, net, ssid_cb, connection_status;
+								wireless24g=info.wifinets[0]||"";
+								
+								if(wireless24g != "")
+								{
+									if(wireless24g.opmode == "sta")
+									{
+										for(var i =0;i<wireless24g.networks.length;i++)
+										{
+											if(wireless24g.networks[i].nmode == wireless24g.opmode)
+											{
+												t_idx = i;
+												break;
+											}
+										}
+										net = wireless24g.networks[t_idx];
+										ssid_cb = (net.ssid)?net.ssid:"---";
+										is_assoc = (net.bssid != "00:00:00:00:00:00");
+										connection_status = ((is_assoc)?"Associated":"Not-Associated");
+									}
+								}
+								str+='<tr class="title-option"><td><%:SSID%></td><td>'+ssid_cb+'</td></tr>';
+								str+='<tr style="background-color:white;"><td><br></td></tr>';
+								// str+='<tr class="title-option"><td><%:Connection Status%></td><td>'+connection_status+'</td></tr><tr><td><br></td></tr>';
+								break;
+							case 'wds_ap':
+								opmode = "WDS Access Point";
+								str+='<tr class="title-option"><td><%:Operation Mode%></td><td>'+opmode+'</td></tr><tr style="background-color:white;"><td><br></td></tr>';
+								break;
+							case 'wds_bridge':
+								opmode = "WDS Bridge";
+								str+='<tr class="title-option"><td><%:Operation Mode%></td><td>'+opmode+'</td></tr><tr style="background-color:white;"><td><br></td></tr>';
+								break;
+							case 'wds_sta':
+								opmode = "WDS Station";
+								str+='<tr class="title-option"><td><%:Operation Mode%></td><td>'+opmode+'</td></tr><tr style="background-color:white;"><td><br></td></tr>';
+								break;
+						}
+					}
+					else
+					{
+						if("<%=mesh_operation_mode%>"=="mesh_ap")
+						{
+							opmode = "Mesh AP";
+							str+='<tr class="title-option"><td><%:Operation Mode%></td><td>'+opmode+'</td></tr>';
+							str+='<tr class="title-option"><td><%:WiFi(SSID) Name%></td><td>'+repSpecHTML("<%=ssid_wifi%>")+'</td></tr>';
+							str+='<tr style="background-color:white;"><td><br></td></tr>';
+						}
+						else
+						{
+							opmode = "Mesh Point";
+							str+='<tr class="title-option"><td><%:Operation Mode%></td><td>'+opmode+'</td></tr>';
+							str+='<tr style="background-color:white;"><td><br></td></tr>';
+						}
+					}
+					
+					str+='<tr class="title"><td colspan="3"><i><%:Wireless LAN 5GHz :%></i></td></tr>';
+					var opmode_5g;
+					if(<%=mesh_disabled%>==1 || (<%=mesh_disabled%>==0 && <%=mesh_5g%>==1))
+					{
+						switch("<%=opmode_5g%>")
+						{
+							case 'ap':
+								opmode_5g = "Access Point";
+								str+='<tr class="title-option"><td><%:Operation Mode%></td><td>'+opmode_5g+'</td></tr>';
+								str+='<tr class="title-option"><td><%:WiFi(SSID) Name%></td><td>'+repSpecHTML("<%=ssid_wifi_5g%>")+'</td></tr>';
+								str+='<tr style="background-color:white;"><td><br></td></tr>';
+								// str+='<tr class="title-option"><td><%:Password%></td><td><%=key_wifi_5g%></td></tr><tr><td><br></td></tr>';
+								break;
+							case 'sta':
+								opmode_5g = "Client Bridge";
+								str+='<tr class="title-option"><td><%:Operation Mode%></td><td>'+opmode_5g+'</td></tr>';
+								
+								var wireless5g, t_idx, is_assoc, net, ssid_cb_5g, connection_status_5g;
+								wireless5g=info.wifinets[1]||"";
+
+								if(wireless5g != "")
+								{
+									if(wireless5g.opmode == "sta")
+									{
+										for(var i =0;i<wireless5g.networks.length;i++)
+										{
+											if(wireless5g.networks[i].nmode == wireless5g.opmode)
+											{
+												t_idx = i;
+												break;
+											}
+										}
+										net = wireless5g.networks[t_idx];
+										ssid_cb_5g = (net.ssid)?net.ssid:"---";
+										is_assoc = (net.bssid != "00:00:00:00:00:00");
+										connection_status_5g = (is_assoc)?"Associated":"Not-Associated";
+									}
+								}
+								str+='<tr class="title-option"><td><%:SSID%></td><td>'+ssid_cb_5g+'</td></tr>';
+								str+='<tr style="background-color:white;"><td><br></td></tr>';
+								// str+='<tr class="title-option"><td><%:Connection Status%></td><td>'+connection_status_5g+'</td></tr><tr><td><br></td></tr>';
+								break;
+							case 'wds_ap':
+								opmode_5g = "WDS Access Point";
+								str+='<tr class="title-option"><td><%:Operation Mode%></td><td>'+opmode_5g+'</td></tr><tr style="background-color:white;"><td><br></td></tr>';
+								break;
+							case 'wds_bridge':
+								opmode_5g = "WDS Bridge";
+								str+='<tr class="title-option"><td><%:Operation Mode%></td><td>'+opmode_5g+'</td></tr><tr style="background-color:white;"><td><br></td></tr>';
+								break;
+							case 'wds_sta':
+								opmode_5g = "WDS Station";
+								str+='<tr class="title-option"><td><%:Operation Mode%></td><td>'+opmode_5g+'</td></tr><tr style="background-color:white;"><td><br></td></tr>';
+								break;
+						}
+					}
+					else
+					{
+						if("<%=mesh_operation_mode%>"=="mesh_ap")
+						{
+							opmode = "Mesh AP";
+							str+='<tr class="title-option"><td><%:Operation Mode%></td><td>'+opmode+'</td></tr>';
+							str+='<tr class="title-option"><td><%:WiFi(SSID) Name%></td><td>'+repSpecHTML("<%=ssid_wifi_5g%>")+'</td></tr>';
+							str+='<tr style="background-color:white;"><td><br></td></tr>';
+						}
+						else
+						{
+							opmode = "Mesh Point";
+							str+='<tr class="title-option"><td><%:Operation Mode%></td><td>'+opmode+'</td></tr>';
+							str+='<tr style="background-color:white;"><td><br></td></tr>';
+						}
+					}
+
+					var mesh_connetType, mesh_ssid, mesh_id, mesh_band, mesh_channel, mesh_pw, mesh_node;
+
+					if(<%=mesh_disabled%>==1)
+					{
+						mesh_connetType = 0;
+						mesh_ssid = "---";
+						mesh_id = "---";
+						mesh_band = "---";
+						mesh_channel = "---";
+						mesh_pw = "---";
+						mesh_node = "---";
+					}
+					else if(<%=mesh%>==0)
+					{
+						mesh_connetType=<%=connectType%>;
+						mesh_ssid = "<%=ssid%>";
+						mesh_id = "<%=mesh_ID%>";
+						mesh_band = "2.4G";
+						mesh_channel = "<%=channel%>";
+						mesh_pw = "<%=passwd%>";
+						mesh_node = connectedNode;
+
+					}
+					else
+					{
+						mesh_connetType=<%=connectType_5g%>;
+						mesh_ssid = "<%=ssid_5g%>";
+						mesh_id = "<%=mesh_ID_5g%>";
+						mesh_band = "5G";
+						mesh_channel = "<%=channel_5g%>";
+						mesh_pw = "<%=passwd_5g%>";
+						mesh_node = connectedNode;
+					}
+
+					str+='<tr class="title"><td colspan="3" ><i><%:Mesh Status%> :</i></td></tr>';
+					// if(mesh_connetType==0)
+					// 	str+='<tr class="title-option"><td myid="title_mesh_ssid_text"><%:Mesh SSID%></td><td myid="wifi5_mesh_text">'+mesh_ssid+'</td></tr>';
+					// else
+						str+='<tr class="title-option"><td myid="title_mesh_ssid_text"><%:Mesh ID%></td><td myid="wifi5_mesh_text">'+mesh_id+'</td></tr>';
+					str+='<tr class="title-option"><td myid="title_mesh_band_text"><%:Mesh Band%></td><td myid="wifi5_mesh_band_text">'+mesh_band+'</td></tr>';
+					str+='<tr class="title-option"><td myid="title_mesh_channel_text"><%:Mesh Channel%></td><td myid="wifi5_channel_text">'+mesh_channel+'</td></tr>';
+					// str+='<tr class="title-option"><td myid="title_mesh_password_text"><%:Password%></td><td myid="wifi5_channel_text">'+mesh_pw+'</td></tr>';
+					// str+='<tr class="title-option"><td myid="title_mesh_Node_text"><%:Connected Node%></td><td myid="wifi5_channel_text">'+mesh_node+'</td></tr>';
+					str+='<tr style="background-color:white;"><td><br></td></tr>';
+
+					/*
+					<%if(resolution_1~="") then%>
+						str+='<tr class="title"><td colspan="3" ><i><%:Video Stream 1 :%></i></td></tr>';
+						str+='<tr class="title-option"><td myid="title_mesh_band_text"><%:Resolution%></td><td myid="wifi5_mesh_band_text">'+resolution_1+'</td></tr>';
+						str+='<tr class="title-option"><td myid="title_mesh_band_text"><%:Frame Rate%></td><td myid="wifi5_mesh_band_text"><%=framerate_1%></td></tr>';
+						str+='<tr class="title-option"><td myid="title_mesh_band_text"><%:Bit Rate%></td><td myid="wifi5_mesh_band_text">'+bitrate_1+'bps</td></tr>';
+						str+='<tr><td><br></td></tr>';
+					<%end%>
+
+					<%if(resolution_2~="") then%>
+						str+='<tr class="title"><td colspan="3" ><i><%:Video Stream 2 :%></i></td></tr>';
+						str+='<tr class="title-option"><td myid="title_mesh_band_text"><%:Resolution%></td><td myid="wifi5_mesh_band_text">'+resolution_2+'</td></tr>';
+						str+='<tr class="title-option"><td myid="title_mesh_band_text"><%:Frame Rate%></td><td myid="wifi5_mesh_band_text"><%=framerate_2%></td></tr>';
+						str+='<tr class="title-option"><td myid="title_mesh_band_text"><%:Bit Rate%></td><td myid="wifi5_mesh_band_text">'+bitrate_2+'bps</td></tr>';
+					<%end%>
+					*/
+
+					str+='</tbody></table>';
+
+					$('#info_display').html(str);
+					if(getById('loading').style.display == "")
+					{
+						getById('loading').style.display = "none";
+						getById('info_display').style.display = "";
+					}
+				}
+			});
+</script>
+			<fieldset id="loading" class="cbi-section" style="display: '';">
+				<legend><img src="<%=resource%>/icons/loading.gif" alt="<%:Loading%>" style="vertical-align:middle" /><%:Collecting data...%></legend>
+			</fieldset>
+			<fieldset id="info_display" class="cbi-section" style="display: none;">
+			</fieldset>
+<script>
+
+		dw('</td>');
+
+		dw('<td width="1%" style="border-right:1px solid #1b489c;"><td>');
+
+		dw('<td width="63%">');
+			dw('<div>');
+				dw('<table style="background-color:white;">');
+					dw('<tr style="background-color:white;"><td><br></td></tr>');
+					dw('<tr style="background-color:white;">');
+						dw('<td width="25%"><font size="3"><%:Status%></font></td>');
+
+						if(connectedNode==0)
+							dw('<td style="text-align:center"><img src="<%=media%>/pictures/icon_topology_off.png"></td>');
+						else
+							dw('<td style="text-align:center"><img src="<%=media%>/pictures/icon_topology_on.png"></td>');
+
+						if(wifi_down_24g==1 && wifi_down_5g==1)
+							dw('<td style="text-align:center"><img src="<%=media%>/pictures/icon_band_off.png"></td>');
+						else
+							dw('<td style="text-align:center"><img src="<%=media%>/pictures/icon_band_on.png"></td>');
+					dw('</tr>');
+					dw('<tr style="background-color:white;">');
+						dw('<td></td>');
+
+						if(<%=mesh_disabled%>==1)
+							dw('<td style="text-align:center"><font size="3"><%:Mesh Status%><br><%:Disable%></font></td>');
+						else if(connectedNode==0)
+							dw('<td style="text-align:center"><font size="3"><%:Mesh Status%><br><%:Disconnected%></font></td>');
+						else
+							dw('<td style="text-align:center"><font size="3"><%:Mesh Status%><br><%:Connected%></font></td>');
+
+						if(wifi_down_24g==1 && wifi_down_5g==1)
+							dw('<td style="text-align:center"><font size="3"><%:Wireless 2.4GHz Off%><br><%:Wireless 5GHz Off%></font></td>');
+						else if(wifi_down_24g==0 && wifi_down_5g==1)
+							dw('<td style="text-align:center"><font size="3"><%:Wireless 2.4GHz On%><br><%:Wireless 5GHz Off%></font></td>');
+						else if(wifi_down_24g==1 && wifi_down_5g==0)
+							dw('<td style="text-align:center"><font size="3"><%:Wireless 2.4GHz Off%><br><%:Wireless 5GHz On%></font></td>');
+						else
+							dw('<td style="text-align:center"><font size="3"><%:Wireless 2.4GHz On%><br><%:Wireless 5GHz On%></font></td>');
+					dw('</tr>');
+					dw('<tr style="background-color:white; border-bottom:1px solid #1b489c;"><td colspan="3"><br></td></tr>');
+				dw('</table>');
+			dw('</div>');
+
+			dw('<div>');
+				dw('<table>');
+					mesh_global_node_info();
+					//if((connectedNode!=0 && hostname_mesh[1]!="" ) || "<%=uci:get('functionlist','functionlist','SUPPORT_DEMO_APPLY')%>" == "1" )
+					{
+						<%if(resolution_1~="") or (resolution_2~="") then%>
+						dw('<tr style="background-color:white;"><td><br></td></tr>');
+						dw('<tr style="background-color:white;">');
+							dw('<td width="24%"><font size="3"><%:Video%></font></td>');
+							<%if(resolution_1~="") then%>
+								dw('<tr class="title-option"><td></td><td width="15%"><i><%:Stream 1 :%></i></td><td myid="" width="15%"><%:Resolution%></td><td myid="">'+resolution_1+'</td></tr>');
+								dw('<tr class="title-option"><td></td><td></td><td myid=""><%:Bit Rate%></td><td myid="">'+bitrate_1+'bps</td></tr>');
+								dw('<tr style="background-color:white;"><td><br></td></tr>');
+							<%end%>
+
+							<%if(resolution_2~="") then%>
+								dw('<tr class="title-option"><td></td><td width="10%"><i><%:Stream 2 :%></i></td><td myid="" width="10%"><%:Resolution%></td><td myid="">'+resolution_2+'</td></tr>');
+								dw('<tr class="title-option"><td></td><td></td><td myid=""><%:Bit Rate%></td><td myid="">'+bitrate_2+'bps</td></tr>');
+							<%end%>
+							/*
+							dw('<td width="24%"><font size="3"><%:Mesh Node%></font></td>');
+							dw('<td width="75%">');
+								dw('<div id="nodeNum" align="center"  vlign="middle" style="position:relative; top: 5px;left: 70px; border:2px #red solid;border-radius:10px;width:30px;height:20px;background-color:red; ">');
+										dw('<font color="#FFFFFF" size="3px">'+connectedNode+'</font>');
+								dw('</div>');
+								dw('<a href="<%=disp.build_url('admin/network/mesh_tools')%>"><img style="z-index:-1;" src="<%=media%>/pictures/icon_pc.png"></a>');
+							dw('</td>');
+							*/
+							/*
+							var idx_mesh = connectedNode;
+
+							for(var i=1;i<=idx_mesh;i++)
+							{
+								if(i>1 && i%4==1)
+								{
+									dw('<tr style="background-color:white;"><td></td>');
+								}
+								dw('<td style="text-align:center;"><img class="popper" data-popbox="meshicon'+i+'" src="<%=media%>/pictures/icon_pc.png"><p align="center"><font size="3"><br>'+hostname_mesh[i]+'</font></p><br></td>');
+								if(i==idx_mesh || i%4==0)
+								{
+									dw('</tr>');
+								}
+							}
+							*/
+						dw('</tr>');
+						dw('<tr style="background-color:white; border-bottom:1px solid #1b489c;"><td colspan="4"><br></td></tr>');
+						<%end%>
+					}
+				dw('</table>');
+				getwifidev();
+				var w = 200 + (wifi_devnum%3==0?3:wifi_devnum%3)*155;
+				if(wifi_devnum>3) w = 665;
+				dw('<table style="table-layout:fixed; width:'+w+'px; word-break:break-all;">');
+						//if(<%=wifi_info_length%>!=0)
+						{
+							dw('<tr style="background-color:white;"><td><br></td></tr>');
+							dw('<tr style="background-color:white;">');
+								dw('<td><font size="3"><%:Wireless Client List%></font></td>');
+								var idx_wifi = "<%=uci:get('functionlist','functionlist','SUPPORT_DEMO_APPLY')%>" == "1" ?3:wifi_devnum;
+								for(var i=1;i<=idx_wifi;i++)
+								{
+									if(i>1 && i%3==1)
+									{
+										dw('<tr style="background-color:white;"><td></td>');
+									}
+									dw('<td style="text-align:center;"><img class="popper" data-popbox="wifiicon'+i+'" src="<%=media%>/pictures/icon_pc.png"><p align="center"><font size="3"><br>'+hostname_wifi[i]+'</font></p><br></td>');
+									if(i==idx_wifi || i%3==0)
+									{
+										dw('</tr>');
+									}
+								}
+						}
+				dw('</table>');
+			dw('</div>');
+
+			dw('</td>');
+			dw('</tr>');
+			dw('</table>');
+			dw('</div>');
+			dw('</form>');
+		dw('</body>');
+
+		/*
+		if(hostname_mesh[1]!="")
+		{
+			for(var i=1;i<=idx_mesh;i++)
+			{
+				dw('<div id="meshicon'+i+'" class="popbox3">');
+				dw('<table><tr><td width="50%"><%:Hostname%></td><td width="50%">'+hostname_mesh[i]+'</td></tr><tr><td><%:MAC Address%></td><td>'+mac_mesh[i]+'</td></tr><tr><td><%:IP Address%></td><td>'+ip_mesh[i]+'</td></tr></table>');
+				dw('</div>');
+			}
+		}
+		*/
+		<% if wifi_info_length~=nil then %>
+			if(<%=wifi_info_length%>!=0)
+			{
+				for(var i=1;i<=idx_wifi;i++)
+				{
+					dw('<div id="wifiicon'+i+'" class="popbox3">');
+					dw('<table><tr><td width="50%"><%:Hostname%></td><td width="50%">'+hostname_wifi[i]+'</td></tr><tr><td><%:MAC Address%></td><td>'+mac_wifi[i]+'</td></tr><tr><td><%:IP Address%></td><td>'+ip_wifi[i]+'</td></tr></table>');
+					dw('</div>');
+				}
+			}
+		<% end %>
+</script>
+
+<%+footer%>

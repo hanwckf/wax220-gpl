@@ -1,0 +1,8 @@
+# private net access key of 1905 layer
+netAccessKey=
+
+/* public Csign key to check the signature of connector */
+CsignKey=
+
+# connector of 1905 layer
+connector=

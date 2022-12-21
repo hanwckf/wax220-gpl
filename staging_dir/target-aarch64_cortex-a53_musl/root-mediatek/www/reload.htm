@@ -1,0 +1,83 @@
+<%#
+LuCI - Lua Configuration Interface
+Copyright 2008 Steven Barth <steven@midlink.org>
+Copyright 2008 Jo-Philipp Wich <xm@leipzig.freifunk.net>
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+	http://www.apache.org/licenses/LICENSE-2.0
+
+$Id: apply.htm 9014 2012-08-14 13:08:18Z jow $
+
+-%>
+
+<%+header%>
+
+<title><%=luci.sys.hostname()%></title>
+<script type="text/javascript" src="<%=resource%>/xhr.js"></script>
+<script type="text/javascript" src="/luci-static/resources/cbi.js"></script>
+
+<%
+local uci = require("luci.model.uci").cursor()
+	if 	uci:get("functionlist","functionlist","SUPPORT_OPEN_LEFTMENU") == "0" then
+%>
+		<script>document.getElementById('menu_right_style').style.display = "none";</script>
+<%
+	end
+	reboot_time = uci:get('functionlist','vendorlist','DUT_REBOOT_TIME')  or 60
+%>
+<% if changes then %>
+	<%+cbi/apply_xhr%>
+
+	<%- cbi_apply_xhr('uci-apply', configs, REQUEST_URI) -%>
+
+	<script>
+			var myinterval, target = 'http://<%=addr or luci.http.getenv("SERVER_NAME")%>/';
+			var t = "<% if countdown then %><%=countdown%><% else %>120<% end %>";
+			myinterval = setInterval("a()", 1000);
+			function a()
+			{
+				if(t == 0)
+				{
+					window.clearInterval(myinterval);
+					<% if redir then %>
+						location.href = "http://<%=redir%>/cgi-bin/luci";
+					<% end %>
+				}
+				document.getElementById("countdownString").innerHTML = String.format("<%:Please wait for %s %d %s secs. System is reloading.%>", "<span style='color:darkred;'>", t, "</span>");
+				t -= 1;			
+			}
+	</script>
+	<body>
+	<form name="reloading" action='<%=luci.dispatcher.build_url("admin/uci/reload")%>'  method="post">
+		<div id="maincontainer">
+			<div id="maincontent">
+				<h2><a id="content" name="content" style="font-size: 24px; line-height: 36px;"><%:System%> - <% if title then %><%=title%><% else %><%:Reloading...%><% end %></a></h2>
+				<fieldset class="cbi-section">
+					<p id="countdownString" style="font-size: 16px; line-height: 20px;"></p>
+					<p style="font-size: 16px; line-height: 20px;">
+						<% if msg then %><%=msg%><% else %><%:Changes applied.%><% end %>
+					</p>
+					<p style="font-size: 16px; line-height: 20px;">
+						<img src="<%=resource%>/icons/loading.gif" alt="<%:Loading%>" style="vertical-align:middle" />
+						<%:Waiting for changes to be applied...%>
+					</p>
+					<p id="redirectToLogin"></p>
+				</fieldset>
+			</div>
+		</div>
+		</form>
+	</body>
+<% else %>
+<h2><a id="content" name="content" style="font-size: 24px; line-height: 36px;"><%:There are no pending changes to apply!%></a></h2>
+
+	<% local redir = luci.dispatcher.build_url("admin", "status", "overview")%>
+<script>
+	$(function() {
+  		window.location.href = '<%=redir%>';
+	});
+</script>	
+<% end %>
+<%+footer%>

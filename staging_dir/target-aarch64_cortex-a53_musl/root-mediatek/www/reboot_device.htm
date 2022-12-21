@@ -1,0 +1,73 @@
+
+<%+header%>
+<script>
+	$(function()
+	{
+		$("input[name='reset_default']").on("click", function()
+		{
+			return confirm("<%=translate('The action will erase existing settings and reset all settings to factory default')%>");
+		});
+		$("input[name='reboot']").on("click", function()
+		{
+			return confirm("<%=translate('This will reboot the device and may take few seconds.')%>");
+		});
+	});
+function copyto()
+{
+	document.getElementsByName("reset_to_default")[2].checked = true;
+}
+</script>
+<body onLoad="copyto();">
+<div id="Reset_to_Default_info" class="popbox">
+    <p><%:Reset to factory default setting.%></p>
+</div>
+<fieldset class="cbi-section">
+	<form method="post" action="<%=REQUEST_URI%>">
+	<input type="hidden" id="submitType" value="1" name="submitType"/>	
+	<table>
+		<tr>
+			<td class="title" colspan="3"><%:Reset the device%></td>
+		</tr>	
+		<tr class="title-option">
+			<td style="width: 35%;"><%:Reset the device %><img class="popper" data-popbox="Reset_to_Default_info" src="<%=media%>/pictures/icon_info_blue.png"></td>
+			<td>
+				<input type="radio" value="0" maxlength="12" name="reset_to_default" >
+				<%:Camera%>
+				<input type="radio" value="1" maxlength="12" name="reset_to_default" >
+				<%:Access Point%>
+				<input type="radio" value="2" maxlength="12" name="reset_to_default" >
+				<%:All%>
+			</td>
+			<td><input class="cbi-button" id="reset_default" name="reset_default" onclick="ajax_setCsrf();" value="<%:Reset%>" type="submit"/></td>
+		</tr>	
+		<tr class="title-option">
+				<td style="width: 35%;" colspan="3"><span class="caution"><%:Caution%>:</span>&nbsp;<%:To restore to factory settings, press reset in the UI.%></td>
+		</tr>
+		<tr>
+			<td class="title" colspan="3"><%:Reboot the device%></td>
+		</tr>
+		<tr class="title-option">
+			<td colspan="2">
+				<span class="caution"><%:Caution%>:</span> <%:Pressing this button will cause the device to reboot.%>
+				</td>
+			<td sytle="text-align:right">
+				<input type="submit" class="cbi-button" id="reboot" name="reboot" onclick="ajax_setCsrf();" myid="system_reset_reboot" value="<%:Reboot%>">
+			</td>
+		</tr>
+
+		<!--tr>
+			<td class="title" colspan="3"><%:Reset the Mesh Network%></td>
+		</tr>
+		<tr class="title-option">
+			<td colspan="2">
+				<%:Quick reset the device Mesh settings will cause disconnection and release this device form an existing Mesh Network.%>
+			</td>
+			<td sytle="text-align:right">
+				<input type="submit" class="cbi-button" id="reset_mesh" name="reset_mesh" myid="system_reset_mesh" value="<%:Reset%>">
+			</td>
+		</tr-->
+	</table>	
+	</form>
+</fieldset>
+</body>
+<%+footer%>

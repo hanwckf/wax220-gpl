@@ -1,0 +1,61 @@
+<% http_header("style/cascade.css", "style/cascade2.css", "style/cascade-custom.css", "script/jquery-1.12.4.min.js", "script/cbi.js", "script/common.js") %>
+<!-- <script>
+	document.getElementById('menu_right_style').style.display = "none";
+</script> -->
+<style>
+	.desc{
+		text-align: center;
+		margin-top: 50px;
+	}
+</style>
+<html>
+	<head>
+		<title>NETGEAR <% cat_file("/module_name") %></title>
+		<link rel="stylesheet" type="text/css" media="screen" href="/style/cascade.css" />
+		<link rel="stylesheet" type="text/css" media="screen" href="/style/cascade-custom.css" />
+		<script type="text/javascript" src="/script/xhr.js"></script>
+		<script type="text/javascript" src="/script/cbi.js"></script>
+	</head>
+	<body style="padding:20px 25px;">
+		<div id="maincontainer">
+			<div id="maincontent">
+				<h2><a id="content" name="content">$system_erasing...</a></h2>
+				<fieldset class="cbi-section">
+					<p id="countdownString"></p>
+					<p>
+					    $system_erasing_note1
+					</p>
+					<p>
+						<img src="/image/loading.gif" alt="$loading" style="vertical-align:middle" />
+						$wait_change_apply
+					</p>
+					<p id="redirectToLogin"></p>
+					<script type="text/javascript">//<![CDATA[
+						var myinterval, target = location.origin;
+						var t = 180;
+						var flag = new Date().getTime();
+						function a()
+						{
+							var curr = new Date().getTime();
+							var last = t - parseInt((curr - flag) / 1000, 10);
+
+							if(last <= 0)
+							{
+								location.href = target;
+								window.clearInterval(myinterval);
+								document.getElementById("countdownString").innerHTML = "";
+							} else {
+								document.getElementById("countdownString").innerHTML = String.format("$system_flashing_note1", "<span style='color:darkred;'>", last, "</span>");
+							}
+						}
+
+						clearInterval(myinterval);
+						a();
+						myinterval = setInterval("a()", 1000);
+					//]]></script>
+				</fieldset>
+			</div>
+		</div>
+	</body>
+</html>
+

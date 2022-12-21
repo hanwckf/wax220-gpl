@@ -1,0 +1,57 @@
+<% http_header("style/cascade2.css", "style/cascade-custom.css", "script/cbi.js", "script/jquery-1.12.4.min.js", "script/common.js") %>
+
+<body onLoad="please_wait(false);">
+	<fieldset class="cbi-section">
+		<form method="post" id="fw_up">
+			<table>
+				<tr>
+					<td class="title">$wait_upg_head</td>
+				</tr>
+				<tr class="title-option">
+					<td style="width: 35%;" colspan="2"><br/><br/>$wait_new_version</td>
+					<tr class="title-option">
+						<td>$current_firmware</td>
+						<td id="current_version" td colspan="2">
+						    <script>
+					   	        var fwVersion = "<% cat_file("/firmware_version") %>"
+					   	        document.write((fwVersion == "?")?"?":fwVersion.substring(0));
+						    </script>
+						</td>
+					</tr>
+					<tr class="title-option">
+						<td>$new_firmware</td>
+						<td id="new_version" td colspan="2">
+						    <script>
+					   	        var newVersion = "<% cat_file("/tmp/auto_version") %>"
+					   	        document.write((newVersion == "?")?"?":newVersion.substring(0));
+						    </script>
+						</td>
+					</tr>
+				</tr>
+				<td nowrap colspan=2 align=center>
+					<script>
+						function clickYes(){
+						    document.location.href="download_image.htm";
+							var url, data = 0;
+							url = '<% action_url("func.cgi", "upgrade_found_new_version.htm") %>';
+							data = {anticsrf:'<% generateToken("download_image") %>', submitType:"download_image"};
+						    ajax_normal({
+						        async: false,
+						        type : "POST",
+						        url:url,
+						        data:data,
+						        success: function() {}
+						    });
+						}
+						function clickNo(){
+						    getTop(window).location.href="index.htm";
+						}
+						document.write('<input style="width:4%" class="cbi-button" type="button" name="Yes" id="yes" value="'+"Yes"+'" onclick="clickYes();">&nbsp&nbsp&nbsp&nbsp&nbsp;');
+						document.write('<input style="width:4%" class="cbi-button" type="button" name="No" id="no" value="'+"No"+'" onclick="clickNo();">');
+					</script>
+				</td>
+			</table>
+		</form>
+		<br/>
+	</fieldset>
+</body>

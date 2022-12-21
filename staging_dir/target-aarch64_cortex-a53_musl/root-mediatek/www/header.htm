@@ -1,0 +1,1395 @@
+<%#
+LuCI - Lua Configuration Interface
+Copyright 2008 Steven Barth <steven@midlink.org>
+Copyright 2008 Jo-Philipp Wich <xm@leipzig.freifunk.net>
+Copyright 2012 David Menting <david@nut-bolt.nl>
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+	http://www.apache.org/licenses/LICENSE-2.0
+
+-%>
+<%
+	local sys  = require "luci.sys"
+	local http = require "luci.http"
+	local disp = require "luci.dispatcher"
+	local uci = require "luci.model.uci".cursor()
+	local hostname = sys.hostname()
+	reboot_flag=luci.util.trim(luci.util.exec('cat /tmp/noticeReboot'))
+
+	if uci:get('functionlist','functionlist','SUPPORT_WLAN24G') ~= '1' then --[[ #### WLAN2.4G feature ### --]]
+		export("filterRadio", "wifi0")
+	else
+		export("WLAN24G", "1")
+	end
+	if uci:get('functionlist','functionlist','SUPPORT_WLAN5G') ~= '1' then --[[ #### WLAN5G feature ### --]]
+		export("filterRadio", "wifi1")
+	else
+		export("WLAN5G", "1")
+	end
+	if uci:get('functionlist','functionlist','SUPPORT_WLAN5G_2') == '1' then --[[ #### WLAN5G - 2 feature ### --]]
+		export("WLAN5G_2", "1")
+	end --[[ #### WLAN5G_2 feature ### --]]
+	if uci:get('functionlist','functionlist','SUPPORT_COMBINED_SSID_SETTING') == '1' then --[[ #### SUPPORT_COMBINED_SSID_SETTING ### --]]
+		export("COMBINED_SSID","1")
+	end --[[ #### SUPPORT_COMBINED_SSID_SETTING ### --]]
+
+	local request  = disp.context.path
+	local request2 = disp.context.request
+
+	local category = request[1]
+	local cattree  = category and disp.node(category)
+
+	local webaccount = luci.util.trim(luci.util.exec("cat /etc/webpasswd | awk -F \":\" '{ print $1 }'"))
+	local webpasswd = luci.util.trim(luci.util.exec("cat /etc/webpasswd | awk -F \":\" '{ print $2 }'"))
+
+	local webaccountDef = luci.util.trim(luci.util.exec("cat /rom/etc/webpasswd | awk -F \":\" '{ print $1 }'"))
+	local webpasswdDef = luci.util.trim(luci.util.exec("cat /rom/etc/webpasswd | awk -F \":\" '{ print $2 }'"))
+	local noAccessReset = luci.util.trim(luci.util.exec("cat /tmp/hide"))
+
+	local leaf = request2[#request2]
+
+	local tree = disp.node()
+	local node = disp.context.dispatched
+
+	local categories = disp.node_childs(tree)
+
+	local ex_gui_port="0", ex_onboard_cam_gui_port, ex_onboard_cam_rtsp_port, ex_onboard_cam_rtmp_port
+
+	local lan_ip = luci.util.trim(luci.util.exec("ifconfig br-lan | grep \"inet addr\" | awk -F \" \" '{print $2}' | awk -F \":\" '{print $2}'"))
+
+	if uci:get('functionlist','functionlist','SUPPORT_IPCAM') == "1" then
+		if nixio.fs.access("/etc/config/nat-traversal") then
+			ex_gui_port = uci:get("nat-traversal","nattraversal","ex_gui_port") or "0"
+			ex_onboard_cam_gui_port = uci:get("nat-traversal","nattraversal","ex_onboard_cam_gui_port")
+			ex_onboard_cam_rtsp_port = uci:get("nat-traversal","nattraversal","ex_onboard_cam_rtsp_port")
+			ex_onboard_cam_rtmp_port = uci:get("nat-traversal","nattraversal","ex_onboard_cam_rtmp_port")
+		end
+	end
+
+	local c = tree
+	local i, r
+		local first_login = uci:get('system','firmware','first_login') or "0"
+		local top_menu = uci:get("functionlist","functionlist","SUPPORT_TOP_MENU")
+
+	local account = luci.util.trim(luci.util.exec("cat /tmp/md5tmp_account"))or " " 
+	local password = luci.util.trim(luci.util.exec("cat /tmp/md5tmp_pass"))or " "
+	-- tag all nodes leading to this page
+	for i, r in ipairs(request) do
+		if c.nodes and c.nodes[r] then
+			c = c.nodes[r]
+			c._menu_selected = true
+		end
+	end
+    
+    -- send as HTML5
+	http.prepare_content("text/html")
+
+	local function nodeurl(prefix, name, query)
+		local url = controller .. prefix .. name .. "/"
+		if query then
+			url = url .. http.build_querystring(query)
+		end
+		return pcdata(url)
+	end
+
+	local function subtree(prefix, node, level)
+		if not level then
+			level = 1
+		end
+
+		-- Skip subtree display
+		if prefix == "/admin/network/wireless/" then
+			return
+		elseif prefix == "/admin/network/wireless_device/" then
+			return
+		elseif prefix == "/admin/network/network/" then
+			return
+		end
+		
+		local childs = disp.node_childs(node)
+		if #childs > 0 then
+        
+            if level > 2 then
+%>
+	<ul class="tabs">
+		<%  
+            end
+
+			local selected_node
+			local selected_name
+			local i, v
+
+			for i, v in ipairs(childs) do
+				local nnode = node.nodes[v]
+				if nnode._menu_selected then
+					selected_node = nnode
+					selected_name = v
+				end
+                if level > 2 then
+		%>
+			<li class="tabmenu-item-<%=v%><%- if nnode._menu_selected or (node.leaf and v == leaf) then %> active<% end %>">
+			    <a href="<%=nodeurl(prefix, v, nnode.query)%>"><%=striptags(translate(nnode.title))%></a>
+			</li>
+		<%      end
+			end
+            
+            if level > 2 then
+		%>
+	</ul>
+<%          end
+
+			if selected_node then
+				subtree(prefix .. selected_name .. "/", selected_node, level + 1)
+			end
+		end
+	end
+-%>
+		
+<%
+	local menu_advanced, menu_connections, cur_select, cur_node, menu_wifi_schedule
+
+	if #request2 > 0 then
+		cur_node = ''
+		for i=1, #request2 do
+			cur_node = cur_node .. request2[i] .. '/'
+		end
+
+		if request2[3] ~= "account_change" and uci:get("system","firmware","first_login") == "1" then
+			luci.util.exec("echo '1' > /tmp/logout")
+		else
+			cur_select = disp.build_url(cur_node)
+		end
+	else
+		if uci:get('functionlist','functionlist','SUPPORT_IPCAM') == "1" then
+			local username = luci.util.trim(luci.util.exec('cat /tmp/md5tmp_account'))
+			local isAdminAccount = luci.util.exec("/lib/auth.sh get_authority \""..username.."\""):sub(1,-2)
+			if uci:get('apcontroller','capwap','enable') == "1" then
+				uci:set("system","firmware","first_login","0")
+				uci:save("system")
+				uci:commit("system")
+				luci.http.redirect(disp.build_url('admin/ipcam/Live/'))
+			elseif uci:get('network','sys','EnMesh') == "1" then
+				uci:set("system","firmware","first_login","0")
+				uci:save("system")
+				uci:commit("system")
+				luci.http.redirect(disp.build_url('admin/ipcam/Live/'))
+			elseif 	uci:get('system','firmware','first_login') == "1" and isAdminAccount == "0" then 
+				luci.util.exec("echo '1' > /tmp/hide")
+				luci.http.redirect(disp.build_url('admin/system/account_change/'))
+			else
+				luci.http.redirect(disp.build_url('admin/ipcam/Live/'))
+			end
+		elseif uci:get('functionlist','functionlist','SUPPORT_AP_RP_SETUP_WIZARD') == "1" and uci:get("system","firmware","first_login") == "1" then
+			luci.http.redirect(disp.build_url('admin/network/repeater_site_survey/'))
+		elseif uci:get('functionlist','functionlist','SUPPORT_MESH_SETTING') == "1" then
+			if uci:get('functionlist','functionlist','SUPPORT_HIDE_WIZARD') == "1" then
+				luci.http.redirect(disp.build_url('admin/status/overview/'))
+			else
+				luci.http.redirect(disp.build_url('admin/network/wizard_init/'))
+			end
+		else
+			if webaccount == webaccountDef and webpasswd == webpasswdDef and uci:get('functionlist','functionlist','SUPPORT_MYID') ~= '1' then
+				luci.util.exec("echo '1' > /tmp/hide")
+				luci.http.redirect(disp.build_url('admin/system/account_change/'))
+			else
+				cur_select = disp.build_url('admin/status/overview/')
+			end
+		end
+	end
+	
+	if nixio.fs.access("/usr/lib/lua/luci/view/admin_network/advanced.htm") then
+		menu_advanced = disp.build_url('admin/network/advanced')
+	else
+		menu_advanced = disp.build_url('admin/system/system/')
+	end
+
+	if nixio.fs.access("/usr/lib/lua/luci/view/admin_status/wireless_connections.htm") then
+		menu_connections = disp.build_url('admin/status/wireless_conn')
+	else
+		menu_connections = disp.build_url('admin/status/overview/')
+	end
+
+	if nixio.fs.access("/usr/lib/lua/luci/view/admin_network/wifi_schedule.htm") then
+		menu_wifi_schedule = disp.build_url('admin/network/wifi_schedule')
+	else
+		menu_wifi_schedule = disp.build_url('admin/system/admin/')
+	end
+
+	local ucichanges = 0
+	if tree.nodes[category] and tree.nodes[category].ucidata then
+		for i, j in pairs(require("luci.model.uci").cursor():changes()) do
+			for k, l in pairs(j) do
+				if filterRadio and k==filterRadio then
+				else
+					for m, n in pairs(l) do
+						ucichanges = ucichanges + 1;
+					end
+				end
+			end
+		end
+	end
+
+%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="<%=luci.i18n.context.lang%>">
+ <head>
+  <meta charset="utf-8">
+  <title><%=striptags(hostname) %></title>
+  <link rel="stylesheet"  type="text/css" href="<%=media%>/cascade.css">
+  <link rel="stylesheet"  type="text/css" href="<%=media%>/cascade2.css">
+  <link rel="stylesheet"  type="text/css" href="<%=media%>/cascade-custom.css">
+  <% if node and node.css then %><link rel="stylesheet" href="<%=resource%>/<%=node.css%>">
+  <% end -%>
+  <% if css then %><style title="text/css">
+  <%-= css %>
+  </style>
+  <% end -%>
+  <% if uci:get('functionlist','functionlist','SUPPORT_IPCAM') == "1" then %>
+  <style title="text/css">
+  h1, h2, h3, h4, h5, h6, p, pre, a, abbr, acronym, code, del, em, img, q, s,
+  small, strike, strong, sub, sup, tt, var, dd, dl, dt, li, ol, ul, fieldset,
+  form, label, legend, button, table, caption, tbody, tfoot, thead, tr, th, td {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-weight: normal;
+  font-style: normal;
+  font-size: 100%;
+  line-height: 1;
+  font-family: helvetica,arial,verdana,sans-serif;
+ }  
+  </style>  
+<% end %>
+
+	 <script src="<%=media%>/jquery-1.12.4.min.js"></script>
+	 <script src="<%=resource%>/cbi.js"></script>
+	 <script src="<%=media%>/common.js"></script>
+	 <script type="text/javascript" src="/luci-static/resources/md5.js"></script>
+	 <!--[if IE]>
+	<script type="text/javascript" src="<%=media%>/PIE.js"></script>
+	<![endif]-->
+  <script src="<%=resource%>/xhr.js"></script>
+	 <script>
+	 	var guiTraversalPort="<%=ex_gui_port%>";
+	 	var camGuiTraversalPort="8080";
+	 	var camLiveViewInfo="";
+	 	var lanip="<%=lan_ip%>";
+	 	var clientip='<%=luci.http.getenv("SERVER_NAME")%>';
+
+		function doCookieSetup(name, value, days)
+		{
+			if (days)
+			{
+				var date = new Date();
+				date.setTime(date.getTime()+(days*24*60*60*1000));
+				var expires = "; expires="+date.toGMTString();
+		    }
+		    else
+		    {
+				var expires = "";
+		    }
+		    document.cookie = name+"="+value+expires+"; path=/";
+		}
+		function eraseCookie(name)
+		{
+			doCookieSetup(name,"",-1);
+		}
+		eraseCookie("is_login");
+		eraseCookie("serialize");
+
+        function isprotecting(){
+			$('form').submit(function() {
+				var formdata = $(this).serialize()+"19930408\n";
+				var reg = /cbi\.apply\=Apply|submitType\=Save|&|\=|-*/g;
+				formdata = formdata.replace(reg,"");
+				doCookieSetup("serialize", hex_md5(formdata), 1);
+	        });
+        }
+	 	//if(guiTraversalPort!=0 && guiTraversalPort==window.document.location.port)
+	 	if(lanip!=clientip)
+	 	{
+	 		camGuiTraversalPort = "<%=ex_onboard_cam_gui_port%>";
+	 		camLiveViewInfo = "?onboard_rtsp=<%=ex_onboard_cam_rtsp_port%>&onboard_rtmp=<%=ex_onboard_cam_rtmp_port%>&onboard_gui=<%=ex_onboard_cam_gui_port%>";
+	 	}
+        else
+        {
+            <%
+            local rtspPort = uci:get('firewall', 'rtsp', 'src_dport')
+            %>
+            camLiveViewInfo = "?onboard_rtsp=<%=rtspPort%>&onboard_rtmp=1935";
+        }
+		function ajax_getCsrf(){
+		    var url , container ,data;
+		    url = '<%=luci.dispatcher.build_url("admin/system/ajax_getCsrf")%>';
+		    //container = "#cbi_set";
+		    ajax_normal({
+				async: false,
+		        type : "GET",
+		        url:url,
+		        data:data,
+		        dataType:"json",
+		        error:function(){
+		            // ajax_getChannelList(countryCode);
+		        },
+		        success:function(result){
+		        }
+		    });
+		}
+		function ajax_setCsrf(){
+
+		    var url , container ,data;
+		    url = '<%=luci.dispatcher.build_url("admin/system/ajax_setCsrf")%>';
+		    //container = "#cbi_set";
+		    ajax_normal({
+				async: false,
+		        type : "GET",
+		        url:url,
+		        data:data,
+		        dataType:"json",
+		        error:function(){
+		            // ajax_getChannelList(countryCode);
+		        },
+		        success:function(result){
+		        }
+		    });
+		}
+	 	function invalid(str){
+			var invalidStr = '<%:Invalid value of%>';
+	        return String.format("%s %s!", invalidStr, str);
+		}
+		function isRange(target, name, min, max){
+			var ret = false;
+			var invalidStr = '<%:Invalid value of%>';
+			var str1 = '<%:You should set a value between%>';
+			var str2 = '<%:It should be the decimal number (0-9).%>';
+			if(isNumber(target.value))
+			{
+				if(isBetween(target.value, min, max))
+				{
+					ret = true;
+				}
+				else
+				{
+					alert(String.format("%s %s! %s %s-%s.", invalidStr, name, str1, min, max));
+				}
+			}
+			else
+			{
+				alert(String.format("%s %s! %s", invalidStr, name, str2));
+			}
+			if(!ret)
+			{
+				setfocus(target);
+			}
+			return ret;
+		}
+		function isClockRange(val, name, min, max){
+			var invalidStr = '<%:Invalid value of%>';
+			var str1 = '<%:It should be the decimal number (0-9).%>';
+			var str2 = '<%:You should set a value between%>';
+			if(!isNumber(val))
+			{
+				alert(String.format("%s %s! %s", invalidStr, name, str1));
+				return false;
+			}
+			if(!isBetween(val, min, max))
+			{
+				alert(String.format("%s %s! %s %s-%s.", invalidStr, name, str2, min, max));
+				return false;
+			}
+			return true;
+		}
+		function showEncryption(e)
+		{
+			var encryption = {"none":"<%:None%>", "wep-shared":"WEP Shared", "wep-open":"WEP Open", "psk+tkip":"WPA/PSK TKIP", "psk+ccmp":"WPA/PSK AES", "psk+tkip+ccmp":"WPA/PSK TKIP+AES", "psk2+tkip":"WPA2/PSK TKIP", <%if uci:get('functionlist','functionlist','SUPPORT_WPA3')=='1' then%>"psk2+ccmp":"WPA2-Personal"<%else%>"psk2+ccmp":"WPA2/PSK AES"<%end%>, "psk2+tkip+ccmp":"WPA2/PSK TKIP+AES", "psk-mixed+tkip+ccmp":"WPA/WPA2-PSK TKIP+AES", "psk-mixed+tkip":"WPA/WPA2-PSK TKIP", "psk-mixed+ccmp":"WPA/WPA2-PSK AES", "wpa+tkip+ccmp":"WPA TKIP+AES", "wpa+tkip":"WPA TKIP", "wpa+ccmp":"WPA AES", "wpa2+tkip+ccmp":"WPA2 TKIP+AES", "wpa2+tkip":"WPA2 TKIP", "wpa2+ccmp":"WPA2-Enterprise", "wpa-mixed+tkip+ccmp":"WPA/WPA2 TKIP+AES", "wpa-mixed+tkip":"WPA/WPA2 TKIP", "wpa-mixed+ccmp":"WPA/WPA2 AES", "wpa":"WPA", "wpa2":"WPA2-Enterprise", "owe":"OWE", "sae+ccmp":"WPA3-Personal", "sae-mixed+ccmp":"Mixed-Personal", "wpa3-mixed+ccmp":"Mixed-Enterprise", "wpa3":"WPA3-Enterprise"};
+			return (encryption.hasOwnProperty(e))?encryption[e]:e;
+		}
+		function logout(){
+			if(confirm("<%:Are you sure you want to logout?%>"))
+			{
+				location.href = "<%=disp.build_url('admin/logout')%>";
+			}
+		}
+		function unSaveChanges(){
+			location.href='<%=controller%>/<%=category%>/uci/changes';
+		}
+		function reboot(){
+			location.href="<%=disp.build_url('admin/system/reboot')%>";
+		}
+		function applyreboot(){
+			location.href="<%=disp.build_url('admin/system/applyreboot')%>";
+		}
+		function reset(){
+<%
+if uci:get('apcontroller','capwap','enable') == '1' or uci:get('network','sys','EnMesh') == '1' or uci:get('sysProductInfo','model','modelName') == 'EMD11' then -----#### Switch Control Mode  START ###
+%>			
+	<%
+	if uci:get('functionlist','functionlist','SUPPORT_MANAGEMENT_MODE') == '1' then -----#### SUPPORT_MANAGEMENT_MODE START ###
+	%>
+			location.href="<%=disp.build_url('admin/system/flashops')%>?action=reset";
+	<%
+	else -----#### Switch Management Mode  ELSE ###
+	%>
+			location.href="<%=disp.build_url('admin/status/ews_management')%>";
+	<%
+	end -----#### Switch Management Mode  END ###
+	%>
+<%
+else -----#### Switch Control Mode  ELSE ###
+%>	
+			location.href="<%=disp.build_url('admin/system/flashops')%>?action=reset";
+<%
+end -----#### Switch Control Mode  END ###
+%>				
+		}
+		function live()
+		{
+			location.href="<%=disp.build_url('admin/ipcam/Live')%>";
+		}
+		function wizard()
+		{
+			location.href="<%=disp.build_url('admin/network/wizard_init')%>";
+		}
+		function config()
+		{
+			location.href="<%=disp.build_url('admin/status/overview')%>";
+		}
+		function home()
+		{
+			location.href="<%=disp.build_url('admin/status/home_info')%>";
+		}
+		function mesh_link()
+		{
+			location.href="<%=disp.build_url('admin/network/mesh_tools')%>";
+		}		
+		$(function() {
+			if (window.PIE) {
+				$('#menu_div').each(function() {
+					PIE.attach(this);
+				});
+				$('.PIE').each(function() {  
+					PIE.attach(this);
+				});
+			}
+			<%
+				local uci = require "luci.model.uci".cursor()
+			    local ntm = require "luci.model.network"
+			    ntm.init(uci)
+		        if not nixio.fs.access("/etc/config/functionlist") then
+		    %>
+					$('#languagebar2').show();
+		    <%
+		        end
+		    %>
+
+		    <%
+		        if nixio.fs.access("/etc/config/functionlist") then
+		    %>
+				"<%=uci:get("functionlist","functionlist","SUPPORT_MULTI_LANGUAGE")%>" == "1" ? $('#languagebar2').show() : $('#languagebar2').hide();
+		    <%
+		        end
+		    %>
+
+		});
+		function changeMenu(value)
+		{
+			if(value == 0)
+			{
+				getById("ap_menu").style.display = "";
+				getById("camera_menu").style.display = "none";
+				//$("#ap_menu_div").removeAttr('style').attr("class","blue_menu");
+				//$("#camera_menu_div").removeAttr('style').attr("class","white_menu");
+				$("#ap_menu_div").css({"background-color":"#1b489c","color":"#ffffff"});
+				$("#camera_menu_div").css({"background-color":"#ffffff","color":"#000000"});
+			}
+			else
+			{
+				getById("ap_menu").style.display = "none";
+				getById("camera_menu").style.display = "";
+				//$("#ap_menu_div").removeAttr('style').attr("class","white_menu");
+				//$("#camera_menu_div").removeAttr('style').attr("class","blue_menu");			
+				$("#ap_menu_div").css({"background-color":"#ffffff","color":"#000000"});
+				$("#camera_menu_div").css({"background-color":"#1b489c","color":"#ffffff"});		
+			}
+		}
+		function showMenu(){
+			<% if uci:get('functionlist','functionlist','SUPPORT_MANAGEMENT_SSID') == '1' and uci:get('functionlist','functionlist','SUPPORT_MYID') ~= '1' then %>
+				<%if not( uci:get('functionlist','functionlist','SUPPORT_AP_RP_SETUP_WIZARD') == "1" and (uci:get('system','firmware','first_login') == "1" or reboot_flag == "1" )) then %>
+					$("#change_password_tbl").find("input").attr("disabled", "disabled");
+				<% end %>
+			<% end %>
+			var bg,i,menuHtml="",m=[
+<%
+if uci:get('network','sys','EnMesh') == '1' or uci:get('sysProductInfo','model','modelName') == 'EMD11' then -----#### Switch Control Mode  START ###
+%>
+				{str: "<%:OverView%>",pic: "<%=media%>/pictures/icon_info.png",url: ""},
+					{str: "<%:Device Status%>",pic: "",url: "<%=disp.build_url('admin/status/overview')%>",myid: "Device_Status"},	
+					<%
+					if uci:get('functionlist','functionlist','SUPPORT_MANAGEMENT_MODE') ~= '1' then -----#### SUPPORT_MANAGEMENT_MODE START ###
+					%>
+					{str: "<%:Management%>",pic: "",url: "<%=disp.build_url('admin/status/ews_management')%>",myid: "ews_management"},
+					<%
+					end
+					%>
+				<%
+					if uci:get('functionlist','functionlist','SUPPORT_DDNS') == '1' then
+						if nixio.fs.access("/etc/config/ddns") then
+				%>
+					{str: "<%:DDNS%>",pic: "",url: "<%=disp.build_url('admin/network/ddns')%>",myid: "DDNS"},
+				<%
+						end
+					end
+				%>
+				<%	if uci:get('functionlist','functionlist','SUPPORT_SERVICE_PORT') == '1' then
+						if nixio.fs.access("/etc/config/lighttpd") and nixio.fs.access("/etc/config/firewall") and nixio.fs.access("/etc/config/nat-traversal") then
+				%>
+							{str: "<%:Service Port%>",pic: "",url: "<%=disp.build_url('admin/network/sysportconf')%>",myid: ""},
+				<%
+						end
+					end
+				%>
+<%
+				    --In Engenius products, Device Name is uesed to be dnsmasq search domain
+				    --I use SUPPORT_ATKK_FW_VERSION define to determine the ATKK products
+					if uci:get('functionlist','functionlist','SUPPORT_ATKK_FW_VERSION') ~= '1' then
+%>
+					{str: "<%:Log%>",pic: "",url: "<%=disp.build_url('admin/status/syslog')%>",myid: "Log"},
+<%
+					end
+%>
+				<% 
+					if (uci:get('functionlist','functionlist','SUPPORT_MESH_SETTING') == "1") or (uci:get('functionlist','functionlist','CONTROLLER_MODE_SUPPORT_MESH') == "1" and uci:get('apcontroller','capwap','enable') == "1") then
+				%>
+					{str: "<%:Mesh%>",pic: "<%=media%>/pictures/icon_manage.png",url: "",myid: ""},
+					{str: "<%:Status%>",pic: "",url: "<%=disp.build_url('admin/network/mesh_status')%>",myid: ""},
+				<%
+					end
+				%>
+
+				<%
+					if uci:get('network','sys','EnMesh') == '1' or uci:get('sysProductInfo','model','modelName') == 'EMD11'  then
+				%>
+					{str: "<%:System Manager%>",pic: "<%=media%>/pictures/icon_admin.png",url: "",myid: ""},
+					{str: "<%:Firmware%>",pic: "",url: "<%=disp.build_url('admin/system/flashops')%>",myid: "Firmware"}
+				<%
+					end
+				%>
+
+<%
+else -----#### Switch Control Mode  ELSE ####
+%>			
+				<% 
+					if uci:get('functionlist','functionlist','SUPPORT_MESH_SETTING') == "1" and uci:get('functionlist','functionlist','SUPPORT_HIDE_WIZARD') ~= "1" then
+				%>
+					{str: "Network Wizard",pic: "",url: "<%=disp.build_url('admin/network/wizard_init')%>",myid: ""},
+				<%
+					end
+				%>
+				{str: "<%:OverView%>",pic: "<%=media%>/pictures/icon_info.png",url: ""},
+					{str: "<%:Device Status%>",pic: "",url: "<%=disp.build_url('admin/status/overview')%>",myid: "Device_Status"},			
+					{str: "<%:Connections%>",pic: "",url: "<%=menu_connections%>",myid: "Connections"},
+				<%
+					if uci:get('functionlist','functionlist','SUPPORT_HIDE_REALTIME_MENU') == "1" then
+					else
+				%>
+					{str: "<%:Realtime%>",pic: "",url: "<%=disp.build_url('admin/status/realtime')%>",myid: "Realtime"},
+				<%
+					end
+				%>
+				{str: "<%:Network%>",pic: "<%=media%>/pictures/icon_network.png",url: "",myid: ""},
+					{str: "<%:Basic%>",pic: "",url: "<%=disp.build_url('admin/network/basic')%>",myid: "Basic"},
+					{str: "<%:Wireless%>",pic: "",url: "<%=disp.build_url('admin/network/wireless_device')%>",myid: "Wireless"},
+				<% 
+					if uci:get("functionlist","functionlist","SUPPORT_WPS") == "1" then
+				%>
+					{str: "WPS",pic: "",url: "<%=disp.build_url('admin/network/wps')%>",myid: ""},
+				<%
+					end
+					if uci:get('functionlist','functionlist','SUPPORT_DDNS') == '1' then
+						if nixio.fs.access("/etc/config/ddns") then 
+				%>
+							{str: "<%:DDNS%>",pic: "",url: "<%=disp.build_url('admin/network/ddns')%>",myid: "DDNS"},
+				<%
+						end
+					end
+					if uci:get('functionlist','functionlist','SUPPORT_UPNP') == '1' then
+						if nixio.fs.access("/etc/config/upnpd") and nixio.fs.access("/etc/config/nat-traversal") then
+				%>
+							{str: "<%:UPnP%>",pic: "",url: "<%=disp.build_url('admin/network/natupnp')%>",myid: ""},
+				<%
+						end
+					end
+					if uci:get('functionlist','functionlist','SUPPORT_SERVICE_PORT') == '1' then
+						if nixio.fs.access("/etc/config/lighttpd") and nixio.fs.access("/etc/config/firewall") and nixio.fs.access("/etc/config/nat-traversal") then
+				%>
+							{str: "<%:Service Port%>",pic: "",url: "<%=disp.build_url('admin/network/sysportconf')%>",myid: ""},
+				<%
+						end
+					end
+				%>
+				<%
+					if uci:get('functionlist','functionlist','SUPPORT_MESH_SETTING') == "1" then
+				%>
+					{str: "<%:Mesh%>",pic: "<%=media%>/pictures/icon_mesh.png",url: "",myid: ""},
+					{str: "<%:Status%>",pic: "",url: "<%=disp.build_url('admin/network/mesh_status')%>",myid: "mesh_status"},						
+					{str: "<%:Settings%>",pic: "",url: "<%=disp.build_url('admin/network/wireless_mesh')%>",myid: "Settings"},			
+					{str: "<%:Tools%>",pic: "",url: "<%=disp.build_url('admin/network/mesh_tools')%>",myid: "mesh_tools"},
+				<%
+					end
+				%>
+				{str: "<%:Management%>",pic: "<%=media%>/pictures/icon_manage.png",url: "",myid: ""},
+					{str: "<%:Advanced%>",pic: "",url: "<%=menu_advanced%>",myid: "Advanced"},
+					{str: "<%:Time Zone%>",pic: "",url: "<%=disp.build_url('admin/system/system')%>",myid: "Time Zone"},
+					{str: "<%:WiFi Scheduler%>",pic: "",url: "<%=menu_wifi_schedule%>",myid: "WiFi Scheduler"},
+					{str: "<%:Tools%>",pic: "",url: "<%=disp.build_url('admin/network/diagnostics')%>",myid: "Tools"},
+				{str: "<%:System Manager%>",pic: "<%=media%>/pictures/icon_admin.png",url: "",myid: ""},
+					{str: "<%:Account%>",pic: "",url: "<%=disp.build_url('admin/system/admin')%>",myid: "Account"},
+					{str: "<%:Firmware%>",pic: "",url: "<%=disp.build_url('admin/system/flashops')%>",myid: "Firmware"},
+					<% 
+						if uci:get("functionlist","functionlist","SUPPORT_IPCAM") == "1" then
+					%>
+					{str: "<%:Backup/Restore%>",pic: "",url: "<%=disp.build_url('admin/system/bk_restore')%>",myid: "BK_restore"},
+					{str: "<%:Reset/Reboot%>",pic: "",url: "<%=disp.build_url('admin/system/reboot')%>",myid: "reboot"},
+					<% 
+						end
+					%>					
+					{str: "<%:Log%>",pic: "",url: "<%=disp.build_url('admin/status/syslog')%>",myid: "Log"},
+<%					
+if (uci:get('functionlist','functionlist','SUPPORT_OSS_INFO') == '1')  then -----#### SUPPORT_OSS_INFO START ###	
+%>	
+					{str: "<%:OSS Information%>",pic: "",url: "<%=disp.build_url('admin/status/oss_info')%>",myid: "Oss_Info"}
+<%					
+end -----#### SUPPORT_OSS_INFO END ### 				
+%>
+<%
+end  -----#### Switch Control Mode  END ###
+%>								
+			];
+			for(i=0;i<m.length;i++)
+			{
+				if(m[i].pic!="")
+				{
+					menuHtml+='<table class="menu"><tr><td style="width:15%;vertical-align:middle;padding: 6px 0;"><img src="'+m[i].pic+'" alt=""/></td><td style="padding: 6px 0;"><p class="menu">'+m[i].str+'</p></td></tr></table>';
+				}
+				else
+				{
+					// for flashops
+					<% if luci.http.formvalue("action") ~= "reset" then %>
+						//bg = ('<%=cur_select%>'.split(m[i].url).length > 1)?"style=' background-color: #9FDCFF;'":"";
+						bg = ('<%=cur_select%>'.split(m[i].url).length > 1)?"style=''":"";
+					<%else%>
+						bg = "";
+					<%end%>
+					if (bg != "")
+					{
+						menuHtml+='<p class="dropdown-menu-sel"'+bg+'><a href="'+m[i].url+'" myid="'+m[i].myid+'">'+m[i].str+'</a></p>';
+					}
+					else
+					{
+						menuHtml+='<p class="dropdown-menu"'+bg+'><a href="'+m[i].url+'" myid="'+m[i].myid+'">'+m[i].str+'</a></p>';
+					}
+				}
+			}
+			menuHtml+='<p style="height:20px;"></p>';
+			dw(menuHtml);
+		}
+function showMenu2(){
+			var bg,i,menuHtml="",m=[
+					//OverView
+					<% 
+						if uci:get('functionlist','functionlist','SUPPORT_MESH_SETTING') == "1" and uci:get('functionlist','functionlist','SUPPORT_HIDE_WIZARD') ~= "1" then
+					%>
+						{str: "Network Wizard",pic: "",url: "<%=disp.build_url('admin/network/wizard_init')%>",myid: ""},
+					<%
+						end
+					%>
+					{str: "<%:OverView%>",pic: "<%=media%>/pictures/icon_info.png",url: ""},
+					{str: "<%:Camera Status%>",pic: "",url: "<%=disp.build_url('admin/ipcam/Stainfo_video')%>",myid: ""},
+					//Media
+					{str: "<%:Media%>",pic: "<%=media%>/pictures/icon_media_on.png",url: ""},
+					{str: "<%:Video%>",pic: "",url: "<%=disp.build_url('admin/ipcam/Video')%>",myid: ""},
+					{str: "<%:Camera%>",pic: "",url: "<%=disp.build_url('admin/ipcam/Camera')%>",myid: ""},
+					{str: "<%:Advanced%>",pic: "",url: "<%=disp.build_url('admin/ipcam/Advanced')%>",myid: ""},
+					{str: "<%:Privacy Mask%>",pic: "",url: "<%=disp.build_url('admin/ipcam/Privacy_Mask')%>",myid: ""},
+					{str: "<%:Audio%>",pic: "",url: "<%=disp.build_url('admin/ipcam/Audio')%>",myid: ""},
+					<% 
+						if uci:get("functionlist","functionlist","SUPPORT_SIP_SERVICE") == "1" then
+					%>
+						{str: "<%:SIP%>",pic: "",url: "<%=disp.build_url('admin/ipcam/SIP')%>",myid: ""},
+					<%
+						end
+					%>
+					//Event Management
+					{str: "<%:Event Management%>",pic: "<%=media%>/pictures/icon_event_on.png",url: ""},
+					{str: "<%:Event Control%>",pic: "",url: "<%=disp.build_url('admin/ipcam/Profile')%>",myid: ""},
+					{str: "<%:Motion Detection%>",pic: "",url: "<%=disp.build_url('admin/ipcam/Motion')%>",myid: ""},
+					{str: "<%:Audio Detection%>",pic: "",url: "<%=disp.build_url('admin/ipcam/Detect_Audio')%>",myid: ""},
+					{str: "<%:Tampering Detection%>",pic: "",url: "<%=disp.build_url('admin/ipcam/Tampering')%>",myid: ""},
+					{str: "<%:Event Action%>",pic: "",url: "<%=disp.build_url('admin/ipcam/Action')%>",myid: ""},
+					//{str: "<%:Time-Lapse%>",pic: "",url: "<%=disp.build_url('admin/ipcam/Time-Lapse')%>",myid: ""},
+					//Event Server
+					{str: "<%:Event Server%>",pic: "<%=media%>/pictures/icon_storage_on.png",url: ""},
+					{str: "<%:Network Storage%>",pic: "",url: "<%=disp.build_url('admin/ipcam/Netstorage')%>",myid: ""},
+					{str: "<%:FTP%>",pic: "",url: "<%=disp.build_url('admin/ipcam/FTP')%>",myid: ""},
+					{str: "<%:E-mail%>",pic: "",url: "<%=disp.build_url('admin/ipcam/E-mail')%>",myid: ""},
+					//Storage Info
+					{str: "<%:Storage Info%>",pic: "<%=media%>/pictures/icon_SDcard_on.png",url: ""},
+					{str: "<%:Storage Info%>",pic: "",url: "<%=disp.build_url('admin/ipcam/Storage')%>",myid: ""}
+			];
+			for(i=0;i<m.length;i++)
+			{
+				if(m[i].pic!="")
+				{
+					menuHtml+='<table class="menu"><tr><td style="width:15%;vertical-align:middle;padding: 6px 0;"><img src="'+m[i].pic+'" alt=""/></td><td style="padding: 6px 0;"><p class="menu">'+m[i].str+'</p></td></tr></table>';
+				}
+				else
+				{
+					bg = ('<%=cur_select%>'.split(m[i].url).length > 1)?"style=' background-color: #9FDCFF;'":"";
+					menuHtml+='<p class="dropdown-menu"'+bg+'><a href="'+m[i].url+'" myid="'+m[i].myid+'">'+m[i].str+'</a></p>';
+				}
+			}
+			menuHtml+='<p style="height:20px;"></p>';
+			dw(menuHtml);
+		}
+		$(document).ready(function(){
+			ajax_getCsrf();
+			var language = 0;
+		<% 	if uci:get('functionlist','functionlist','SUPPORT_IPCAM') == "1" then
+			if (REQUEST_URI:match("ipcam")) then%>
+			getById("ap_menu").style.display = "none";
+			getById("camera_menu").style.display = "";
+			<%else%>
+				getById("ap_menu").style.display = "";
+				getById("camera_menu").style.display = "none";
+		<%
+			end
+		end
+		%>
+
+			if('<%=uci:get_first("luci","main","lang")%>' != null)
+				language = '<%=uci:get("luci","main","lang")%>'
+			$('#language_select').val(language);
+
+			$('#language_select').change(function(){
+				var lang = $('#language_select').find('option:selected').val();
+				var url = '<%=disp.build_url("admin/system/change_language")%>';
+				url += '?current_uri=<%=current_entry%>';
+				url += '&&lang='+lang;
+				  location.href= url ;			
+			});		
+		<%
+			local username = luci.util.trim(luci.util.exec('cat /tmp/md5tmp_account'))
+			local isAdminAccount = luci.util.exec("/lib/auth.sh get_authority \""..username.."\""):sub(1,-2)
+			if isAdminAccount == "1" then
+		%>
+			getById("language_select").style.display = "none";
+		<%
+		else
+		%>
+			getById("language_select").style.display = "";
+		<%
+			end
+		%>
+		var uci_changes = <%=ucichanges%>;
+		if ( uci_changes > 0 )
+			$('#save_apply_float_window').show();
+		});	
+
+//--------- checkrule for account and password----------------------
+//<![CDATA[
+/**
+ * \brief	test the validity of the usre name.
+ * \param	usr_name	The name string.
+ * \param	min			The minimum length of the name.
+ * \param	max			The maximum length of the name.
+ * \return	Return 0 if OK.
+ */
+var CHECK_PASS=0
+var CHECK_FAILED=1
+function validateUsr(usr_name, min, max)
+{
+	if ("" == usr_name)
+	{
+		alert("<%:Please enter the username!%>");
+		return CHECK_FAILED;
+	}
+	else if (min > usr_name.length || max < usr_name.length)
+	{
+		alert(String.format("<%:Name: length must between %d and %d!%>", min, max));
+		return CHECK_FAILED;
+	}
+	else if (isChinese(usr_name))
+	{
+		alert(String.format("<%:Chinese are invalid characters. Please input a new one.%>"));
+		return CHECK_FAILED;
+	}
+<% if uci:get("functionlist","functionlist","SUPPORT_MULTI_LOGIN") == "1" then%>
+	var ReservedChars = /^[^#\^\$\.\*\%\'\":\\\/\[\]& ]+$/;
+	if (!ReservedChars.test(usr_name) || isFullwidth(usr_name))
+	{
+		alert('<%=translatef("%s (Space) are invalid characters. Please input a new one.", " ^ $ % * .  # \\\' \" : \\\\ / [ ] &")%>');
+		return CHECK_FAILED;
+	}
+<% else %>
+	var ReservedChars = /^[^#\`\'\":\\\/\[\]& ]+$/;
+	if (!ReservedChars.test(usr_name) || isFullwidth(usr_name))
+	{
+		alert('<%=translatef("%s (Space) are invalid characters. Please input a new one.", " # \` \\\' \" : \\\\ / [ ] &")%>');
+		return CHECK_FAILED;
+	}
+<% end %>
+	return CHECK_PASS;
+}
+
+/**
+ * \brief	test the validity of the password.
+ * \param	pw		The password string.
+ * \return	Return 0 if OK.
+ */
+function validatePW(pw)
+{
+	// var ReservedChars = /^[^#\'\":\\\/\[& ]+$/;
+	// var ReservedChars = /^[^:#\'\";\\\/\[& $\(\)]+$/;
+	if ("" == pw)
+	{
+		alert("<%:Please enter the new password!%>");
+		return CHECK_FAILED;
+	}
+	else if (isChinese(pw))
+	{
+		alert(String.format("<%:Chinese are invalid characters. Please input a new one.%>"));
+		return CHECK_FAILED;
+	}
+
+<% if uci:get("functionlist","functionlist","SUPPORT_MULTI_LOGIN") == "1" then%>
+	var ReservedChars = /^[^#\^\$\.\*\%\'\":\\\/\[\]& ]+$/;
+	if (!ReservedChars.test(pw) || isFullwidth(pw))
+	{
+		alert('<%=translatef("%s (Space) are invalid characters. Please input a new one.", " ^ $ % * .  # \\\' \" : \\\\ / [ ] &")%>');
+		return CHECK_FAILED;
+	}
+<% else %>
+	var ReservedChars = /^[^#\`\'\":\\\/\[\]& ]+$/;
+	if (!ReservedChars.test(pw) || isFullwidth(pw))
+	{
+		alert('<%=translatef("%s (Space) are invalid characters. Please input a new one.", " # \` \\\' \" : \\\\ / [ ] &")%>');
+		return CHECK_FAILED;
+	}
+<% end %>
+	// For some special characters, we use mt5sum to replace nixio.crypt
+	// else if (!ReservedChars.test(pw))
+	// {
+	// 	alert(": , # , \' , \" , ; , \\ , / , [ , & , $ , ( , ) ,(Space)  are invalid characters. Please input a new one.");
+	// 	iRet = 1;
+	// }
+	return CHECK_PASS;
+}
+
+/**
+ * \brief	test the validity of the password.
+ * \param	pw		The password string.
+ * \return	Return 0 if OK.
+ */
+function validatePW2(pw)
+{
+	var iRet = 0;
+
+	if (pw.length < 8 || pw.length > 32)
+	{
+		messageInfo();
+		iRet = 1;
+	}
+
+	if (iRet == 0)
+	{
+		/*
+		******Force has one special character !@#$%^&*()
+		if (!hasNumber(pw) || !hasCapital(pw) || !hasLowercase(pw) || !hasValidSpecialChar(pw)|| !hasSpecialChar2(pw))
+		*/
+		/*
+		******Option has one special character !@#$%^&*()
+		*/
+		if (!hasNumber(pw) || !hasCapital(pw) || !hasLowercase(pw) || !hasValidSpecialChar(pw))
+		{
+			messageInfo();
+			iRet = 1;
+		}
+	}
+
+	return iRet;
+}
+
+/**
+ * \brief	Administrator account is not permitted.
+ * \param	usr		The user name string.
+ * \return	Return 0 if OK.
+ */
+function checkUserName(usr)
+{
+	if( usr == "root" || usr == "nobody" || usr == "daemon"
+		|| usr == "ftp" || usr == "network"){
+		alert("<%:This user name is invalid. Please input a new one.%>");
+		return CHECK_FAILED;
+	}
+	return CHECK_PASS;
+}
+
+/**
+ * \brief	check the new password.
+ * \param	pw1			The password string.
+ * \param	pw2			The password string.
+ * \param	szRet		The error message.
+ * \return	Return 0 if OK.
+ */
+function checkPW1PW2(pw1, pw2, szRet)
+{
+	if ("" == szRet)
+	{
+		if(pw2 != pw1)
+		{
+			alert("<%:Given password confirmation did not match, password not changed!%>");
+			return CHECK_FAILED;
+		}
+	}
+	else
+	{
+		if (pw2 == pw1)
+		{
+			alert("<%=translate('New password cannot be the same as the old password.')%>");
+			return CHECK_FAILED;
+		}
+
+	}
+	return CHECK_PASS;
+}
+//--------- checkrule for account and password end----------------------
+
+function change_webpasswd(){
+	$("#change_password_tbl").find("input").removeAttr('disabled');
+	$('input:enabled[name$=".key"]').val('');
+	$('#change_password_window').show();
+}
+function checkpwd(){
+
+	var szRet = "";
+	var user_account = document.getElementById("user_account").value;
+	var user_password = document.getElementsByName("user_password")[0].value;
+	var user_password_confirm = document.getElementsByName("user_password_confirm")[0].value;
+
+	if ((checkUserName(user_account)) ||
+		(validateUsr(user_account, 1, 12)) ||
+		(validatePW(user_password)) ||
+		(checkPW1PW2(user_password, user_password_confirm, szRet)))
+	{
+		return false;
+	}
+
+    ajax_setCsrf();
+    document.change_password_form.submit();
+}
+function messageInfo()
+{
+	var msg="<%:Password must be 8-32 characters in length, with at least one uppercase letter, one lowercase letter, and one number. Allowed symbols are %>"+'!@#$%^&()*';
+	alert(msg);
+}
+function pop_out_window(option){
+	if(option == 1){
+		$('#change_password_window').hide();
+		$('#warning_window').show();
+	}
+	else if(option == 2){
+		$('#warning_window').hide();
+		$('#change_password_window').show();
+	}
+}
+function copyto2()
+{
+	setTimeout("insight_msg()", 1000);
+}
+function insight_msg()
+{
+<% if nixio.fs.access('/tmp/alert_insight_msg') then %>
+	alert("<%:The AirBridge is in Insight Management Mode. Grayed-out settings must be configured in Insight.%>");
+<%
+	luci.util.exec("rm /tmp/alert_insight_msg")
+%>
+<%end%>
+}
+$(function() {
+	var url = '<%=luci.http.getenv("REQUEST_URI")%>';
+<% if uci:get('apcontroller','capwap','enable') == '1' then %>
+<% if uci:get('system','firmware','first_login') == '0' then %>
+	if(url.indexOf('wireless_device') != -1)
+	{	// In Wirelss page
+		$(".cbi-button-save").attr("disabled", true);
+		$('.cbi-button-save').css("color", "grey");
+	}
+	else if(url.indexOf('basic') != -1 || url.indexOf('admin/system/admin') != -1)
+	{	// In Basic and Account page
+		$('input[type="submit"]').attr("disabled", true);
+		$('input[type="submit"]').css("color", "grey");
+		$("input").attr("disabled",true);
+	}
+	else if(url.indexOf('system/system') != -1)
+	{	// In Time Zone page
+		$(".cbi-button").attr("disabled", true);
+		$('.cbi-button').css("color", "grey");
+		$("input").attr("disabled",true);
+		$("select").attr("disabled",true);
+	}
+	else if(url.indexOf('wifi_schedule') != -1)
+	{	// In Auto Reboot and Wifi Scheduler page
+		$("input").attr("disabled",true);
+		$("select").attr("disabled",true);
+		$("input[name='power_en']").removeAttr("disabled");
+		$(".cbi-button").attr("disabled", false);
+	}
+	else if(url.indexOf('flashops') != -1)
+	{
+		$('input[name="restore"]').attr("disabled", true);
+		$('#archive').attr("disabled", true);
+		$('input[name="user_backup"]').attr("disabled", true);
+		$('input[name="user_restore"]').attr("disabled", true);
+		$('#restoreuserdefaultButton').attr("disabled", true);
+		$('input[name="image"]').attr("disabled", true);
+	}
+	else if(url.indexOf('system/account_change') == -1 && url.indexOf('advanced') == -1 && url.indexOf('changes') == -1 && url.indexOf('syslog') == -1)
+	{	// The other pages, except account_change, advanced, changes and syslog pages
+		$('input[type="submit"]').attr("disabled", true);
+		$('input[type="submit"]').css("color", "grey");
+	}
+	$('#language_select').removeAttr("disabled");
+<%end%>
+<%else%>
+	if(url.indexOf('wireless_device') != -1)
+	{	// In Wirelss page
+		$(".cbi-button-save").attr("disabled", false);
+		$('.cbi-button-save').css("color", "white");
+	}
+	else if(url.indexOf('system/system') != -1)
+	{	// In Time Zone page
+		$(".cbi-button").attr("disabled", false);
+		$('.cbi-button').css("color", "#333");
+		$('input[type="submit"]').attr("disabled", false);
+		$('input[type="submit"]').css("color", "white");
+	}
+	else if(url.indexOf('flashops') != -1)
+	{
+		$('input[type="submit"]').attr("disabled", false);
+		$('input[type="submit"]').css("color", "black");
+		$('.cbi-button-save').css("color", "white");
+		$('.cbi-button-reset').css("color", "white");
+		$('.cbi-button-apply').css("color", "white");
+	}
+	else
+	{	// The other pages
+		$('input[type="submit"]').attr("disabled", false);
+		$('input[type="submit"]').css("color", "white");
+	}
+<% end %>
+});
+	 </script>
+ </head>
+<%
+ local d
+ if nixio.fs.access("/etc/config/sysProductInfo") then
+ d = luci.model.uci.cursor():get_all("sysProductInfo","model")
+ else
+ d = {["modelName"]="ECB123", ["description"]="Hello World"}
+ end
+ local BANNER_LOGO = uci:get('functionlist','vendorlist','BANNER_LOGO') or "/Netgear_logo.png"
+ if uci:get("functionlist","functionlist","SUPPORT_BUSINESS_SERIES") == "1" then
+ 	BANNER_LOGO = "/Netgear_business_logo.png"
+ end
+
+%>
+<%+functionlist%>
+<%if uci:get("system","firmware","first_login") == "0" and uci:get("functionlist","functionlist","SUPPORT_MYID") ~= '1' then %>
+ <body onload="copyto2()" class="lang_<%=luci.i18n.context.lang%> <%- if node then %><%= striptags( node.title ) %><%- end %>">
+<% else %>
+ <body class="lang_<%=luci.i18n.context.lang%> <%- if node then %><%= striptags( node.title ) %><%- end %>">
+<% end %>
+ <table id="wrap" align="center" cellspacing="0" cellpadding="0">
+	 <tr>
+		 <td colspan="2" style="padding: 0 10px 0 10px;">
+			<!--div style="background-image: url('<%=media%><%=BANNER_LOGO%>');width:1200; height:71px;"-->
+			<div style="background-color:#3F3E3F ;width:1200; height:71px;">
+				<div style="height:20px"></div>
+				<div id="languagebar2" style="text-align:right;margin-right:1px;display:none;">
+<% if uci:get("functionlist","functionlist","SUPPORT_BUSINESS_SERIES") == "1" then %>
+					<IMG style="MARGIN-LEFT: 25px; MARGIN-TOP: 5px" width="13%";alt="" src="<%=media%><%=BANNER_LOGO%>" align="left">
+<% else %>
+					<IMG style="MARGIN-LEFT: 25px; MARGIN-TOP: 10px;MARGIN-BOTTOM: 16px" width="13%";alt="" src="<%=media%><%=BANNER_LOGO%>" align="left">
+<% end %>
+					<span style="color: #FFFFFF;margin-right: 15px;font-size: 14px"><%=striptags(luci.sys.hostname())%> - <%=d["description"]%></span>
+					<select id="language_select" style="width: 200px;display:none" myid="language_select">
+						<option value="auto">English</option>
+						<%
+							local i18ndir = luci.i18n.i18ndir .. "base."
+							for k, v in luci.util.kspairs(luci.config.languages) do
+								local file = i18ndir .. k:gsub("_", "-")
+								if k:sub(1, 1) ~= "." and nixio.fs.access(file .. ".lmo") then
+						%>		
+						<option value="<%=k%>"><%=v%></option>
+						<%
+								end
+							end
+						%>
+					</select>
+				</div>
+			</div>
+			 <div class="PIE" style=" background-color:#3F3E3F; border-radius: 0 0 5px 9px; width:1200; height:36px; color:black; border:1px solid #3F3E3F; border-top:0;">
+				 <div style="float:left; width:181px; color:#ffffff; text-align: center; font-size: 22px; padding: 8px 0 0 0;"><!--%=striptags(luci.sys.hostname())%--></div>
+				 <div style="float:left;text-align: left; color:#ffffff; font-size:12pt; padding: 8px 4px 4px;margin-left:34px; width:433px; font-weight: bold;"><!--%=d["description"]%--></div>
+	<%
+		local authority = luci.util.exec("/lib/auth.sh get_authority \""..account.."\""):sub(1,-2)
+			if uci:get("functionlist","functionlist","SUPPORT_MULTI_LOGIN") ~= "1" then
+	%>
+			<% if uci:get('functionlist','functionlist','SUPPORT_AP_RP_SETUP_WIZARD') == "1" and uci:get("system","firmware","first_login") == "1" or noAccessReset == "1"  then %>
+			<div class="top_button PIE" style="border-radius: 4px 0 0 4px;cursor:not-allowed;">
+			<% else %>
+			    <% if uci:get('sysProductInfo','model','modelName')=='EMD11' then %>
+			    <div onclick="unSaveChanges()" class="top_button PIE" style="border-radius: 4px 0 0 4px;visibility:hidden;">
+			    <% else %>
+			    <div onclick="unSaveChanges()" class="top_button PIE" style="border-radius: 4px 0 0 4px;">
+			    <% end %>
+			<% end %>
+		<%
+			end
+
+        -- calculate the number of unsaved changes
+		if tree.nodes[category] and tree.nodes[category].ucidata then
+		if uci:get("functionlist","functionlist","SUPPORT_MULTI_LOGIN") == "1" then
+		%>
+			<div style="text-align:right;padding: 6px 0;margin-right:24px">
+		<%	if(authority == "0" and first_login == "0" and top_menu == "1" ) then	
+				if uci:get("functionlist","functionlist","HAS_ALL_APPLY") ~= "1" then%>
+					<div id="changes_text" class="popbox2"><p><%:Changes%></p></div>
+					<img class="popper" data-popbox="changes_text" onclick="unSaveChanges();"id="changes_amount" myid="Changes" "<% if REQUEST_URI:match("changes") then%>	src="<%=media%>/pictures/btn_change_b.png" <%else%> onmouseover = "this.src = '<%=media%>/pictures/btn_change_b.png'" onmouseout="this.src = '<%=media%>/pictures/btn_change_w.png'" src="<%=media%>/pictures/btn_change_w.png"<%end%> "/>
+					<span style="margin-right:24px ;font-size: 16px;<% if REQUEST_URI:match("changes") then%>color:#a3daff <%else%> color:#ffffff<%end%>">(<%=ucichanges%>)</span>
+
+	<%			end
+			end
+		else
+	%>
+		<%:Changes%>: <span id="changes_amount" myid="Changes"><%=ucichanges%></span>
+	<%
+			end
+
+		end
+	if uci:get("functionlist","functionlist","SUPPORT_MULTI_LOGIN") ~= "1" then
+
+	%>
+		</div>
+	<%	end	%>
+	<%
+		if uci:get("functionlist","functionlist","HAS_ALL_APPLY") ~= "1" then
+	%>
+
+	<div id="save_apply_float_window" style="position:fixed; bottom:0; right:0; border-style: solid;border-color: #ddd;background: #fffbba; display:none;">
+	 	<table>
+	 		<tr>
+	 			<td colspan="2" >
+	 				<font style="color: black;"><%:Waiting for changes to be applied%> </font>
+	 				<strong id="save_apply_float_window_changes"> (<%=ucichanges%>)</strong>	
+	 			</td>
+	 		</tr>
+	 		<tr>
+	 			<td align="right">
+		 			<div class="cbi-page-actions" align="middle" style="margin-bottom: 0px;">
+					<% if uci:get('functionlist','functionlist','SUPPORT_MANAGEMENT_SSID') == '1' and uci:get('functionlist','functionlist','SUPPORT_MYID') ~= '1' then %>
+						<% if not( uci:get('functionlist','functionlist','SUPPORT_AP_RP_SETUP_WIZARD') == "1" and (uci:get('system','firmware','first_login') == "1" or reboot_flag == "1" )) then %>
+								<form class="inline" method="get" action="<%=controller%>/admin/uci/saveapply">
+									<input type="hidden" name="redir" value="<%=pcdata(luci.http.formvalue("redir"))%>" />
+									<input class="cbi-button cbi-button-save" style="background-color:#21a9f3; color:#ffffff" type="submit" onclick="ajax_setCsrf();" value="<%:Apply%>" />
+								</form>
+						<% else %>
+							<form class="inline" method="get" action="<%=controller%>/admin/uci/saveapply">
+								<input type="hidden" name="redir" value="<%=pcdata(luci.http.formvalue("redir"))%>" />
+								<input class="cbi-button cbi-button-save" style="background-color:#21a9f3; color:#ffffff" type="submit" onclick="ajax_setCsrf();" value="<%:Apply%>" />
+							</form>
+						<% end %>
+					<% else %>
+						<form class="inline" method="get" action="<%=controller%>/admin/uci/saveapply">
+							<input type="hidden" name="redir" value="<%=pcdata(luci.http.formvalue("redir"))%>" />
+							<input class="cbi-button cbi-button-save" style="background-color:#21a9f3; color:#ffffff" type="submit" onclick="ajax_setCsrf();" value="<%:Apply%>" />
+						</form>
+					<% end %>
+					</div>
+	 			</td>
+	 			<td align="left">
+	 				<div class="cbi-page-actions" align="middle" style="margin-bottom: 0px;">
+		 				<form class="inline" method="get" action="<%=controller%>/admin/uci/revert">
+							<input type="hidden" name="redir" value="<%=pcdata(luci.http.formvalue("redir"))%>" />
+							<input class="cbi-button cbi-button-reset" style="background-color:#21a9f3; color:#ffffff" type="submit" onclick="ajax_setCsrf();" value="<%:Revert%>" />
+						</form>
+					</div>
+				</td>
+	 		</tr>
+	 	</table>
+	</div>
+	<%	end %>
+	<%
+		if uci:get("functionlist","functionlist","SUPPORT_HOME_INFO") == "1" then
+	%>
+		<script>
+		if("<%=authority%>" == "0"  && "<%=first_login%>" == "0" && "<%=top_menu%>" == "1")
+		{
+			dw('<div id="home_text" class="popbox2"><p><%:Home%></p></div>');
+			dw('<img class="popper" data-popbox="home_text" style="margin-right:24px" onclick="home(); " <% if REQUEST_URI:match("home_info") then%>	src=\"<%=media%>/pictures/icon_home_on.png\" <%else%> onmouseover = \"this.src = \'<%=media%>/pictures/icon_home_on.png\'\" onmouseout=\"this.src = \'<%=media%>/pictures/icon_home_off.png\'\" src=\"<%=media%>/pictures/icon_home_off.png\"<%end%> " myid="Home"/>');
+		}
+		</script>
+	<%	end %>
+	<%
+		if uci:get("functionlist","functionlist","SUPPORT_MULTI_LOGIN") == "1" then
+	%>
+		<script>
+		if("<%=authority%>" == "0"  && "<%=first_login%>" == "0" && "<%=top_menu%>" == "1")
+		{
+			dw('<div id="reboot_text" class="popbox2"><p><%:Reboot%></p></div>');
+			dw('<img class="popper" data-popbox="reboot_text" style="margin-right:24px" onclick="reboot();" <% if luci.http.formvalue("action") == "reset" then %>	src=\"<%=media%>/pictures/btn_reboot_b.png\" <%else%> onmouseover = \"this.src = \'<%=media%>/pictures/btn_reboot_b.png\'\" onmouseout=\"this.src = \'<%=media%>/pictures/btn_reboot_w.png\'\" src=\"<%=media%>/pictures/btn_reboot_w.png\"<%end%> " myid="Reset"/>');
+		}
+		</script>
+		<% 	else %>
+			<% if uci:get('functionlist','functionlist','SUPPORT_AP_RP_SETUP_WIZARD') == "1" and uci:get("system","firmware","first_login") == "1" or noAccessReset == "1"  then %>
+			<div class="top_button PIE" myid="Reset" style="border-right: 1px solid #1B489C; border-left: 1px solid #1B489C;cursor:not-allowed;"><%:Reset%></div>
+			<% else %>
+			<div onclick="reset()" class="top_button PIE" myid="Reset" style="border-right: 1px solid #3F3E3F; border-left: 1px solid #3F3E3F;"><%:Reboot%>/<%:Reset%></div>
+			<% end %>
+		<% 	end %>
+
+	<% 
+	if uci:get("functionlist","functionlist","SUPPORT_MULTI_LOGIN") == "1" then
+	%>
+		<script>
+		if("<%=authority%>" == "0" && "<%=first_login%>" == "0" && "<%=top_menu%>" == "1")
+		{
+			dw('<div id="liveview_text" class="popbox2"><p><%:Live View%></p></div>');
+			dw('<img class="popper" data-popbox="liveview_text" style="margin-right:24px" onclick="live(); " <% if REQUEST_URI:match("Live") then%>	src=\"<%=media%>/pictures/btn_liveview_b.png\" <%else%> onmouseover = \"this.src = \'<%=media%>/pictures/btn_liveview_b.png\'\" onmouseout=\"this.src = \'<%=media%>/pictures/btn_liveview_w.png\'\" src=\"<%=media%>/pictures/btn_liveview_w.png\"<%end%> " myid="live"/>');
+			dw('<div id="settings_text" class="popbox2"><p><%:Settings%></p></div>');
+			dw('<img class="popper" data-popbox="settings_text" style="margin-right:24px" onclick="config()" " <% if REQUEST_URI:match("overview") then%>	src=\"<%=media%>/pictures/btn_setting_b.png\" <%else%> onmouseover = \"this.src = \'<%=media%>/pictures/btn_setting_b.png\'\" onmouseout=\"this.src = \'<%=media%>/pictures/btn_setting_w.png\'\" src=\"<%=media%>/pictures/btn_setting_w.png\"<%end%> " myid="config" />');
+			if('<%=uci:get("mesh","wifi","disabled")%>' == '0' && '<%=uci:get("network","sys","EnMesh")%>' == '0')
+			{
+				dw('<div id="mesh_link_text" class="popbox2"><p><%:Mesh Link%></p></div>');
+				dw('<img class="popper" data-popbox="mesh_link_text" style="margin-right:24px" onclick="mesh_link()" " <% if REQUEST_URI:match("mesh_tools") then%>	src=\"<%=media%>/pictures/btn_mesh_b.png\" <%else%> onmouseover = \"this.src = \'<%=media%>/pictures/btn_mesh_b.png\'\" onmouseout=\"this.src = \'<%=media%>/pictures/btn_mesh_w.png\'\" src=\"<%=media%>/pictures/btn_mesh_w.png\"<%end%> " myid="mesh_link" />');
+			}
+		}
+		 </script>
+		<%end%>
+	<% 
+		if uci:get('functionlist','functionlist','SUPPORT_MESH_SETTING') == "1" and uci:get('functionlist','functionlist','SUPPORT_HIDE_WIZARD') ~= "1"then
+	%>
+		<script>
+		if("<%=authority%>" == "0" && "<%=first_login%>" == "0" && "<%=top_menu%>" == "1")
+		{
+			dw('<div id="wizard_text" class="popbox2"><p><%:Network Wizard%></p></div>');	
+			dw('<img class="popper" data-popbox="wizard_text"	style="margin-right:24px" onclick="wizard(); " <% if REQUEST_URI:match("wizard") then%>	src=\"<%=media%>/pictures/btn_wizard_b.png\" <%else%> onmouseover = \"this.src = \'<%=media%>/pictures/btn_wizard_b.png\'\" onmouseout=\"this.src = \'<%=media%>/pictures/btn_wizard_w.png\'\" src=\"<%=media%>/pictures/btn_wizard_w.png\"<%end%> " myid="wizard"/>');
+		}
+		 </script>
+	<%
+		end
+	%>
+	<%	if uci:get("functionlist","functionlist","SUPPORT_MULTI_LOGIN") == "1" then
+		if((first_login == "0" or authority == "1") and top_menu == "1") then	%>
+	<div id="logout_text" class="popbox2"><p><%:Logout%></p></div>
+	<img class="popper" data-popbox="logout_text" onclick="logout();"myid="logout" "<% if REQUEST_URI:match("logout") then%>	src="<%=media%>/pictures/btn_logout_b.png" <%else%> onmouseover = "this.src = '<%=media%>/pictures/btn_logout_b.png'" onmouseout="this.src = '<%=media%>/pictures/btn_logout_w.png'" src="<%=media%>/pictures/btn_logout_w.png"<%end%> "/></div>
+	<%
+		else
+	%>
+		</div>
+	<%	end
+	else%>
+	<% if uci:get('functionlist','functionlist','SUPPORT_AP_RP_SETUP_WIZARD') == "1" and uci:get("system","firmware","first_login") == "1" or noAccessReset == "1" then %>
+	<div class="top_button PIE" myid="logout" style="border-radius: 0 4px 4px 0;cursor:not-allowed;"><%:Logout%></div>
+	<% else %>
+	<div onclick="logout()" class="top_button PIE" myid="logout" style="border-radius: 0 4px 4px 0;"><%:Logout%></div>
+	<% end %>
+	<%end%>	
+
+			 </div>
+			 <div style=" margin-bottom:5px;"><img src="<%=media%>/banner_shadow.png" alt=""/></div>
+		 </td>
+	 </tr>
+ </table>
+<div id="menu_div">
+	<table style="margin-bottom: 0;">
+	 <tr>
+		<td id="menu_right_style">
+<%
+	if uci:get('functionlist','functionlist','SUPPORT_IPCAM') == "1" then
+%>
+		<div style="border-bottom:2px solid #ffffff;">
+		<table>
+		<tr style="border-bottom:1px solid #1b489c;">
+		<!--and (REQUEST_URI:match("SIP") ~= "SIP")-->
+		<td  id ="ap_menu_div" width = "50%" onmouseover="this.style.cursor='pointer';" onclick="changeMenu(0);" style="cursor:hand;<% if (REQUEST_URI:match("ipcam") == "ipcam") then%> background: #ffffff;color:#000000; <%else%>
+				background: #1b489c;color:#ffffff; 	<%end%>border-radius: 14px 0 0 0;font-size: 14px;" >
+		 	<%:Access Point%>
+		</td>
+		<td  id ="camera_menu_div" width = "50%" onmouseover="this.style.cursor='pointer';"  onclick="changeMenu(1);"style="cursor:hand;<% if (REQUEST_URI:match("ipcam") == "ipcam") then%> background: #1b489c;color:#ffffff; <%else%>
+				background: #ffffff;color:#000000; 	<%end%>font-size: 14px;" >
+		 	<%:Camera%>
+		</td>
+		</tr>
+		</table>
+		</div>
+
+	<div id="camera_menu" style = "display:none;min-width: 192px;width:auto;vertical-align: top;" >
+	<script>showMenu2();</script>
+
+    </div>
+    <div id="ap_menu" style = "min-width: 192px;width:auto;vertical-align: top;">
+<%	else
+%> 
+	<div id="menu">
+<%	end
+%>
+		<script>showMenu();</script>
+	 	<%-
+		local function submenu(prefix, node)
+			local childs = disp.node_childs(node)
+			if #childs > 0 then
+		%>
+			<%-
+				for i, r in ipairs(childs) do
+					local nnode = node.nodes[r]
+					local href  = controller .. prefix .. r ..
+						(nnode.query and http.build_querystring(nnode.query) or "")
+			%>
+		<!--<p class="dropdown-menu"><a href="<%=pcdata(href)%>"><%=pcdata(striptags(translate(nnode.title)))%></a></p>-->
+			<%-
+				end
+			%>
+		<%-
+			end
+		end
+
+		childs = disp.node_childs(cattree)
+
+		--if #childs > 0 then
+		if 0 then
+			for i, r in ipairs(childs) do
+				local nnode = cattree.nodes[r]
+				local href  = controller .. "/" .. category .. "/" .. r ..
+					(nnode.query and http.build_querystring(k.query) or "")
+                local grandchildren = disp.node_childs(nnode)
+                if #grandchildren > 0 then
+	%> 
+                <% -- <a class="menu" href="<%=pcdata(href)%>"><img src="<%=media%>/icon_tools_on.png" alt="tools"/><%=pcdata(striptags(translate(nnode.title)))%></a>%>
+                <% -- submenu("/" .. category .. "/" .. r .. "/", nnode) 
+				else %>
+	            <% -- <a class="menu" href="<%=pcdata(href)%>"><img src="<%=media%>/icon_tools_on.png" alt="tools"/><%=pcdata(striptags(translate(nnode.title)))%></a>%>
+    <%
+                end
+			end
+		end
+	%>
+    </div>
+	</td>
+	<td id="content">
+
+<div id="maincontent" class="container">
+<% if category then subtree("/" .. category .. "/", cattree) end %>

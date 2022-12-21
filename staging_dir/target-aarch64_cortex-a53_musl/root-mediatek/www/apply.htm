@@ -1,0 +1,96 @@
+<%#
+LuCI - Lua Configuration Interface
+Copyright 2008 Steven Barth <steven@midlink.org>
+Copyright 2008 Jo-Philipp Wich <xm@leipzig.freifunk.net>
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+	http://www.apache.org/licenses/LICENSE-2.0
+
+$Id: apply.htm 9014 2012-08-14 13:08:18Z jow $
+
+-%>
+
+<%+header%>
+
+<h2><a id="content" name="content"><%:Configuration%> / <%:Apply%></a></h2>
+<%
+local uci = require("luci.model.uci").cursor()
+	if 	uci:get("functionlist","functionlist","SUPPORT_OPEN_LEFTMENU") == "0" then
+%>
+		<script>document.getElementById('menu_right_style').style.display = "none";</script>
+<%
+	end
+	reboot_time = uci:get('functionlist','vendorlist','DUT_REBOOT_TIME')  or 60
+%>
+<% if changes then %>
+<%
+if uci:get('functionlist','functionlist','SUPPORT_MANAGEMENT_SSID') == '1' then
+	if uci:get('tmp_wizard','wizard','pw_ignore') ~= '1' and uci:get('tmp_wizard','wizard','pw_changed') ~= '1' then
+		luci.util.exec("touch /tmp/login_check")
+	end
+end
+%>
+	<%+cbi/apply_xhr%>
+	<%+admin_uci/changelog%>
+
+	<%- cbi_apply_xhr('uci-apply', configs, REQUEST_URI) -%>
+
+	<p><strong><%:The following changes have been committed%>:</strong></p>
+	<%- uci_changelog(changes) -%>
+	<script>
+		var j = <%write(require "luci.json".encode(changes))%>;
+		if(j.network)
+		{
+			if(j.network.lan.proto == "dhcp")
+			{
+				setTimeout(function(){
+					getById('cbi-apply-uci-apply-status').style.display = "none";
+					var e = getById('cbi-apply-redirect-status');
+					e.style.display = "";
+					e.innerHTML = "<%:IP address was modified, please connect the device with new address that obtain from DHCP server.%>"
+				}, 20000);
+			}
+			else if((j.network.lan.proto == "static") || j.network.lan.ipaddr)
+			{
+				getById('cbi-apply-uci-apply-status').style.display = "none";
+				getById('cbi-apply-redirect-status').style.display = "";
+				var t = 60;
+				if(j.wireless){
+					t = <%=reboot_time%>;	
+				}
+				var t2 = getById('redirect_sec'), ip = "<%=luci.model.uci.cursor():get('network', 'lan', 'ipaddr')%>";
+				setInterval(function()
+				{
+					if(t != -1)
+					{
+						t2.innerHTML = t;
+						t -= 1;
+					}
+					else
+					{
+						location.href = "http://" + ip + "/cgi-bin/luci";
+					}
+				}, 1000);
+			}
+		}
+	</script>
+<% else %>
+	<p><strong><%:There are no pending changes to apply!%></strong></p>
+
+	<% local redir = luci.dispatcher.build_url("admin", "status", "overview")%>
+
+<script>
+	$(function() {
+  		window.location.href = '<%=redir%>';
+	});
+</script>	
+	<div class="cbi-page-actions">
+		<form class="inline" method="get" action="<%=redir%>">
+			<input class="cbi-button cbi-button-save" style="margin:0" type="submit" value="<%:Back%>" myid="button_back"/>
+		</form>
+	</div>
+<% end %>
+<%+footer%>

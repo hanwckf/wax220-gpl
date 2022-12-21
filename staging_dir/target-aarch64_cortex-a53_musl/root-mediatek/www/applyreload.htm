@@ -1,0 +1,93 @@
+<%local uci = require "luci.model.uci".cursor()%>
+
+<script>
+	document.getElementById('menu_right_style').style.display = "none";
+</script>
+<style>
+	.desc{
+		text-align: center;
+		margin-top: 50px;
+	}
+<%if welcome == 1 then%>
+	h2
+	{
+		font-size: 24px;
+	}
+<% end %>
+</style>
+<html>
+	<head>
+		<title><%=luci.sys.hostname()%></title>
+		<link rel="stylesheet" type="text/css" media="screen" href="<%=media%>/cascade.css" />
+		<link rel="stylesheet" type="text/css" media="screen" href="<%=media%>/cascade-custom.css" />
+		<script type="text/javascript" src="<%=resource%>/xhr.js"></script>
+		<script type="text/javascript" src="/luci-static/resources/cbi.js"></script>
+		<script type="text/javascript">//<![CDATA[
+		var myinterval, target = 'http://<%=addr or luci.http.getenv("SERVER_NAME")%>/';
+		var t = "<% if countdown then %><%=countdown%><% else %>60<% end %>";
+		myinterval = setInterval("a()", 1000);
+		function a()
+		{
+			if(t <= 0)
+			{
+				location.href = target;
+				window.clearInterval(myinterval);
+			}
+			document.getElementById("countdownString").innerHTML = String.format("<%:Please wait for %s %d %s secs. System is reloading.%>", "<span style='color:darkred;'>", t, "</span>");
+			t -= 1;
+		}
+		//]]></script>
+	</head>
+	<body style="padding:20px 25px;">
+<%if welcome == 1 then%>
+		</br></br></br></br></br></br></br></br>
+		<div id="maincontainer" align="center">
+			<div id="maincontent">
+				<h2><a id="content" name="content"><%:System%> - <% if title then %><%=title%><% else %><%:Rebooting...%><% end %></a></h2>
+				<fieldset class="cbi-section">
+					<p id="countdownString"></p>
+					<p>
+						<% if msg then %><%=msg%><% else %><%:Changes applied.%><% end %>
+					</p>
+					<p>
+						<img src="<%=resource%>/icons/loading.gif" alt="<%:Loading%>" style="vertical-align:middle" />
+						<%:Waiting for changes to be applied...%>
+					</p>
+					<p id="redirectToLogin"></p>
+				</fieldset>
+			</div>
+		<div align="center">
+			<!--img src="<%=resource%>/icons/loading.gif" alt="<%:Loading%>" style="vertical-align:middle" />
+			<p><strong>Applying your custom settings...</strong></p-->
+			<p>Your new WiFi network details are</[>
+			<p>WiFi Networks: <strong><%=ssid%></strong></p>
+			<p>Password: <strong><%=passphrase%></strong></p>
+			</br>
+			<p>Device IP: <strong><%=device_ip%></strong></p>
+			</br>
+			<p>For seamless Internet access, wait 2 minutes before connecting to your new WiFi network.</p>
+			<p>Use the <%=mgmt_ssid%> when configuring the device. For security, </p>
+			<p>the CONFIG-ONLY SSID does not provide Internet access and automatically turns off after 15 mins idle time.</p>
+		</div>
+		</div>
+
+<%else%>
+		<div id="maincontainer">
+			<div id="maincontent">
+				<h1><a id="content" name="content"><%:System%> - <% if title then %><%=title%><% else %><%:Rebooting...%><% end %></a></h1>
+				<fieldset class="cbi-section">
+					<p id="countdownString"></p>
+					<p>
+						<% if msg then %><%=msg%><% else %><%:Changes applied.%><% end %>
+					</p>
+					<p>
+						<img src="<%=resource%>/icons/loading.gif" alt="<%:Loading%>" style="vertical-align:middle" />
+						<%:Waiting for changes to be applied...%>
+					</p>
+					<p id="redirectToLogin"></p>
+				</fieldset>
+			</div>
+		</div>
+<%end%>
+	</body>
+</html>

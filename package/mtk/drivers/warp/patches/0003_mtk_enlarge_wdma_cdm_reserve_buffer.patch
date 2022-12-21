@@ -1,0 +1,31 @@
+diff --git a/regs/coda/wdma_hw.h b/regs/coda/wdma_hw.h
+index cfd28b4..aa16f51 100644
+--- a/regs/coda/wdma_hw.h
++++ b/regs/coda/wdma_hw.h
+@@ -107,8 +107,9 @@
+ #define WDMA_GLO_CFG_FLD_RX_INFO3_PRESERVE                    REG_FLD(1, 26)
+ #define WDMA_GLO_CFG_FLD_RX_WCID_SEL                          REG_FLD(1, 25)
+ #define WDMA_GLO_CFG_FLD_RX_WIFI_EN                           REG_FLD(1, 24)
+-#define WDMA_GLO_CFG_FLD_REV0                                 REG_FLD(13, 11)
+-#define WDMA_GLO_CFG_FLD_MULTI_EN                             REG_FLD(1, 10)
++#define WDMA_GLO_CFG_FLD_RESV_BUF                              REG_FLD(8, 16)
++#define WDMA_GLO_CFG_FLD_MULTI_CNT                            REG_FLD(4, 12)
++#define WDMA_GLO_CFG_FLD_MULTI_EN                             REG_FLD(1, 11)
+ #define WDMA_GLO_CFG_FLD_EXT_FIFO_EN                          REG_FLD(1, 9)
+ #define WDMA_GLO_CFG_FLD_DESC_32B_E                           REG_FLD(1, 8)
+ #define WDMA_GLO_CFG_FLD_BIG_ENDIAN                           REG_FLD(1, 7)
+diff --git a/regs/reg_v2/warp_hw_v2.c b/regs/reg_v2/warp_hw_v2.c
+index 59cb480..59aaa2c 100644
+--- a/regs/reg_v2/warp_hw_v2.c
++++ b/regs/reg_v2/warp_hw_v2.c
+@@ -798,6 +798,10 @@
+ 		if ((txrx == WARP_DMA_RX) || (txrx == WARP_DMA_TXRX))
+ 			wdma_cfg |= (1 << WDMA_GLO_CFG_FLD_TX_DMA_EN);
+ #endif
++
++		/* WDMA workaround - CDM FIFO overrun issue  */
++		wdma_cfg &= ~(0xFF << WDMA_GLO_CFG_FLD_RESV_BUF);
++		wdma_cfg |= (0x80 << WDMA_GLO_CFG_FLD_RESV_BUF);
+ 	} else {
+ 		wdma_cfg &= ~(1 << WDMA_GLO_CFG_FLD_RX_INFO1_PRESERVE);
+ 		wdma_cfg &= ~(1 << WDMA_GLO_CFG_FLD_RX_INFO2_PRESERVE);

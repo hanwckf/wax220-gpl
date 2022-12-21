@@ -1,0 +1,447 @@
+<% http_header( "script/jquery-1.12.4.min.js", "style/cascade2.css", "style/cascade.css", "style/cascade-custom.css", "script/cbi.js", "script/common.js", "script/xhr.js", "script/device_status.js") %>
+<body onLoad="please_wait(false);">
+<form>
+<div id="STP_info" class="popbox">
+    <p>$index_stp_info_1</p>
+</div>
+
+<style>
+	.subtitle {
+		padding-left: 35px;
+	}
+
+	.one-long-line {
+		max-width:50px;
+		white-space:nowrap;
+		overflow:hidden;
+		text-overflow:ellipsis;
+   	}
+
+	.one-long-line:hover{
+		color:grey;
+		overflow:visible;
+		position: relative;
+	}
+
+	.one-long-line:hover span{
+		font-weight: bold;
+		color: black;
+		background-color:white;
+		display: inline-block;
+		height: 100%;
+	}
+
+</style>
+<fieldset class="cbi-section">
+	<table width="100%" cellspacing="10" id="dev_info">
+		<tr>
+			<td colspan="2" class="title">$device_information</td>
+		</tr>
+		<tr class="title-option" id="title_Device_Name_text"></tr>
+		<tr class="title-option"><td width="40%" myid="title_Device_Serial_Number_text">$serial_number</td><td myid="Device_Serial_Number_text"><% get_sn() %></td></tr>
+		<tr class="title-option">
+			<td colspan="2">$mac_address</td>
+		</tr>
+		<tr class="title-option" id="tr-lan1">
+			<td class="subtitle" myid="title_lan_mac_text">- $lan1</td>
+			<td id="mac_lan1" myid="lan1_mac_text"><% cfg_get("macAddr") %></td>
+		</tr>
+		<tr class="title-option" id="tr-lan2">
+			<td class="subtitle" myid="title_lan_mac_text">- $lan2</td>
+			<td id="mac_lan2" myid="lan2_mac_text"><% cfg_get("macAddr") %></td>
+		</tr>
+		<tr class="title-option" id="tr-lan">
+			<td class="subtitle" myid="title_lan_mac_text">- $lan</td>
+			<!--<td id="mac_lan" myid="lan_mac_text" id="td-demo-mac">"88:DC:96:88:99:30"</td>-->
+			<td id="mac_lan" myid="lan_mac_text" id="td-brlan-mac"><% lan_mac() %></td>
+		</tr>
+		<tr class="title-option" id="tr-wifi24-enable">
+			<td class="subtitle" myid="title_wifi24_bssid1_text">- $wireless_lan - 2.4GHz</td>
+			<!--<td id="mac_24g" myid="wifi24_bssid1_text" id="td-demo-bssid1"><% cfg_get("wifi24_bssid1")%></td>-->
+			<td id="mac_24g" myid="wifi24_bssid1_text" id="td-wifi0-bssid1"><% cfg_get("wl_mac") %></td>
+		</tr>
+		<tr class="title-option" id="tr-wifi5-enable">
+			<td class="subtitle" myid="title_wifi5_bssid1_text">- $wireless_lan - 5GHz</td>
+			<!--<td id="mac_5g" myid="wifi5_bssid1_text" id="td-demo-5g-bssid1"><% cfg_get("wifi5_bssid1") %></td>-->
+			<td id="mac_5g" myid="wifi5_bssid1_text" id="td-wifi1-5g-bssid1"><% cfg_get("wla_mac") %></td>
+		</tr>
+		<tr class="title-option" id="tr-wifi5_2-enable">
+			<td class="subtitle" myid="title_wifi5_1_bssid1_text">- $wireless_lan - 5GHz - 2</td>
+			<td id="mac_5g_2" myid="wifi5_1_bssid1_text"><% cfg_get("wifi5_1_bssid1") %></td>
+		</tr>
+		<tr class="title-option">
+			<td myid="title_wifi_country_text">$country</td>
+				<td id="ws_country" myid="wifi_country_text" id="wifi24-country"></td>
+				<!--<td id="ws_country" myid="wifi_country_text" id="wifi5-country"><% cfg_get("wifi5_country") %></td>-->
+		</tr>
+		<tr class="title-option"><td width="40%" myid="title_localtime_text">$current_local_time</td><td id="localtime" myid="localtime_text"></td></tr>
+		<tr class="title-option"><td width="40%" myid="title_uptime_text">$uptime</td><td id="uptime" myid="uptime_text"></td></tr>
+<!--<%
+if (uci:get('functionlist','functionlist','SUPPORT_CAPWAP_CONTROL') == '1' and uci:get('sysProductInfo','model','modelName') ~= 'EMD11' )  then -----#### SUPPORT_CAPWAP_CONTROL START ###
+%>-->
+	<!--<%
+	if (uci:get('functionlist','functionlist','SUPPORT_ATKK_FW_VERSION') == '1')  then -----#### SUPPORT_ATKK_FW_VERSION START ###
+	%>-->
+		<tr class="title-option" id="title_fw_ver_text"></tr>
+		<!--<tr class="title-option"><td width="40%" myid="title_fw_ver_text">$firmware_version</td><td myid="fw_ver_text"></td></tr>-->
+	<!--<%
+	else -----####  SUPPORT_ATKK_FW_VERSION ELSE #### 
+	%>
+		<tr class="title-option"><td width="40%" myid="title_fw_ver_text"><%:Firmware Version%></td><td myid="fw_ver_text">
+			<script>document.write((firmwareVersion == "?")?"?":"v"+firmwareVersion.substring(0, firmwareVersion.lastIndexOf('.'))+"_c<%=capwap_firmwareVersion%>");</script>
+		</td></tr>
+	<%
+	end-----####  SUPPORT_ATKK_FW_VERSION END #### 
+	%>-->
+<!--<%
+else -----####  SUPPORT_CAPWAP_CONTROL ELSE #### 
+%>
+	<%
+	if (uci:get('functionlist','functionlist','SUPPORT_FULL_FW_VERSION') == '1')  then -----#### SUPPORT_ATKK_FW_VERSION START ###
+	%>
+		<tr class="title-option"><td width="40%" myid="title_fw_ver_text"><%:Firmware Version%></td><td myid="fw_ver_text">
+			<script>document.write(firmwareVersion);</script>
+		</td></tr>
+	<%
+	else -----####  SUPPORT_FULL_FW_VERSION ELSE ####
+	%>
+		<tr class="title-option"><td width="40%" myid="title_fw_ver_text"><%:Firmware Version%></td><td myid="fw_ver_text">
+			<script>document.write((firmwareVersion == "?")?"?":firmwareVersion.substring(0, firmwareVersion.lastIndexOf('.')));</script>
+		</td></tr>
+	<%
+	end-----####  SUPPORT_FULL_FW_VERSION END ####
+	%>
+<%
+end-----####  SUPPORT_CAPWAP_CONTROL END #### 
+%>-->	
+		<tr class="title-option"><td width="40%">$device_version</td><td id="device_version"></td></tr>
+<!--<%
+if (uci:get('sysProductInfo','model','modelName') ~= 'EMD11') then
+%>-->
+		<tr class="title-option">
+			<td myid="title_VLAN_id_text">$management_vlan_id</td>
+<!--<% if (WLANVLANEnable =="0") or (tonumber(managementVlanId) > ManagementVLANID_MAX_VALUE) or (tonumber(managementVlanId) < 1) then %>-->
+			<td id="mg_vlan_id" myid="VLAN_id_text">$untagged</td>
+<!--<% else %>
+			<td id="mg_vlan_id" myid="VLAN_id_text"><%=managementVlanId%></td>
+<% end %>-->
+		</tr>
+		<tr class="title-option">
+			<td myid="title_VLAN_id_text">$lan_speed</td>
+			<td>
+				<div id="lan_speed"></div>
+			</td>
+		</tr>
+<!--<%
+if (uci:get('functionlist','functionlist','SUPPORT_CAPWAP_CONTROL') == '1')  then -----#### SUPPORT_CAPWAP_CONTROL START ###
+	if (uci:get('functionlist','functionlist','SUPPORT_HIDE_CHECK_CODE_IN_STATUS') == '1')  then -----#### SUPPORT_HIDE_CHECK_CODE_IN_STATUS START ###
+	else
+%>	-->	
+		<!--<tr class="title-option">
+			<td style="width:45%;">$registration_check_code</td>
+			<td>
+				<div id="RegiCheckCodeInfo"></div>
+			</td>
+		</tr>-->
+<!--<%
+	end -----####  SUPPORT_HIDE_CHECK_CODE_IN_STATUS END ####
+end-----####  SUPPORT_CAPWAP_CONTROL END #### 
+%>-->
+<!--<%
+end
+%>-->
+	</table>
+</fieldset>
+
+<fieldset class="cbi-section">
+
+	<table width="100%" cellspacing="10">
+		<tr>
+			<td colspan="2" class="title">$memory_information</td>
+		</tr>
+		<tr class="title-option"><td width="40%">$total_available</td><td id="memtotal">-</td></tr>
+		<tr class="title-option"><td width="40%">$free</td><td id="memfree">-</td></tr>
+		<tr class="title-option"><td width="40%">$cached</td><td id="memcache">-</td></tr>
+		<tr class="title-option"><td width="40%">$buffered</td><td id="membuff">-</td></tr>
+	</table>
+</fieldset>
+
+<fieldset class="cbi-section">
+	<table width="100%" cellspacing="10">
+		<tr>
+			<td colspan="2" class="title">$lan_information - IPv4</td>
+		</tr>
+		<tr class="title-option">
+			<td width="40%" myid="title_lan_ipaddr_text">$ip_address</td>
+			<td id="ipv4_ipaddr" myid="lan_ipaddr_text"><% cfg_get("lan_ipaddr)" %></td>
+		</tr>
+		<tr class="title-option">
+			<td width="40%" myid="title_lan_netmask_text">$subnet_mask</td>
+			<td id="ipv4_netmask" myid="lan_netmask_text"><% cfg_get("lan_netmask") %></td>
+		</tr>
+		<tr class="title-option">
+			<td width="40%" myid="title_lan_gateway_text">$gateway</td>
+			<td id="ipv4_gwaddr" myid="lan_gateway_text"></td>
+		</tr>
+		<tr class="title-option">
+			<td width="40%" myid="title_lan_dns1_text">$primary_dns</td>
+			<td id="ipv4_dns" myid="lan_dns1_text">N/A</td>
+		</tr>
+		<tr class="title-option">
+			<td width="40%" myid="title_lan_dns2_text">$secondary_dns</td>
+			<td id="ipv4_dns2" myid="lan_dns2_text">N/A</td>
+		</tr>
+		<tr class="title-option">
+			<td width="40%" myid="title_lan_dhcp_protocol_text">$dhcp_client</td>
+			<td id="ipv4_proto" myid="lan_dhcp_protocol_text">$disable</td>
+		</tr>
+		<!--<tr class="title-option">
+			<td width="40%" myid="title_lan_stp_text">$spanning_tree_protocol_stp<img class="popper" data-popbox="STP_info" src="<%=media%>/image/icon_info_blue.png"></td>
+			<td id="ipv4_stp" myid="lan_stp_text">$disable</td>
+		</tr>-->
+	</table>
+</fieldset>
+
+<!--<% if has_ipv6 and  disable_ipv6_GUI == "0" then %>-->
+<fieldset class="cbi-section">
+	<table width="100%" cellspacing="10" style="display: none;">
+		<tr>
+			<td colspan="2" class="title">$lan_information - IPv6</td>
+		</tr>
+		<tr class="title-option">
+			<td width="40%" myid="title_lan_ip6addr_text">$ip_address</td>
+			<td id="ipv6_ipaddr" myid="lan_ip6addr_text">N/A</td>
+		</tr>
+		<tr class="title-option">
+			<td width="40%" myid="title_lan_ip6linklocal_text">$link_local_address</td>
+			<td id="ipv6_linklocal" myid="lan_ip6linklocal_text"><% cfg_get("ipv6_linklocal_addr") %></td>
+		</tr>
+		<tr class="title-option">
+			<td width="40%" myid="title_lan_ip6gw_text">$gateway</td>
+			<td id="ipv6_gwaddr" myid="lan_ip6gw_text">N/A</td>
+		</tr>
+		<tr class="title-option">
+			<td width="40%" myid="title_lan_ip6dns1_text">$primary_dns</td>
+			<td id="ipv6_dns" myid="lan_ip6dns1_text">N/A</td>
+		</tr>
+		<tr class="title-option">
+			<td width="40%" myid="title_lan_ip6dns2_text">$secondary_dns</td>
+			<td id="ipv6_dns2" myid="lan_ip6dns2_text">N/A</td>
+		</tr>
+	</table>
+</fieldset>
+<!--<% end %>-->
+<!--<%
+if uci:get("functionlist","functionlist","SUPPORT_STP_STATUS") == "1" then
+%>-->
+
+<fieldset class="cbi-section" id="span-tree-protocol-stp">
+	<table width="100%" cellspacing="10">
+<!-- 		<tr class="title-option">
+			<td colspan="2"><%:Spanning Tree Protocol(STP)%><img class="popper" data-popbox="STP_info" src="<%=media%>/pictures/icon_info_blue.png"></td>
+		</tr> -->
+		<tr>
+			<td colspan="2" class="title">$spanning_tree_protocol_stp_information</td>
+		</tr>
+		<tr class="title-option">
+			<td width="40%" >$status</td>
+			<td id="stp_status" ></td>
+		</tr>
+		<tr class="title-option">
+			<td width="40%" >$hello_time</td>
+			<td id="stp_hello_time" ><%=laninfo["hello_time"] or "0"%></td>
+		</tr>
+		<tr class="title-option">
+			<td width="40%" >$max_age</td>
+			<td id="stp_max_age" ><%=laninfo["max_age"] or "0"%></td>
+		</tr>
+		<tr class="title-option">
+			<td width="40%" >$forward_delay</td>
+			<td id="stp_forward_delay" ><%=laninfo["forward_delay"] or "0"%></td>
+		</tr>
+		<tr class="title-option">
+			<td width="40%" >$priority</td>
+			<td id="stp_priority" ><%=laninfo["priority"] or "0"%></td>
+		</tr>
+		<tr class="title-option">
+			<td width="40%" >$designated_root</td>
+			<td id="stp_designated_root" >N/A</td>
+		</tr>		
+		<tr><td colspan="2"><div id="stp_statistics" class="table"></div></td></tr>	
+	</table>
+	<!-- <div id="stp_statistics" class="table"></div> -->
+</fieldset>
+<!--<%
+end
+%>-->
+
+
+<fieldset class="cbi-section" id="span-tree-protocol-lacp">
+	<table width="100%" cellspacing="10">
+<!-- 		<tr class="title-option">
+			<td colspan="2">$link_aggregation_control_protocol_lacp</td>
+		</tr> -->
+		<tr>
+			<td colspan="2" class="title">$link_aggregation_control_protocol_lacp_information</td>
+		</tr>
+		<tr class="title-option">
+			<td width="40%" >$status</td>
+			<td id="lacp_status" ></td>
+		</tr>
+		<tr class="title-option">
+			<td width="40%" >$timeout</td>
+			<td id="lacp_timeout" ></td>
+		</tr>
+		<tr class="title-option">
+			<td width="40%" >$system_priority</td>
+			<td id="lacp_system_priority" ><%=lacpinfo["system_priority"] or "0"%></td>
+		</tr>
+		<tr class="title-option">
+			<td width="40%" >$actor_key</td>
+			<td id="lacp_actor_key" >N/A</td>
+		</tr>
+		<tr class="title-option">
+			<td width="40%" >$partner_key</td>
+			<td id="lacp_partner_key" >N/A</td>
+		</tr>
+		<tr class="title-option">
+			<td width="40%" >$partner_mac_address</td>
+			<td id="lacp_partner_mac" >N/A</td>
+		</tr>						
+	</table>
+</fieldset>
+
+<!--<% if has_wifi then %>-->
+<fieldset class="cbi-section">
+	<table id="wifi_status_table" width="100%" cellspacing="10">
+		<tr><td><em>$collecting_data</em></td></tr>
+	</table>
+</fieldset>
+<!--<% if uci:get('functionlist','functionlist','SUPPORT_COMBINED_SSID_SETTING') == '1' then %>-->
+<fieldset class="cbi-section">
+	<table id="wifi_status_table_ap" width="100%" cellspacing="10" class="ecm-tbl">
+		<tr><td></td></tr>
+	</table>
+</fieldset>
+
+<fieldset class="cbi-section">
+	<table id="wifi_status_table_wds_ap" width="100%" cellspacing="10" class="ecm-tbl">
+		<tr><td></td></tr>
+	</table>
+</fieldset>
+<!--<% end %>-->
+<!--<% end %>-->
+<!--<%
+if (uci:get('functionlist','functionlist','SUPPORT_ENGENIUS_DDNS') == '1') or (uci:get('functionlist','functionlist','OMIT_ENGENIUS_DDNS') == '0')then -----#### SUPPORT_ENGENIUS_DDNS or OMIT_ENGENIUS_DDNS ###
+%>
+<fieldset class="cbi-section">
+	<table width="100%" cellspacing="10">
+		<tr>
+			<td colspan="2" class="title">$uid_ddns</td>
+		</tr>	
+		<tr class="title-option">
+			<td style="width:45%;"><label for="">$default_uid</label></td>
+			<td>
+				<div id="UID"></div>
+			</td>
+		</tr>
+		<tr class="title-option">
+			<td style="width:45%;"><label for="">$default_ddns_name</label></td>
+			<td>
+				<div id="DDNSName">.</div>
+			</td>
+		</tr>
+	</table>
+</fieldset>
+<!--<%
+end-----####  SUPPORT_ENGENIUS_DDNS  or OMIT_ENGENIUS_DDNS ####
+%>-->
+
+<!--<%
+if (uci:get('functionlist','functionlist','SUPPORT_CAPWAP_CONTROL') == '1')  then -----#### SUPPORT_CAPWAP_CONTROL START ###
+	if (uci:get('functionlist','functionlist','SUPPORT_HIDE_CHECK_CODE_IN_STATUS') == '1')  then -----#### SUPPORT_HIDE_CHECK_CODE_IN_STATUS START ###
+	else
+%>-->
+
+<!--<%
+	end -----####  SUPPORT_HIDE_CHECK_CODE_IN_STATUS END ####
+end-----####  SUPPORT_CAPWAP_CONTROL END #### 
+%>-->
+<!--<%
+if uci:get('functionlist','functionlist','SUPPORT_RENEW_STATISTICS_BY_BUTTON') == '1' then -----#### SUPPORT_RENEW_STATISTICS_BY_BUTTON START ###
+
+	local ntm = require "luci.model.network".init()
+	local fwm = require "luci.model.firewall".init()
+	local net
+	local ifaces = { }
+	local netlist = { }
+
+	for _, net in ipairs(ntm:get_networks()) do
+		if net:name() ~= "loopback" and net:name() ~= "pptp" and net:name() ~= "l2tp"  then
+              --local z = fwm:get_zone_by_network(net:name())
+               ifaces[#ifaces+1] = net:name()
+               netlist[#netlist+1] = {
+                  net:name()
+               }
+       	end        
+	end
+	if only_eth1_for_lan == '1' then
+		ifaces[#ifaces+1] = "eth1"
+	end
+--[[
+	for _, wdev in ipairs(ntm:get_wifidevs()) do
+		local wnet
+		for _, wnet in ipairs(wdev:get_wifinets()) do
+               ifaces[#ifaces+1] = wnet:name()
+               netlist[#netlist+1] = {
+                  wnet:name()
+               }
+               luci.sys.exec('echo '.. wnet:name().." >> /tmp/test123")
+		end
+	end
+]]
+	table.sort(netlist,
+		function(a, b)
+			return a[1] < b[1]
+		end)
+%>-->
+<STYLE type="text/css">
+.ecm-tbl .tbl-grey {
+    background-color: #EEEEEE;
+    padding-left: 6px;
+    vertical-align : middle;
+}
+.ecm-tbl .tbl-grey-15px {
+    background-color: #EEEEEE;
+    padding-left: 6px;
+}
+.tbl-grey {
+    border-bottom: 1px solid #EEEEEE;
+    color: #000000;
+    font-size: 16px;
+    height: 27px;
+}
+.tbl-grey-15px {
+    border-bottom: 1px solid #EEEEEE;
+    color: #000000;
+    font-size: 15px;
+    height: 27px;
+    line-height: 19px;
+}
+.ecm-tbl td:not(.title){
+    text-align: center;
+}
+
+</STYLE>
+<div id="interface_statistics" class="table"></div>
+<br>
+<div class="cbi-page-actions left">
+	<input class="cbi-button cbi-button-save" id="renew_statistics" type="button" value="$refresh" onclick='refresh_statistics();' />
+	<img src="/image/loading.gif" alt="$loading" style="vertical-align:middle" id="loading" class="cbi-section" style="display: '';" />
+</div>
+<!--<%
+end-----####  SUPPORT_RENEW_STATISTICS_BY_BUTTON END #### 
+%>-->
+
+</form>
+</body>

@@ -1,0 +1,209 @@
+<% http_header("style/cascade.css", "style/cascade2.css", "style/cascade-custom.css", "script/jquery-1.12.4.min.js", "script/md5.js", "script/xhr.js", "script/cbi.js", "script/common.js", "script/diagnostics.js") %>
+<body onLoad="please_wait(false);" bgcolor="#ffffff">
+<div id="Traceroute_Test_Parameters_info" class="popbox">
+    <p>$diagnostics_note1</p>
+</div>
+<div id="Nslookup_Test_Parameters_info" class="popbox">
+    <p>$diagnostics_note2</p>
+</div>
+<div id="SpeedTest_IP_info" class="popbox">
+    <p>$diagnostics_note3</p>
+</div>
+<div class="cbi-map">
+	<fieldset class="cbi-section-node">
+		<div class="cbi-section-descr"></div>
+		<fieldset class="cbi-section-node">
+			<div class="cbi-value cbi-value-last">
+				<ul class="cbi-tabmenu">
+					<li id="ping" class="cbi-tab active" style="cursor:pointer"><a onclick="update_display('ping')">Ping</a></li>
+					<li id="traceroute" class="cbi-tab-disable" style="cursor:pointer"><a onclick="update_display('traceroute')">Traceroute</a></li>
+					<li id="nslookup" class="cbi-tab-disable" style="cursor:pointer"><a onclick="update_display('nslookup')">Nslookup</a></li>
+					<li id="iperf" class="cbi-tab-disable" style="cursor:pointer"><a onclick="update_display('iperf')">$speed_test</a></li>
+					<li id="led" class="cbi-tab-disable" style="cursor:pointer"><a onclick="update_display('led')">LED</a></li>
+				</ul>
+			</div>
+		</fieldset>
+	</fieldset>
+	<fieldset class="cbi-section">
+		<table id="tab_ping">
+			<tr>
+				<td class="title" colspan="2">$ping_test_parameters</td>
+			</tr>
+			<tr class="title-option">
+				<td style="width: 30%">$target_ip / $domain_name</td>
+				<td><input type="text" myid="ping_ip" name="ping" maxlength="63"/></td>
+			</tr>
+			<tr class="title-option">
+				<td style="width: 30%">$ping_packet_size</td>
+				<td><input id="pks" myid="ping_size" type="text" maxlength="5" size="5" value="64"/>&nbsp;$bytes</td>
+			</tr>
+			<tr class="title-option">
+				<td style="width: 30%">$number_of_pings</td>
+				<td><input id="pings" myid="ping_number" type="text" maxlength="4" size="5" value="4"/></td>
+			</tr>
+			<tr class="title-option">
+				<td style="width: 30%; vertical-align: top;"><input type="button" myid="button_save_ping" id="save_ping" value="$start" class="cbi-button" onclick="update_status('ping', '', 'diag-rc-output1', 'diag-rc-legend1')" /></td>
+				<td>
+					<fieldset class="cbi-section" style="display:none">
+						<legend id="diag-rc-legend1">$collecting_data</legend>
+						<span id="diag-rc-output1"></span>
+					</fieldset>
+				</td>
+			</tr>
+		</table>
+
+		<table id="tab_traceroute" style="display:none;">
+			<tr>
+				<td class="title" colspan="2">
+					$traceroute_test_parameters&nbsp;<img class="popper" data-popbox="Traceroute_Test_Parameters_info" src="image/icon_info_blue.png">
+				</td>
+			</tr>
+			<tr class="title-option">
+				<td style="width: 30%">$target_ip / $domain_name</td>
+				<td><input type="text" myid="trace_ip" name="traceroute"/></td>
+			</tr>
+			<tr class="title-option">
+				<td style="width: 30%; vertical-align: top;"><input id="save_traceroute" myid="button_save_traceroute" type="button" value="$start" class="cbi-button" onclick="update_status('traceroute', '', 'diag-rc-output2', 'diag-rc-legend2')" /></td>
+				<td>
+					<fieldset class="cbi-section" style="display:none">
+						<legend id="diag-rc-legend2">$collecting_data</legend>
+						<span id="diag-rc-output2"></span>
+					</fieldset>
+				</td>
+			</tr>
+		</table>
+
+		<table id="tab_nslookup" style="display:none;">
+			<tr>
+				<td class="title" colspan="2">
+					$nslookup_test_parameters&nbsp;<img class="popper" data-popbox="Nslookup_Test_Parameters_info" src="image/icon_info_blue.png">
+				</td>
+			</tr>
+			<tr class="title-option">
+				<td style="width: 30%">Target IP/$domain_name</td>
+				<td><input type="text" myid="nslookup_ip" name="nslookup"/></td>
+			</tr>
+			<tr class="title-option">
+				<td style="width: 30%; vertical-align: top;"><input type="button" id="save_nslookup" myid="button_save_nslookup" value="$start" class="cbi-button" onclick="update_status('nslookup', '', 'diag-rc-output3', 'diag-rc-legend3')" /></td>
+				<td>
+					<fieldset class="cbi-section" style="display:none">
+						<legend id="diag-rc-legend3">$collecting_data</legend>
+						<span id="diag-rc-output3"></span>
+					</fieldset>
+				</td>
+			</tr>
+		</table>
+
+		<table id="tab_speedtest" style="display:none;">
+			<tr>
+				<td colspan="2" style="font-size: 14px">$diagnostics_note4<td/>
+			</tr>
+			<tr>
+				<td class="title" colspan="2">$speed_test_parameters</td>
+			</tr>
+			<tr class="title-option">
+				<td style="width: 30%">$target_ip&nbsp;<img class="popper" data-popbox="SpeedTest_IP_info" src="image/icon_info_blue.png"></td>
+				<td><input type="text" name="iperf" myid="iperf_ip" id="iperfIp"/></td>
+			</tr>
+			<tr class="title-option">
+				<td style="width: 30%">$time_period</td>
+				<td><input type="text" value="20" id="iperf_timePeriod" myid="iperf_timePeriod" name="iperf_timePeriod"/>&nbsp;$sec</td>
+			</tr>
+			<tr class="title-option">
+				<td style="width: 30%">$check_interval</td>
+				<td><input type="text" value="5" id="iperf_checkInterval" myid="iperf_checkInterval" name="iperf_checkInterval"/>&nbsp;$sec</td>
+			</tr>
+
+			<tr class="title-option">
+				<td style="width: 30%">IPv4$space_port</td>
+				<td>5201<input type="hidden" value="5201" id="iperf_port" name="iperf_port"  /></td>
+			</tr>
+			<tr class="title-option" style="display:none;">
+				<td style="width: 30%">IPv6$space_port</td>
+				<td>60001<input type="hidden" value="60001" id="iperf_port_v6" name="iperf_port_v6"  /></td>
+			</tr>			
+			<tr class="title-option">
+				<td style="width: 30%; vertical-align: top;"><input type="button" id="save_iperf" myid="button_save_iperf" value="$start" class="cbi-button" onclick="update_status('iperf', '', 'diag-rc-output4', 'diag-rc-legend4')" /></td>
+				<td>
+					<fieldset class="cbi-section" style="display:none">
+						<legend id="diag-rc-legend4">$collecting_data</legend>
+						<span id="diag-rc-output4"></span>
+					</fieldset>
+				</td>
+			</tr>
+		</table>
+
+		<table id="tab_led" style="display:none;">
+			<tr>
+				<td class="title" colspan="2">$led_control</td>
+			</tr>
+			<tr class="title-option">
+				<td style="width: 30%">$power&nbsp;</td>
+				<td><input type="radio" value="0" name="led_power"/>&nbsp;$enable&nbsp;<input type="radio" value="1" name="led_power"/>&nbsp;$disable</td>
+			</tr>
+			<tr class="title-option">
+				<td style="width: 30%">$other&nbsp;</td>
+				<td><input type="radio" value="0" name="led_other"/>&nbsp;$enable&nbsp;<input type="radio" value="1" name="led_other"/>&nbsp;$disable</td>
+			</tr>
+			<tr class="title-option">
+				<td colspan="2">
+					<div class="cbi-page-actions", style="margin-bottom: 0;">
+						<input class="cbi-button-apply", type="submit", value="$apply", style="color: white;" onclick="update_led(1)">
+						<span>$apply_saved_settings_to_take_effect</span>
+					</div>
+				</td>
+			</tr>
+		</table>
+
+		<table id="tab_discovery" style="display:none;">
+			<tr>
+				<td class="title" colspan="5">$device_discovery</td>
+			</tr>
+			<tr class="title-option" style="background-color: #EEEEEE;">
+				<td>$device_name</td>
+				<td>$operation_mode</td>
+				<td>$ip_address</td>
+				<td>$system_mac_address</td>
+				<td>$firmware_version</td>
+			</tr>
+			<tbody id="locator_content">
+			<tr class="title-option">
+				<td>&nbsp;</td>
+				<td></td>
+				<td></td>
+				<td></td>
+				<td></td>
+			</tr>
+			</tbody>
+			<tr class="title-option">
+				<td colspan="5"><input onclick="update_device()" class="cbi-button" type="button" value="$scan"/>&nbsp;&nbsp;<span id="locator_loading"></span></td>
+			</tr>
+		</table>
+		<br style="clear:both" /><br />
+	</fieldset>
+</div>
+
+<fieldset class="cbi-section" style="display:none">
+	<legend id="diag-rc-legend">$collecting_data</legend>
+	<span id="diag-rc-output"></span>
+</fieldset>
+
+<script>
+	//var led={lan_1:"0<!--<%=lan1_led%>-->",power:"0,<!--<%=power_led%>-->",wlan24:"0,<!--<%=wifi0_led%>-->",wlan5:"0,<!--<%=wifi1_led%>-->",mesh:"0,<!--<%=mesh_led%>-->",wlan5_2:"0,<!--<%=wifi2_led%>-->"};
+	var led = {lan_1:"0",power:"0",wlan24:"0",wlan5:"0",mesh:"0",wlan5_2:"0"};
+	$$("input[name='led_lan_1'][value='"+led.lan_1+"']").prop("checked",true);
+	$$("input[name='led_power'][value='"+led.power+"']").prop("checked",true);
+	$$("input[name='led_wlan24'][value='"+led.wlan24+"']").prop("checked",true);
+	$$("input[name='led_wlan5'][value='"+led.wlan5+"']").prop("checked",true);
+	$$("input[name='led_mesh'][value='"+led.mesh+"']").prop("checked",true);
+	$$("input[name='led_wlan5_2'][value='"+led.wlan5_2+"']").prop("checked",true);
+
+	if (led.lan_1 == 1  || led.wlan24 == 1 || led.wlan5 == 1 || led.mesh == 1 || led.wlan5_2 == 1){
+		$$("input[name='led_other'][value='1']").prop("checked",true);
+	}
+	else{
+		$$("input[name='led_other'][value='0']").prop("checked",true);
+	}
+</script>
+<!--<%+footer%>-->
+</body>

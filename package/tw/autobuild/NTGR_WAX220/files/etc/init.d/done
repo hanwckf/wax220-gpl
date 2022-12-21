@@ -1,0 +1,69 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2006 OpenWrt.org
+
+START=95
+boot() {
+	mount_root done
+	rm -f /sysupgrade.tgz
+
+	# process user commands
+	[ -f /etc/rc.local ] && {
+		sh /etc/rc.local
+	}
+
+	# set leds to normal state
+	. /etc/diag.sh
+	set_state done
+	
+	# init ssid isolation and client isolation
+	sh /sbin/init_isolation.sh
+
+	ntp_enabled=$(uci get system.ntp.enabled)
+	if [ "$ntp_enabled" != "1" ];then
+		/etc/init.d/sysntpd stop
+		manual_time=$(uci get system.ntp.manual_time)
+		date -s "$manual_time"
+	fi
+
+	# update crontab file
+	if [ -e /etc/config/crontab_file ];then
+		cp -f /etc/config/crontab_file /var/spool/cron/crontabs/root &
+		crontab -u admin /var/spool/cron/crontabs/root &
+	fi
+	sleep 20 && sh /usr/bin/wifi_schedule_init.sh &
+
+	# if the router not init setup, forbidden accessing network
+	agree_full_tc=$(uci get system.@system[0].agree_full_tc)
+	wan_if=$(uci get network.wan_dev.name)
+	if [ "$agree_full_tc" != "1" -a "x$wan_if" != "x" ];then
+		iptables -I OUTPUT -o $wan_if -j DROP
+		iptables -I FORWARD -j DROP
+	fi
+
+	# init email alert log
+	sh /usr/bin/email_log_setup.sh
+	sh /usr/bin/email_alert_setup.sh &
+
+	saved_sys_bootup_time=$(/usr/bin/redis-cli -s /tmp/.redis.sock get sys_bootup_time)
+	if [ "x$saved_sys_bootup_time" = "x" ];then
+		/usr/bin/redis-cli -s /tmp/.redis.sock set sys_bootup_time $(cat /proc/uptime | awk -F'.' '{print $1}')
+	fi
+
+	block_option=$(uci get block_services.config.block_option 2> /dev/null)
+	if [ "$block_option" = "perschedule" ];then
+		sh /usr/bin/filtering_schedule.sh add blockservice
+		sh /etc/init.d/filteringschedule restart
+	fi
+
+	# always shut down ddns
+	ddns_common_enable=$(uci get ddns.common.enable 2> /dev/null)
+	ddns_oray_enable=$(uci get ddns.oray.enable 2> /dev/null)
+	if [ "$ddns_common_enable" = "1" -o "$ddns_oray_enable" = "1" ];then
+		uci set ddns.common.enable=0
+		uci set ddns.oray.enable=0
+		uci commit ddns
+	fi
+
+	# Check cli enable
+	sh /usr/bin/cli_login.sh
+}

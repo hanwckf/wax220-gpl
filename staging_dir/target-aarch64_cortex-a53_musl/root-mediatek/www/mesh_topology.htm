@@ -1,0 +1,393 @@
+<%
+local meshlist = luci.util.trim(luci.util.exec('cat /tmp/mesh_global_node_info'))
+%>
+<html align="center">
+<meta charset="utf-8">
+<style>
+
+.node {
+  font: 300 11px "Helvetica Neue", Helvetica, Arial, sans-serif;
+  fill: #bbb;
+}
+
+.node:hover {
+  fill: #000;
+}
+
+.link {
+  stroke: steelblue;
+  stroke-opacity: .4;
+  fill: none;
+  pointer-events: none;
+  stroke-dasharray:3;  
+}
+
+.node:hover,
+.node--source,
+.node--target {
+  font-weight: 700;
+}
+
+.node--source {
+  fill: #2ca02c;
+}
+
+.node--target {
+  fill: #1b489c;
+}
+
+.link--source,
+.link--target {
+  stroke-opacity: 1;
+  stroke-width: 2px;
+}
+
+.link--source {
+  stroke: #2ca02c;
+  stroke-dasharray:0;
+}
+
+.link--target {
+  stroke: #2ca02c;
+  stroke-dasharray:0;
+}
+
+</style>
+<script src="<%=media%>/jquery-1.12.4.min.js"></script>
+<script src="<%=media%>/aight.min.js"></script>
+<script src="<%=media%>/d3.v3.min.js"></script>
+<body onload="copyto();" align="center"> 
+<script>
+var meshdata=[];
+
+function mesh_table()
+{
+  var i, obj;
+  var j=0;
+  obj = JSON.parse('<%=meshlist%>');
+  for(i=0;i<obj.length;i++)
+  {
+    if(obj[i].GetMeshNodeInfoResult == "OK")
+    {
+      meshdata[j] = obj[i];
+      j++;
+    }
+  }
+}
+
+var diameter = 400,
+    radius = diameter / 2,
+    innerRadius = radius - 150;
+
+var cluster = d3.layout.cluster()
+    .size([360, innerRadius])
+    .sort(null)
+    .value(function(d) { return d.size; });
+
+var bundle = d3.layout.bundle();
+
+var line = d3.svg.line.radial()
+    .interpolate("bundle")
+    .tension(.85)
+    .radius(function(d) { return d.y; })
+    .angle(function(d) { return d.x / 180 * Math.PI; });
+
+var svg = d3.select("body").append("svg")
+    .attr("width", diameter)
+    .attr("height", diameter)
+    .attr("align", "center")
+  .append("g")
+    .attr("transform", "translate(" + radius + "," + radius + ")");
+
+var link = svg.append("g").selectAll(".link"),
+    node = svg.append("g").selectAll(".node");
+
+var topology=[
+];
+
+var MeshDeviceNeighborsList=[]
+var meshNameList=[];
+var hasGateWay="";
+
+function getTopologyList()
+{
+  mesh_table();
+
+  var tmp_meshNameList=[];
+  var Obj = meshdata;
+  var url;
+  var tmp_obj=[];
+  var tmp=[];
+
+  if(meshdata != "")
+  {
+    for(var i=0;i<Obj.length ;i++)
+    {
+      if(Obj[i].MeshDevice.MeshRole=="server")
+        meshNameList.push({mac:Obj[i].MeshDevice.MacAddress, name:Obj[i].MeshDevice.MacAddress+"(Root)",gateway:1})
+      else
+        meshNameList.push({mac:Obj[i].MeshDevice.MacAddress, name:Obj[i].MeshDevice.MacAddress,gateway:0})
+    }
+  }
+
+  var check_device_name;
+
+  /*for(var i=0;i<meshNameList.length;i++)
+  {
+    check_device_name=0;
+
+    for(var j=0;j<meshNameList.length;j++)
+    {
+      if(meshNameList[i].name==meshNameList[j].name && meshNameList[i].mac!=meshNameList[j].mac)
+      {
+         meshNameList[j].name=meshNameList[j].name+"'";
+         check_device_name=1;
+      }
+    }
+  }*/
+
+  var block_array = [];
+  var block_count=0;
+
+  for(var i=0;i<Obj.length;i++)
+  {    
+    for(var j=0;j<Obj[i].Neighbors.length;j++)
+    {
+      block_array[block_count]=[];
+      if(Obj[i].Neighbors[j].Flag!="..")
+      {
+        block_array[block_count][0]=Obj[i].MeshDevice.MacAddress;
+        block_array[block_count][1]=Obj[i].Neighbors[j].MAC;
+        block_count++;
+      }
+    }
+  }
+
+  var block, neighbor;
+
+  for(var i=0; i < Obj.length;i++)
+  {
+    neighbor = 0;
+    tmp[i]='{"name": "'+meshNameList[i].name+'", "size":"3938", "imports":['
+    
+    if(Obj[i].MeshDevice.MeshRole=="server" && Obj[i].MeshDevice.MacAddress != meshNameList.mac)
+    {
+      neighbor = 1;
+      tmp[i]=tmp[i]+'"'+Obj[i].MeshDevice.MacAddress+"(Root)"+'", ';
+    }
+
+    var checkStr=0;
+
+    for(var j=0;j<Obj[i].Neighbors.length;j++)
+    {         
+        block = 0;
+        for(var l=0;l<block_array.length;l++)
+        {
+          if(block_array[l].length>0)
+          {
+            if((block_array[l][0].toUpperCase()==Obj[i].MeshDevice.MacAddress.toUpperCase() && block_array[l][1].toUpperCase()==Obj[i].Neighbors[j].MAC.toUpperCase()) || (block_array[l][1].toUpperCase()==Obj[i].MeshDevice.MacAddress.toUpperCase() && block_array[l][0].toUpperCase()==Obj[i].Neighbors[j].MAC.toUpperCase()))
+            {
+              block = 1;
+            }
+          }            
+        }
+        for(var k=0;k<meshNameList.length;k++)
+        {
+          if(Obj[i].Neighbors[j].MAC.toUpperCase()==meshNameList[k].mac && block==0)
+          {
+            neighbor = 1;
+            tmp[i] = tmp[i]+'"'+meshNameList[k].name+'", '
+          }
+          if((Obj[i].Neighbors[j].MAC.toUpperCase()==meshNameList[k].mac) && meshNameList[i].gateway==1 && meshNameList[k].gateway==1&& block==1)
+          {
+            neighbor = 1;
+            tmp[i] = tmp[i]+'"'+meshNameList[k].name+'", ' 
+          }
+        }
+    }
+
+    if(neighbor==1)
+      tmp[i] = tmp[i].slice(0,tmp[i].length-3)+'"]}';
+    else
+      tmp[i] = tmp[i]+']}';
+
+    MeshDeviceNeighborsList.push(JSON.parse(tmp[i]))
+  }
+  return MeshDeviceNeighborsList;
+}
+
+function copyto()
+{
+  if(getTopologyList()!="")
+  {
+    var nodes = cluster.nodes(packageHierarchy(getTopologyList())),
+      links = packageImports(nodes);
+
+    link = link
+        .data(bundle(links))
+        .enter().append("path")
+        .each(function(d) { d.source = d[0], d.target = d[d.length - 1]; })
+        .attr("class", "link")
+        .attr("d", line);
+
+    node = node
+        .data(nodes.filter(function(n) { return !n.children; }))
+        .enter().append("text")
+        .attr("class", "node")
+        .attr("dy", ".31em")
+        .attr("transform", function(d) { return "rotate(" + (d.x - 90) + ")translate(" + (d.y + 1) + ",0)" + (d.x < 180 ? "" : "rotate(180)"); })
+        .style("text-anchor", function(d) { return d.x < 180 ? "start" : "end"; })
+        .text(function(d) { return d.key; })
+        .on("mouseover", mouseovered)
+        .on("mouseout", mouseouted);
+  }
+}
+
+function objToString (obj) 
+{
+    var str = '';
+
+    for (var p in obj) 
+    {
+        if (obj.hasOwnProperty(p)) 
+        {
+            str += p + ':' + obj[p] + '\n';
+        }
+    }
+
+    return str; 
+}
+
+
+function checkLinkHasGateway(node)
+{
+
+  //{"name": "EWS360AP_1 (Gateway)", "size":"3938", "imports":["EWS360AP_2 (Gateway)"]}
+  //var hasGateWay="";
+
+  for (var i=0;i<MeshDeviceNeighborsList.length;i++)
+  {
+    if(node==MeshDeviceNeighborsList[i].name)
+    {
+      for(var j=0;j<MeshDeviceNeighborsList[i].imports.length;j++)
+      {
+        for(var k=0;k<meshNameList.length;k++)
+        {
+          if((MeshDeviceNeighborsList[i].imports[j]==meshNameList[k].name) && (meshNameList[k].gateway==1))
+          {
+            hasGateWay = meshNameList[k].name;
+          }
+        }
+      }
+    }
+  }
+}
+
+function mouseovered(d) {
+  node
+      .each(function(n) { n.target = n.source = false; });
+
+  link
+      .classed("link--target", function(l) 
+      { 
+        //alert(objToString(l.source))
+        if (l.target === d)
+        {
+          //checkLinkHasGateway(l.target.name);
+          //alert(hasGateWay)
+          return l.source.source = true;
+        }
+
+        if(l.target.name==hasGateWay)
+        {
+          return l.source.source = true;
+        }
+
+        /*
+        if(l.source.name=="EWS360AP_1 (Gateway)")
+          return l.source.source = true;*/
+      })
+      .classed("link--source", function(l) 
+      { 
+        if (l.source === d)
+        {
+          //checkLinkHasGateway(l.source.name);
+          //alert(hasGateWay)
+          return l.target.target = true;
+        }
+
+        if(l.source.name==hasGateWay)
+        {
+          return l.target.target = true;
+        }
+        /*
+        if(l.target.name=="EWS360AP_1 (Gateway)")
+          return l.target.target = true;*/
+      })
+    .filter(function(l) { return l.target === d || l.source === d; })
+      .each(function() { this.parentNode.appendChild(this); });
+
+  node
+      .classed("node--target", function(n) { return n.target; })
+      .classed("node--source", function(n) { return n.source; });
+}
+
+function mouseouted(d) {
+  link
+      .classed("link--target", false)
+      .classed("link--source", false);
+
+  node
+      .classed("node--target", false)
+      .classed("node--source", false);
+}
+
+d3.select(self.frameElement).style("height", diameter + "px");
+
+// Lazily construct the package hierarchy from class names.
+function packageHierarchy(classes) {
+  var map = {};
+
+  function find(name, data) {
+    var node = map[name], i;
+    if (!node) {
+      node = map[name] = data || {name: name, children: []};
+      if (name.length) {
+        node.parent = find(name.substring(0, i = name.lastIndexOf(".")));
+        node.parent.children.push(node);
+        node.key = name.substring(i + 1);
+      }
+    }
+    return node;
+  }
+
+  classes.forEach(function(d) {
+    find(d.name, d);
+  });
+
+  return map[""];
+}
+
+// Return a list of imports for the given array of nodes.
+function packageImports(nodes) {
+  var map = {},
+      imports = [];
+
+  // Compute a map from name to node.
+  nodes.forEach(function(d) {
+    map[d.name] = d;
+  });
+
+  // For each import, construct a link from the source to target node.
+  nodes.forEach(function(d) {
+    if (d.imports) d.imports.forEach(function(i) {
+      imports.push({source: map[d.name], target: map[i]});
+    });
+  });
+
+  return imports;
+}
+
+</script>
+</body>
+</html>

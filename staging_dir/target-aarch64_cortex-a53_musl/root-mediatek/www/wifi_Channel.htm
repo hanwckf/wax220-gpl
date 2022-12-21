@@ -1,0 +1,1023 @@
+<html>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="style/cascade.css">
+    <link rel="stylesheet" href="style/cascade-custom.css">
+    <script src="script/jquery-1.12.4.min.js"></script>
+    <script src="script/common.js"></script>
+    <script type="text/javascript" src="script/cbi.js"></script>
+    <style>
+        .button-no-selected[disabled] {
+            color: #333333;
+            background-color: #f5f5f5;
+            border-color: #DDDDDD;
+            opacity: 0.65;
+        }
+        .button-no-selected{
+            margin-top:10px;
+            -moz-border-bottom-colors: none;
+            -moz-border-image: none;
+            -moz-border-left-colors: none;
+            -moz-border-right-colors: none;
+            -moz-border-top-colors: none;
+            background-repeat: no-repeat;
+            background-color: #FFFFFF;
+            border-color: #CCCCCC #CCCCCC #BBBBBB;
+            border-radius: 4px 4px 4px 4px;
+            border-style: solid;
+            border-width: 1px;
+            box-shadow: 0 1px 0 rgba(255, 255, 255, 0.2) inset, 0 1px 2px rgba(0, 0, 0, 0.05);
+            color: #333333;
+            cursor: pointer;
+            display: inline-block;
+            font-size: 16px;
+            line-height: normal;
+            padding: 5px 14px 6px;
+            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.75);
+            width:200px !important; 
+            height: auto;
+        }
+        .button-selected{
+            margin-top:10px;
+            -moz-border-bottom-colors: none;
+            -moz-border-image: none;
+            -moz-border-left-colors: none;
+            -moz-border-right-colors: none;
+            -moz-border-top-colors: none;
+            background-repeat: no-repeat;
+            background-color: #CDCDCD;
+            border-color: #CCCCCC #CCCCCC #BBBBBB;
+            border-radius: 4px 4px 4px 4px;
+            border-style: solid;
+            border-width: 1px;
+            box-shadow: 0 1px 0 rgba(255, 255, 255, 0.2) inset, 0 1px 2px rgba(0, 0, 0, 0.05);
+            color: #333333;
+            cursor: pointer;
+            display: inline-block;
+            font-size: 16px;
+            line-height: normal;
+            padding: 5px 14px 6px;
+            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.75);
+            width:200px !important; 
+            height: auto;
+        }
+        </style>
+    <script>
+    
+    var idchange={
+    "all2G":"24_all",
+    "none2G":"24_none",
+    "group2G_1":"24_G1",
+    "group2G_2":"24_G2",
+    "group2G_3":"24_G3",
+    "group2G_4":"24_G4",
+    "all5G":"5_all",
+    "none5G":"5_none",
+    "group5G_1":"5_G1",
+    "group5G_2":"5_G2",
+    "group5G_3":"5_G2A",
+    "group5G_4":"5_G3",
+    "group5G_5":"5_G4"
+    }
+    
+    if (window.opener.$$("input[name='save_auto_chan']").val() == "0"){
+        var chan_data2G = {
+            opmode:window.opener.$$('select[name$$="wifi0.opmode"]').val(),
+            disabled:window.opener.disabled2G,
+            ChannelEnable:'0',
+            ChannelStatus:'<% cfg_get("wl_channelStatus") %>',
+            channel_config_group:'<% cfg_get("wl_channelGroup") %>',
+            Channel:'<% cfg_get("wl_channel") %>',
+            ChannelList:'<% cfg_get("wl_channelist") %>',
+            ExtChannel:window.opener.$$('select[name$$="wifi0.ext_channel"]').val()
+        }
+        var chan_data5G = {
+            opmode:window.opener.$$('select[name$$="wifi1.opmode"]').val(),
+            nochannel:window.opener.$$("input:hidden[name='cbid.wireless.wifi1.nochannel']").val(),
+            disabled:window.opener.disabled5G,
+            ChannelEnable:'0',
+            ChannelStatus:'<% cfg_get("wla_channelStatus") %>',
+            channel_config_group:'<% cfg_get("wla_channelGroup") %>',
+            Channel:'<% cfg_get("wla_channel") %>',
+            ChannelList:'<% cfg_get("wla_channelist") %>'
+        }
+        
+    }
+    else{
+        var chan_data2G = {
+            opmode:window.opener.$$('select[name$$="wifi0.opmode"]').val(),
+            disabled:window.opener.disabled2G,
+            ChannelEnable:window.opener.$$("input[name='wireless.wifi0.channel_config_enable']").val(),
+            Channel:window.opener.$$("input[name='wireless.wifi0.channel']").val(),
+            ChannelList:window.opener.$$("input[name='wireless.wifi0.channel_config_list']").val(),
+            ChannelStatus:window.opener.$$("input[name='wireless.wifi0.channel_config_status']").val(),
+            channel_config_group:window.opener.$$("input[name='wireless.wifi0.channel_config_group']").val(),
+            ExtChannel:window.opener.$$('select[name$$="wifi0.ext_channel"]').val()
+        }
+        var chan_data5G = {
+            opmode:window.opener.$$('select[name$$="wifi1.opmode"]').val(),
+            disabled:window.opener.disabled5G,
+            nochannel:window.opener.$$("input:hidden[name='cbid.wireless.wifi1.nochannel']").val(),     
+            ChannelEnable:window.opener.$$("input[name='wireless.wifi1.channel_config_enable']").val(),
+            Channel:window.opener.$$("input[name='wireless.wifi1.channel']").val(),
+            ChannelList:window.opener.$$("input[name='wireless.wifi1.channel_config_list']").val(),
+            ChannelStatus:window.opener.$$("input[name='wireless.wifi1.channel_config_status']").val(),
+            channel_config_group:window.opener.$$("input[name='wireless.wifi1.channel_config_group']").val()
+        }
+    
+    }
+    
+    
+    var is_form_submit = "0";
+    var channel_t={};
+    var model="<% cat_file("/module_name") %>";
+    var channleList = [
+                        '{"ChInfo2G":[{"Channel":"Ch 1 : 2.412 GHz","Value":"1"},{"Channel":"Ch 2 : 2.417 GHz","Value":"2"},{"Channel":"Ch 3 : 2.422 GHz","Value":"3"},\
+                                      {"Channel":"Ch 4 : 2.427 GHz","Value":"4"},{"Channel":"Ch 5 : 2.432 GHz","Value":"5"},{"Channel":"Ch 6 : 2.437 GHz","Value":"6"},\
+                                      {"Channel":"Ch 7 : 2.442 GHz","Value":"7"},{"Channel":"Ch 8 : 2.447 GHz","Value":"8"},{"Channel":"Ch 9 : 2.452 GHz","Value":"9"},\
+                                      {"Channel":"Ch 10 : 2.457 GHz","Value":"10"},{"Channel":"Ch 11 : 2.462 GHz","Value":"11"},{"Channel":"Ch 12 : 2.467 GHz","Value":"12"},\
+                                      {"Channel":"Ch 13 : 2.472 GHz","Value":"13"}],\
+                        "ChInfo5G":[{"Channel":"Ch 36 : 5.180 GHz","Value":"36"},{"Channel":"Ch 40 : 5.200 GHz","Value":"40"},\
+                                    {"Channel":"Ch 44 : 5.220 GHz","Value":"44"},{"Channel":"Ch 48 : 5.240 GHz","Value":"48"},\
+                                    {"Channel":"Ch 52 : 5.260 GHz","Value":"52"},{"Channel":"Ch 56 : 5.280 GHz","Value":"56"},\
+                                    {"Channel":"Ch 60 : 5.300 GHz","Value":"60"},{"Channel":"Ch 64 : 5.320 GHz","Value":"64"},\
+                                    {"Channel":"Ch 100 : 5.500 GHz","Value":"100"},{"Channel":"Ch 104 : 5.520 GHz","Value":"104"},\
+                                    {"Channel":"Ch 108 : 5.540 GHz","Value":"108"},{"Channel":"Ch 112 : 5.560 GHz","Value":"112"},\
+                                    {"Channel":"Ch 116 : 5.580 GHz","Value":"116"},{"Channel":"Ch 120 : 5.600 GHz","Value":"120"},\
+                                    {"Channel":"Ch 124 : 5.620 GHz","Value":"124"},{"Channel":"Ch 128 : 5.640 GHz","Value":"128"},\
+                                    {"Channel":"Ch 132 : 5.660 GHz","Value":"132"},{"Channel":"Ch 136 : 5.680 GHz","Value":"136"},\
+                                    {"Channel":"Ch 140 : 5.700 GHz","Value":"140"}]}',
+                        '{"ChInfo2G":[{"Channel":"Ch 1 : 2.412 GHz","Value":"1"},{"Channel":"Ch 2 : 2.417 GHz","Value":"2"},{"Channel":"Ch 3 : 2.422 GHz","Value":"3"},\
+                                      {"Channel":"Ch 4 : 2.427 GHz","Value":"4"},{"Channel":"Ch 5 : 2.432 GHz","Value":"5"},{"Channel":"Ch 6 : 2.437 GHz","Value":"6"},\
+                                      {"Channel":"Ch 7 : 2.442 GHz","Value":"7"},{"Channel":"Ch 8 : 2.447 GHz","Value":"8"},{"Channel":"Ch 9 : 2.452 GHz","Value":"9"},\
+                                      {"Channel":"Ch 10 : 2.457 GHz","Value":"10"},{"Channel":"Ch 11 : 2.462 GHz","Value":"11"},{"Channel":"Ch 12 : 2.467 GHz","Value":"12"},\
+                                      {"Channel":"Ch 13 : 2.472 GHz","Value":"13"}],\
+                        "ChInfo5G":[{"Channel":"Ch 36 : 5.180 GHz","Value":"36"},{"Channel":"Ch 40 : 5.200 GHz","Value":"40"},\
+                                    {"Channel":"Ch 44 : 5.220 GHz","Value":"44"},{"Channel":"Ch 48 : 5.240 GHz","Value":"48"},\
+                                    {"Channel":"Ch 52 : 5.260 GHz","Value":"52"},{"Channel":"Ch 56 : 5.280 GHz","Value":"56"},\
+                                    {"Channel":"Ch 60 : 5.300 GHz","Value":"60"},{"Channel":"Ch 64 : 5.320 GHz","Value":"64"},\
+                                    {"Channel":"Ch 100 : 5.500 GHz","Value":"100"},{"Channel":"Ch 104 : 5.520 GHz","Value":"104"},\
+                                    {"Channel":"Ch 108 : 5.540 GHz","Value":"108"},{"Channel":"Ch 112 : 5.560 GHz","Value":"112"},\
+                                    {"Channel":"Ch 116 : 5.580 GHz","Value":"116"},{"Channel":"Ch 120 : 5.600 GHz","Value":"120"},\
+                                    {"Channel":"Ch 124 : 5.620 GHz","Value":"124"},{"Channel":"Ch 128 : 5.640 GHz","Value":"128"},\
+                                    {"Channel":"Ch 132 : 5.660 GHz","Value":"132"},{"Channel":"Ch 136 : 5.680 GHz","Value":"136"},\
+                                    {"Channel":"Ch 140 : 5.700 GHz","Value":"140"},\
+                                    {"Channel":"Ch 149 : 5.745 GHz","Value":"149"},{"Channel":"Ch 153 : 5.765 GHz","Value":"153"},\
+                                    {"Channel":"Ch 157 : 5.785 GHz","Value":"157"},{"Channel":"Ch 161 : 5.805 GHz","Value":"161"}]}',
+                        '{"ChInfo2G":[{"Channel":"Ch 1 : 2.412 GHz","Value":"1"},{"Channel":"Ch 2 : 2.417 GHz","Value":"2"},{"Channel":"Ch 3 : 2.422 GHz","Value":"3"},\
+                                      {"Channel":"Ch 4 : 2.427 GHz","Value":"4"},{"Channel":"Ch 5 : 2.432 GHz","Value":"5"},{"Channel":"Ch 6 : 2.437 GHz","Value":"6"},\
+                                      {"Channel":"Ch 7 : 2.442 GHz","Value":"7"},{"Channel":"Ch 8 : 2.447 GHz","Value":"8"},{"Channel":"Ch 9 : 2.452 GHz","Value":"9"},\
+                                      {"Channel":"Ch 10 : 2.457 GHz","Value":"10"},{"Channel":"Ch 11 : 2.462 GHz","Value":"11"},{"Channel":"Ch 12 : 2.467 GHz","Value":"12"},\
+                                      {"Channel":"Ch 13 : 2.472 GHz","Value":"13"}],\
+                        "ChInfo5G":[{"Channel":"Ch 36 : 5.180 GHz","Value":"36"},{"Channel":"Ch 40 : 5.200 GHz","Value":"40"},\
+                                    {"Channel":"Ch 44 : 5.220 GHz","Value":"44"},{"Channel":"Ch 48 : 5.240 GHz","Value":"48"},\
+                                    {"Channel":"Ch 52 : 5.260 GHz","Value":"52"},{"Channel":"Ch 56 : 5.280 GHz","Value":"56"},\
+                                    {"Channel":"Ch 60 : 5.300 GHz","Value":"60"},{"Channel":"Ch 64 : 5.320 GHz","Value":"64"},\
+                                    {"Channel":"Ch 100 : 5.500 GHz","Value":"100"},{"Channel":"Ch 104 : 5.520 GHz","Value":"104"},\
+                                    {"Channel":"Ch 108 : 5.540 GHz","Value":"108"},{"Channel":"Ch 112 : 5.560 GHz","Value":"112"},\
+                                    {"Channel":"Ch 116 : 5.580 GHz","Value":"116"},{"Channel":"Ch 120 : 5.600 GHz","Value":"120"},\
+                                    {"Channel":"Ch 124 : 5.620 GHz","Value":"124"},{"Channel":"Ch 128 : 5.640 GHz","Value":"128"},\
+                                    {"Channel":"Ch 132 : 5.660 GHz","Value":"132"},{"Channel":"Ch 136 : 5.680 GHz","Value":"136"},\
+                                    {"Channel":"Ch 140 : 5.700 GHz","Value":"140"},\
+                                    {"Channel":"Ch 149 : 5.745 GHz","Value":"149"},{"Channel":"Ch 153 : 5.765 GHz","Value":"153"},\
+                                    {"Channel":"Ch 157 : 5.785 GHz","Value":"157"},{"Channel":"Ch 161 : 5.805 GHz","Value":"161"},\
+                                    {"Channel":"Ch 165 : 5.825 GHz","Value":"165"}]}',
+                        '{"ChInfo2G":[{"Channel":"Ch 1 : 2.412 GHz","Value":"1"},{"Channel":"Ch 2 : 2.417 GHz","Value":"2"},{"Channel":"Ch 3 : 2.422 GHz","Value":"3"},\
+                                      {"Channel":"Ch 4 : 2.427 GHz","Value":"4"},{"Channel":"Ch 5 : 2.432 GHz","Value":"5"},{"Channel":"Ch 6 : 2.437 GHz","Value":"6"},\
+                                      {"Channel":"Ch 7 : 2.442 GHz","Value":"7"},{"Channel":"Ch 8 : 2.447 GHz","Value":"8"},{"Channel":"Ch 9 : 2.452 GHz","Value":"9"},\
+                                      {"Channel":"Ch 10 : 2.457 GHz","Value":"10"},{"Channel":"Ch 11 : 2.462 GHz","Value":"11"}],\
+                        "ChInfo5G":[{"Channel":"Ch 36 : 5.180 GHz","Value":"36"},{"Channel":"Ch 40 : 5.200 GHz","Value":"40"},\
+                                    {"Channel":"Ch 44 : 5.220 GHz","Value":"44"},{"Channel":"Ch 48 : 5.240 GHz","Value":"48"},\
+                                    {"Channel":"Ch 52 : 5.260 GHz","Value":"52"},{"Channel":"Ch 56 : 5.280 GHz","Value":"56"},\
+                                    {"Channel":"Ch 60 : 5.300 GHz","Value":"60"},{"Channel":"Ch 64 : 5.320 GHz","Value":"64"},\
+                                    {"Channel":"Ch 100 : 5.500 GHz","Value":"100"},{"Channel":"Ch 104 : 5.520 GHz","Value":"104"},\
+                                    {"Channel":"Ch 108 : 5.540 GHz","Value":"108"},{"Channel":"Ch 112 : 5.560 GHz","Value":"112"},\
+                                    {"Channel":"Ch 116 : 5.580 GHz","Value":"116"},{"Channel":"Ch 120 : 5.600 GHz","Value":"120"},\
+                                    {"Channel":"Ch 124 : 5.620 GHz","Value":"124"},{"Channel":"Ch 128 : 5.640 GHz","Value":"128"},\
+                                    {"Channel":"Ch 132 : 5.660 GHz","Value":"132"},{"Channel":"Ch 136 : 5.680 GHz","Value":"136"},\
+                                    {"Channel":"Ch 140 : 5.700 GHz","Value":"140"},{"Channel":"Ch 144 : 5.720 GHz","Value":"144"},\
+                                    {"Channel":"Ch 149 : 5.745 GHz","Value":"149"},{"Channel":"Ch 153 : 5.765 GHz","Value":"153"},\
+                                    {"Channel":"Ch 157 : 5.785 GHz","Value":"157"},{"Channel":"Ch 161 : 5.805 GHz","Value":"161"},\
+                                    {"Channel":"Ch 165 : 5.825 GHz","Value":"165"},{"Channel":"Ch 169 : 5.845 GHz","Value":"169"},\
+                                    {"Channel":"Ch 173 : 5.865 GHz","Value":"173"},{"Channel":"Ch 177 : 5.885 GHz","Value":"177"}]}',
+                        '{"ChInfo2G":[{"Channel":"Ch 1 : 2.412 GHz","Value":"1"},{"Channel":"Ch 2 : 2.417 GHz","Value":"2"},{"Channel":"Ch 3 : 2.422 GHz","Value":"3"},\
+                                      {"Channel":"Ch 4 : 2.427 GHz","Value":"4"},{"Channel":"Ch 5 : 2.432 GHz","Value":"5"},{"Channel":"Ch 6 : 2.437 GHz","Value":"6"},\
+                                      {"Channel":"Ch 7 : 2.442 GHz","Value":"7"},{"Channel":"Ch 8 : 2.447 GHz","Value":"8"},{"Channel":"Ch 9 : 2.452 GHz","Value":"9"},\
+                                      {"Channel":"Ch 10 : 2.457 GHz","Value":"10"},{"Channel":"Ch 11 : 2.462 GHz","Value":"11"},{"Channel":"Ch 12 : 2.467 GHz","Value":"12"},\
+                                      {"Channel":"Ch 13 : 2.472 GHz","Value":"13"}],\
+                        "ChInfo5G":[{"Channel":"Ch 36 : 5.180 GHz","Value":"36"},{"Channel":"Ch 40 : 5.200 GHz","Value":"40"},\
+                                    {"Channel":"Ch 44 : 5.220 GHz","Value":"44"},{"Channel":"Ch 48 : 5.240 GHz","Value":"48"},\
+                                    {"Channel":"Ch 52 : 5.260 GHz","Value":"52"},{"Channel":"Ch 56 : 5.280 GHz","Value":"56"},\
+                                    {"Channel":"Ch 60 : 5.300 GHz","Value":"60"},{"Channel":"Ch 64 : 5.320 GHz","Value":"64"},\
+                                    {"Channel":"Ch 100 : 5.500 GHz","Value":"100"},{"Channel":"Ch 104 : 5.520 GHz","Value":"104"},\
+                                    {"Channel":"Ch 108 : 5.540 GHz","Value":"108"},{"Channel":"Ch 112 : 5.560 GHz","Value":"112"},\
+                                    {"Channel":"Ch 116 : 5.580 GHz","Value":"116"},{"Channel":"Ch 120 : 5.600 GHz","Value":"120"},\
+                                    {"Channel":"Ch 124 : 5.620 GHz","Value":"124"},{"Channel":"Ch 128 : 5.640 GHz","Value":"128"},\
+                                    {"Channel":"Ch 132 : 5.660 GHz","Value":"132"},{"Channel":"Ch 136 : 5.680 GHz","Value":"136"},\
+                                    {"Channel":"Ch 140 : 5.700 GHz","Value":"140"},{"Channel":"Ch 144 : 5.720 GHz","Value":"144"}]}',
+                        ];
+    var channleList2 = [
+                        '{"ChInfo2G":[{"Channel":"Ch 1 : 2.412 GHz","Value":"1"},{"Channel":"Ch 2 : 2.417 GHz","Value":"2"},{"Channel":"Ch 3 : 2.422 GHz","Value":"3"},\
+                                      {"Channel":"Ch 4 : 2.427 GHz","Value":"4"},{"Channel":"Ch 5 : 2.432 GHz","Value":"5"},{"Channel":"Ch 6 : 2.437 GHz","Value":"6"},\
+                                      {"Channel":"Ch 7 : 2.442 GHz","Value":"7"},{"Channel":"Ch 8 : 2.447 GHz","Value":"8"},{"Channel":"Ch 9 : 2.452 GHz","Value":"9"},\
+                                      {"Channel":"Ch 10 : 2.457 GHz","Value":"10"},{"Channel":"Ch 11 : 2.462 GHz","Value":"11"},{"Channel":"Ch 12 : 2.467 GHz","Value":"12"},\
+                                      {"Channel":"Ch 13 : 2.472 GHz","Value":"13"}],\
+                        "ChInfo5G":[{"Channel":"Ch 36 : 5.180 GHz","Value":"36"},{"Channel":"Ch 40 : 5.200 GHz","Value":"40"},\
+                                    {"Channel":"Ch 44 : 5.220 GHz","Value":"44"},{"Channel":"Ch 48 : 5.240 GHz","Value":"48"}]}',
+                        '{"ChInfo2G":[{"Channel":"Ch 1 : 2.412 GHz","Value":"1"},{"Channel":"Ch 2 : 2.417 GHz","Value":"2"},{"Channel":"Ch 3 : 2.422 GHz","Value":"3"},\
+                                      {"Channel":"Ch 4 : 2.427 GHz","Value":"4"},{"Channel":"Ch 5 : 2.432 GHz","Value":"5"},{"Channel":"Ch 6 : 2.437 GHz","Value":"6"},\
+                                      {"Channel":"Ch 7 : 2.442 GHz","Value":"7"},{"Channel":"Ch 8 : 2.447 GHz","Value":"8"},{"Channel":"Ch 9 : 2.452 GHz","Value":"9"},\
+                                      {"Channel":"Ch 10 : 2.457 GHz","Value":"10"},{"Channel":"Ch 11 : 2.462 GHz","Value":"11"},{"Channel":"Ch 12 : 2.467 GHz","Value":"12"},\
+                                      {"Channel":"Ch 13 : 2.472 GHz","Value":"13"}],\
+                        "ChInfo5G":[{"Channel":"Ch 36 : 5.180 GHz","Value":"36"},{"Channel":"Ch 40 : 5.200 GHz","Value":"40"},\
+                                    {"Channel":"Ch 44 : 5.220 GHz","Value":"44"},{"Channel":"Ch 48 : 5.240 GHz","Value":"48"},\
+                                    {"Channel":"Ch 149 : 5.745 GHz","Value":"149"},{"Channel":"Ch 153 : 5.765 GHz","Value":"153"},\
+                                    {"Channel":"Ch 157 : 5.785 GHz","Value":"157"},{"Channel":"Ch 161 : 5.805 GHz","Value":"161"}]}',
+                        '{"ChInfo2G":[{"Channel":"Ch 1 : 2.412 GHz","Value":"1"},{"Channel":"Ch 2 : 2.417 GHz","Value":"2"},{"Channel":"Ch 3 : 2.422 GHz","Value":"3"},\
+                                      {"Channel":"Ch 4 : 2.427 GHz","Value":"4"},{"Channel":"Ch 5 : 2.432 GHz","Value":"5"},{"Channel":"Ch 6 : 2.437 GHz","Value":"6"},\
+                                      {"Channel":"Ch 7 : 2.442 GHz","Value":"7"},{"Channel":"Ch 8 : 2.447 GHz","Value":"8"},{"Channel":"Ch 9 : 2.452 GHz","Value":"9"},\
+                                      {"Channel":"Ch 10 : 2.457 GHz","Value":"10"},{"Channel":"Ch 11 : 2.462 GHz","Value":"11"},{"Channel":"Ch 12 : 2.467 GHz","Value":"12"},\
+                                      {"Channel":"Ch 13 : 2.472 GHz","Value":"13"}],\
+                        "ChInfo5G":[{"Channel":"Ch 36 : 5.180 GHz","Value":"36"},{"Channel":"Ch 40 : 5.200 GHz","Value":"40"},\
+                                    {"Channel":"Ch 44 : 5.220 GHz","Value":"44"},{"Channel":"Ch 48 : 5.240 GHz","Value":"48"},\
+                                    {"Channel":"Ch 149 : 5.745 GHz","Value":"149"},{"Channel":"Ch 153 : 5.765 GHz","Value":"153"},\
+                                    {"Channel":"Ch 157 : 5.785 GHz","Value":"157"},{"Channel":"Ch 161 : 5.805 GHz","Value":"161"},\
+                                    {"Channel":"Ch 165 : 5.825 GHz","Value":"165"}]}',
+                        '{"ChInfo2G":[{"Channel":"Ch 1 : 2.412 GHz","Value":"1"},{"Channel":"Ch 2 : 2.417 GHz","Value":"2"},{"Channel":"Ch 3 : 2.422 GHz","Value":"3"},\
+                                      {"Channel":"Ch 4 : 2.427 GHz","Value":"4"},{"Channel":"Ch 5 : 2.432 GHz","Value":"5"},{"Channel":"Ch 6 : 2.437 GHz","Value":"6"},\
+                                      {"Channel":"Ch 7 : 2.442 GHz","Value":"7"},{"Channel":"Ch 8 : 2.447 GHz","Value":"8"},{"Channel":"Ch 9 : 2.452 GHz","Value":"9"},\
+                                      {"Channel":"Ch 10 : 2.457 GHz","Value":"10"},{"Channel":"Ch 11 : 2.462 GHz","Value":"11"}],\
+                        "ChInfo5G":[{"Channel":"Ch 36 : 5.180 GHz","Value":"36"},{"Channel":"Ch 40 : 5.200 GHz","Value":"40"},\
+                                    {"Channel":"Ch 44 : 5.220 GHz","Value":"44"},{"Channel":"Ch 48 : 5.240 GHz","Value":"48"},\
+                                    {"Channel":"Ch 52 : 5.260 GHz","Value":"52"},{"Channel":"Ch 56 : 5.280 GHz","Value":"56"},\
+                                    {"Channel":"Ch 60 : 5.300 GHz","Value":"60"},{"Channel":"Ch 64 : 5.320 GHz","Value":"64"},\
+                                    {"Channel":"Ch 100 : 5.500 GHz","Value":"100"},{"Channel":"Ch 104 : 5.520 GHz","Value":"104"},\
+                                    {"Channel":"Ch 108 : 5.540 GHz","Value":"108"},{"Channel":"Ch 112 : 5.560 GHz","Value":"112"},\
+                                    {"Channel":"Ch 116 : 5.580 GHz","Value":"116"},{"Channel":"Ch 120 : 5.600 GHz","Value":"120"},\
+                                    {"Channel":"Ch 124 : 5.620 GHz","Value":"124"},{"Channel":"Ch 128 : 5.640 GHz","Value":"128"},\
+                                    {"Channel":"Ch 132 : 5.660 GHz","Value":"132"},{"Channel":"Ch 136 : 5.680 GHz","Value":"136"},\
+                                    {"Channel":"Ch 140 : 5.700 GHz","Value":"140"},{"Channel":"Ch 144 : 5.720 GHz","Value":"144"},\
+                                    {"Channel":"Ch 149 : 5.745 GHz","Value":"149"},{"Channel":"Ch 153 : 5.765 GHz","Value":"153"},\
+                                    {"Channel":"Ch 157 : 5.785 GHz","Value":"157"},{"Channel":"Ch 161 : 5.805 GHz","Value":"161"},\
+                                    {"Channel":"Ch 165 : 5.825 GHz","Value":"165"},{"Channel":"Ch 169 : 5.845 GHz","Value":"169"},\
+                                    {"Channel":"Ch 173 : 5.865 GHz","Value":"173"},{"Channel":"Ch 177 : 5.885 GHz","Value":"177"}]}',
+                        '{"ChInfo2G":[{"Channel":"Ch 1 : 2.412 GHz","Value":"1"},{"Channel":"Ch 2 : 2.417 GHz","Value":"2"},{"Channel":"Ch 3 : 2.422 GHz","Value":"3"},\
+                                      {"Channel":"Ch 4 : 2.427 GHz","Value":"4"},{"Channel":"Ch 5 : 2.432 GHz","Value":"5"},{"Channel":"Ch 6 : 2.437 GHz","Value":"6"},\
+                                      {"Channel":"Ch 7 : 2.442 GHz","Value":"7"},{"Channel":"Ch 8 : 2.447 GHz","Value":"8"},{"Channel":"Ch 9 : 2.452 GHz","Value":"9"},\
+                                      {"Channel":"Ch 10 : 2.457 GHz","Value":"10"},{"Channel":"Ch 11 : 2.462 GHz","Value":"11"},{"Channel":"Ch 12 : 2.467 GHz","Value":"12"},\
+                                      {"Channel":"Ch 13 : 2.472 GHz","Value":"13"}],\
+                        "ChInfo5G":[{"Channel":"Ch 36 : 5.180 GHz","Value":"36"},{"Channel":"Ch 40 : 5.200 GHz","Value":"40"},\
+                                    {"Channel":"Ch 44 : 5.220 GHz","Value":"44"},{"Channel":"Ch 48 : 5.240 GHz","Value":"48"},\
+                                    {"Channel":"Ch 52 : 5.260 GHz","Value":"52"},{"Channel":"Ch 56 : 5.280 GHz","Value":"56"},\
+                                    {"Channel":"Ch 60 : 5.300 GHz","Value":"60"},{"Channel":"Ch 64 : 5.320 GHz","Value":"64"},\
+                                    {"Channel":"Ch 100 : 5.500 GHz","Value":"100"},{"Channel":"Ch 104 : 5.520 GHz","Value":"104"},\
+                                    {"Channel":"Ch 108 : 5.540 GHz","Value":"108"},{"Channel":"Ch 112 : 5.560 GHz","Value":"112"},\
+                                    {"Channel":"Ch 116 : 5.580 GHz","Value":"116"},{"Channel":"Ch 120 : 5.600 GHz","Value":"120"},\
+                                    {"Channel":"Ch 124 : 5.620 GHz","Value":"124"},{"Channel":"Ch 128 : 5.640 GHz","Value":"128"},\
+                                    {"Channel":"Ch 132 : 5.660 GHz","Value":"132"},{"Channel":"Ch 136 : 5.680 GHz","Value":"136"},\
+                                    {"Channel":"Ch 140 : 5.700 GHz","Value":"140"},{"Channel":"Ch 144 : 5.720 GHz","Value":"144"}]}',
+                        ];
+    function ajax_getChannelList(countryCode,htmode_2g, htmode_5g, green_wifi0,green_wifi1){
+        //<% country_list(countryCode) %>
+        if (model == "WAX220")
+        {
+            //if ((countryCode == 36 || countryCode == 554 || countryCode == 826) && htmode_5g == "HT20")
+            //{
+            //    channelist_now = channleList[2];
+            //}
+            //else if ((countryCode == 410 && htmode_5g != "HT160") || ((countryCode == 36 || countryCode == 554 || countryCode == 826) && (htmode_5g == "HT40" || htmode_5g == "HT80")))
+            //{
+            //    channelist_now = channleList[1];
+            //    if (htmode_5g == "HT40"){
+            //        var tempChannel = jQuery.parseJSON(channelist_now);
+            //        tempChannel["ChInfo5G"].splice(18, 1); 
+            //        channelist_now=JSON.stringify(tempChannel);
+            //    }else if (htmode_5g == "HT80"){
+            //        var tempChannel = jQuery.parseJSON(channelist_now);
+            //        tempChannel["ChInfo5G"].splice(18, 1); //140
+            //        tempChannel["ChInfo5G"].splice(17, 1); //136
+            //        tempChannel["ChInfo5G"].splice(16, 1); //132
+            //        channelist_now=JSON.stringify(tempChannel);
+            //    }
+            //}
+            if (countryCode == 840)
+            {
+                channelist_now = channleList[3];
+                if (htmode_5g == "HT80" || (htmode_5g == "HT40")){
+                    //var tempChannel = jQuery.parseJSON(channelist_now); 
+                    //tempChannel["ChInfo5G"].splice(28, 1); //181
+                    //channelist_now=JSON.stringify(tempChannel);
+                }else if (htmode_5g == "HT160"){
+                    var tempChannel = jQuery.parseJSON(channelist_now);
+                    //tempChannel["ChInfo5G"].splice(28, 1); //181
+                    // tempChannel["ChInfo5G"].splice(27, 1); //177
+                    // tempChannel["ChInfo5G"].splice(26, 1); //173
+                    // tempChannel["ChInfo5G"].splice(25, 1); //169
+                    // tempChannel["ChInfo5G"].splice(24, 1); //165
+                    // tempChannel["ChInfo5G"].splice(23, 1); //161
+                    // tempChannel["ChInfo5G"].splice(22, 1); //157
+                    // tempChannel["ChInfo5G"].splice(21, 1); //153
+                    // tempChannel["ChInfo5G"].splice(20, 1); //149
+                    tempChannel["ChInfo5G"].splice(19, 1); //144
+                    tempChannel["ChInfo5G"].splice(18, 1); //140
+                    tempChannel["ChInfo5G"].splice(17, 1); //136
+                    tempChannel["ChInfo5G"].splice(16, 1); //132
+                    channelist_now=JSON.stringify(tempChannel);
+                }
+            }
+			else if (countryCode == 392)
+            {
+                channelist_now = channleList[4];
+                if (htmode_5g == "HT40"){
+                    //var tempChannel = jQuery.parseJSON(channelist_now); 
+                    //tempChannel["ChInfo5G"].splice(18, 1); //140
+                    //channelist_now=JSON.stringify(tempChannel);
+                }else if ((htmode_5g == "HT160")){
+                    var tempChannel = jQuery.parseJSON(channelist_now);
+                    tempChannel["ChInfo5G"].splice(19, 1); //144
+                    tempChannel["ChInfo5G"].splice(18, 1); //140
+                    //tempChannel["ChInfo5G"].splice(17, 1); //136
+                    //tempChannel["ChInfo5G"].splice(16, 1); //132
+                    channelist_now=JSON.stringify(tempChannel);
+                }
+            }
+            else
+            {
+                channelist_now = channleList[0];
+                if (htmode_5g == "HT40"){
+                    var tempChannel = jQuery.parseJSON(channelist_now);
+                    tempChannel["ChInfo5G"].splice(18, 1); 
+                    channelist_now=JSON.stringify(tempChannel);
+                }else if (htmode_5g == "HT80" || htmode_5g == "HT160"){
+                    var tempChannel = jQuery.parseJSON(channelist_now);
+                    tempChannel["ChInfo5G"].splice(18, 1); //140
+                    tempChannel["ChInfo5G"].splice(17, 1); //136
+                    tempChannel["ChInfo5G"].splice(16, 1); //132
+                    channelist_now=JSON.stringify(tempChannel);
+                }
+            }
+        }
+        else
+        {
+            //not support HT160M, WAX214v2
+            if ((countryCode == 36 || countryCode == 554 || countryCode == 826) && htmode_5g == "HT20")
+            {
+                channelist_now = channleList2[2];
+            }
+            else if ((countryCode == 410 && htmode_5g != "HT160") || ((countryCode == 36 || countryCode == 554 || countryCode == 826) && (htmode_5g == "HT40" || htmode_5g == "HT80")))
+            {
+                channelist_now = channleList2[1];
+            }
+            else if (countryCode == 840)
+            {
+                channelist_now = channleList2[3];
+                if (htmode_5g == "HT80" || (htmode_5g == "HT40"))
+                {
+                    // var tempChannel = jQuery.parseJSON(channelist_now); 
+                    // tempChannel["ChInfo5G"].splice(28, 1);
+                    // channelist_now=JSON.stringify(tempChannel);
+                }
+            }
+            else if (countryCode == 392)
+            {
+                channelist_now = channleList2[4];
+                if (htmode_5g == "HT40"){
+                    //var tempChannel = jQuery.parseJSON(channelist_now); 
+                    //tempChannel["ChInfo5G"].splice(18, 1); //140
+                    //channelist_now=JSON.stringify(tempChannel);
+                }else if ((htmode_5g == "HT80") || (htmode_5g == "HT160")){
+                    //var tempChannel = jQuery.parseJSON(channelist_now);
+                    //tempChannel["ChInfo5G"].splice(19, 1); //144
+                    //tempChannel["ChInfo5G"].splice(18, 1); //140
+                    //tempChannel["ChInfo5G"].splice(17, 1); //136
+                    //tempChannel["ChInfo5G"].splice(16, 1); //132
+                    //channelist_now=JSON.stringify(tempChannel);
+                }
+            }
+            else
+            {
+                channelist_now = channleList2[0];
+            }
+        }
+        var channel_now = jQuery.parseJSON(channelist_now); 
+        for (var key in channel_now) {
+            var obj = channel_now[key];
+            for (var prop in obj) {
+
+                if (obj[prop]["v80"] === undefined || obj[prop]["v80"] == "1"){
+                    var s = String.format(
+                        '<button type=\'button\' class="button-no-selected" name="%s%s" value="%s">%s</button>&nbsp&nbsp&nbsp',key,obj[prop]["Value"],obj[prop]["Value"],obj[prop]["Channel"]
+                    )
+                    $$("td[name='"+key+"']").append(s);
+                    channel_t[key] = (channel_t[key]==null) ? obj[prop]["Value"] : channel_t[key]+","+obj[prop]["Value"];
+                }
+            }
+        }
+    }
+    
+    var ButtonRule = (function(){
+        var init = function(radio,country_change_chan,opmode,none,status,group,ChannelEnable,ChannelList,Channel){
+            //--------- init -------------------
+        var all_flag = 0 ;
+        if(Channel!="" || (Channel=="" && status=="1")){none = 0;}
+        if(status=="2"){none = 1;}
+    
+            if(opmode == "sta" || opmode == "wds_sta"){
+    
+                $$("button[name='none"+radio+"']").triggerHandler('click');
+                $$("button[name='none"+radio+"'],button[name='all"+radio+"'],button[name^='group"+radio+"'],button[name^='ChInfo"+radio+"']").attr("class","button-no-selected").attr("disabled",true);
+            }
+            else{
+                if (country_change_chan == "0"){
+                    switch(opmode) {
+                        case "wds_ap":
+                        case "wds_bridge":
+                            $$("button[name^='all"+radio+"'],button[name^='none"+radio+"'],button[name^='group"+radio+"']").attr("class","button-no-selected").attr("disabled",true);
+                            $$("button[name^='ChInfo"+radio+"']:first-child").trigger('click');
+                            break;
+                        default:
+                            $$("button[name='all"+radio+"']").trigger('click');
+                            break;
+                    } 
+                }
+                else{
+                    if (none == "1"){
+                        if(opmode == "wds_bridge" || opmode == "wds_ap"){
+                            $$("button[name^='all"+radio+"'],button[name^='none"+radio+"'],button[name^='group"+radio+"']").attr("class","button-no-selected").attr("disabled",true);
+                            $$("button[name^='ChInfo"+radio+"']:first-child").trigger('click');
+                        }
+                        else{
+                            $$("button[name='none"+radio+"']").trigger('click');
+                        }
+                    }
+                    else{
+                        if(opmode == "wds_bridge" || opmode == "wds_ap"){
+                            $$("button[name^='all"+radio+"'],button[name^='none"+radio+"'],button[name^='group"+radio+"']").attr("class","button-no-selected").attr("disabled",true);
+                        }
+                        if (status == "1"){
+                            if(opmode == "wds_bridge" || opmode == "wds_ap"){
+                                $$("button[name^='ChInfo"+radio+"']:first-child").trigger('click');
+                                all_flag = 1;
+                            }
+                            else{
+                                $$("button[name='all"+radio+"']").trigger('click');
+                                all_flag = 1;
+                            }                    
+                        }
+                        else if (status = "4" && Channel != "auto"){
+                            ChannelList=Channel;
+                        }
+                        if (ChannelList != "" && all_flag == 0){
+                            if((opmode == "wds_bridge" || opmode == "wds_ap") && ChannelList.split(",").length != 1){
+                               $$("button[name^='ChInfo"+radio+"']:first-child").trigger('click');
+                            }
+                            else{
+                                var hasgroup = 0;
+                                if (opmode != "wds_bridge" && opmode != "wds_ap"){
+                                    if (group != "" && group != "0"){   
+                                        $$("button[name='group"+radio+"_"+group+"']").trigger('click');
+                                        var hasgroup = 1;
+                                    }
+                                }
+                                if (hasgroup == 0){
+                                    var ChannelListIndex = ChannelList.split(',')
+                                    for(j=0;j<ChannelListIndex.length;j++){
+                                        $$("button[name^='ChInfo"+radio+"']").filter(function(){
+                                            return  $$(this).attr("value") == ChannelListIndex[j]}).triggerHandler('click');
+                                    }            
+                                } 
+                            }                                  
+                        }
+                    }
+                    //---------- if channel all not support , choose all -------------------
+                    if ($$("td[name^='all_none"+radio+"']").find(':visible.button-selected').length + $$("td[name^='Group"+radio+"']").find(':visible.button-selected').length + $$("td[name^='ChInfo"+radio+"']").find(':visible.button-selected').length == 0){
+                        switch(opmode) {
+                            case "wds_ap":
+                            case "wds_bridge":
+                                $$("button[name^='all"+radio+"'],button[name^='none"+radio+"'],button[name^='group"+radio+"']").attr("class","button-no-selected").attr("disabled",true);
+                                $$("button[name^='ChInfo"+radio+"']:first-child").trigger('click');
+                                break;
+                            default:
+                                $$("button[name='all"+radio+"']").trigger('click');
+                                break;
+                        }                        
+                    }
+                }
+            }
+        },
+    
+        AllButton = function(all,none,group,channel){
+            //------ ALL button ---------
+            all.on('click',function(){
+                if ($$(this).attr("class") == "button-no-selected"){             
+                    none.attr("class","button-no-selected");
+                    group.attr("class","button-no-selected");
+                    channel.attr("class","button-no-selected");
+                    //channel.attr("disabled",false);
+                    //none.attr("disabled",false);
+                    //group.attr("disabled",false);                
+                }
+                else{
+                    none.attr("class","button-no-selected");
+                    group.attr("class","button-no-selected");
+                    //none.attr("class","button-no-selected").attr("disabled",true);
+                    //group.attr("class","button-no-selected").attr("disabled",true);
+                    //channel.attr("disabled",true);
+                    channel.attr("class","button-selected");
+                }
+            });
+        },
+    
+        NoneButton = function(opmode,all,none,group,channel){
+            //------ None button ---------
+            none.on('click',function(){
+                all.attr("class","button-no-selected");
+                group.attr("class","button-no-selected");
+                channel.attr("class","button-no-selected");
+                if ($$(this).attr("class") == "button-selected"){                
+                    if (opmode != "wds_bridge" && opmode != "wds_ap"){
+                        //all.attr("class","button-no-selected").attr("disabled",true);
+                        //group.attr("class","button-no-selected").attr("disabled",true);
+                    }
+                    //channel.attr("class","button-no-selected").attr("disabled",true);
+                }
+                else{
+                    if (opmode != "wds_bridge" && opmode != "wds_ap"){
+                        //all.attr("disabled",false);
+                        //group.attr("disabled",false);
+                    }
+                    //channel.attr("disabled",false);
+                }
+            });
+        },
+    
+        GroupButton = function(all,none,group,channel){
+           //------ Group button ---------
+            group.on('click',function(){
+                all.attr("class","button-no-selected");
+                none.attr("class","button-no-selected");
+                channel.attr("class","button-no-selected");
+    
+                group.not(this).each(function(){
+                    $$(this).attr("class","button-no-selected");
+                })
+    
+                if ($$(this).attr("name").match("^group2G")) {
+                    //---------channel disable-------------
+                    if ($$(this).attr("class") == "button-selected") {
+                        //all.attr("disabled",true);
+                        //none.attr("disabled",true);
+                        //$$('button[name^="ChInfo2G"]').attr("disabled",true);
+                    }
+                    else{
+                        //all.attr("disabled",false);
+                        //none.attr("disabled",false);
+                        //$$('button[name^="ChInfo2G"]').attr("disabled",false);
+                    }
+                    GroupBtnChangeChan2G($$(this));
+                }
+    
+                else{
+                    if ($$(this).attr("class") == "button-selected") {
+                        //all.attr("disabled",true);
+                        //none.attr("disabled",true);
+                        //$$('button[name^="ChInfo5G"]').attr("disabled",true);
+                    }
+                    else{
+                        //all.attr("disabled",false);
+                        //none.attr("disabled",false);
+                        //$$('button[name^="ChInfo5G"]').attr("disabled",false);
+                    }              
+                    GroupBtnChangeChan5G($$(this));
+                }
+    
+            });
+        },
+    
+        GroupBtnChangeChan2G = function(element){
+            //------------ 2.4G -------------  
+            var GroupChannelList = element.val().split(',')
+            if(element.attr("class") == "button-selected"){
+                for(j=0;j<GroupChannelList.length;j++){
+                    $$('button[name^="ChInfo2G"]').filter(function(){
+                        return  $$(this).attr("value") == GroupChannelList[j]}).triggerHandler('clickFake');
+                }            
+            }    
+        },
+    
+        GroupBtnChangeChan5G = function(element){
+            //------------ 5G ---------------
+            if(element.attr("class") == "button-selected"){
+                if(element.attr("name") == "group5G_1"){
+                    $$('button[name^="ChInfo5G"]').filter(function(){
+                        return  parseInt($$(this).attr("value"),10) >=36 && parseInt($$(this).attr("value"),10) <=48}).trigger('clickFake');
+                }
+                else if(element.attr("name") == "group5G_2"){
+                    $$('button[name^="ChInfo5G"]').filter(function(){
+                        return  parseInt($$(this).attr("value"),10) >=52 && parseInt($$(this).attr("value"),10) <=64}).trigger('clickFake');
+                }
+                else if(element.attr("name") == "group5G_3"){
+                    $$('button[name^="ChInfo5G"]').filter(function(){
+                        return  parseInt($$(this).attr("value"),10) >=100 && parseInt($$(this).attr("value"),10) <=144}).trigger('clickFake');
+                }
+                else if(element.attr("name") == "group5G_4"){
+                    $$('button[name^="ChInfo5G"]').filter(function(){
+                        return  parseInt($$(this).attr("value"),10) >=149 && parseInt($$(this).attr("value"),10) <=165}).trigger('clickFake');
+                } 
+                else{
+                    $$('button[name^="ChInfo5G"]').filter(function(){ 
+                        return  parseInt($$(this).attr("value"),10) >=169 }).trigger('clickFake');
+                }
+            }
+        },
+    
+        ChannelButton = function(radio,opmode,channel_t,groupset,all,none,group,channel){
+            if (opmode == "wds_bridge" || opmode == "wds_ap"){
+                $$("button[name^='ChInfo"+radio+"']").click(function(){
+                    $$("button[name^='ChInfo"+radio+"']").not(this).each(function(){
+                        $$(this).attr("class","button-no-selected");
+                    });
+                })
+            }
+            else{
+                $$("button[name^='ChInfo"+radio+"']").click(function(){
+                    var channel_selected="";
+                    $$("button[name^='ChInfo"+radio+"']").each(function(){
+                        if ($$(this).attr("class") == "button-selected"){
+                            channel_selected = (channel_selected=="") ? $$(this).val() : channel_selected+","+$$(this).val();
+                        }
+                    });
+    
+                    for(i=1;i<=Object.keys(groupset).length;i++){
+                        if (channel_selected == groupset[i]){
+                            $$("button[name='group"+radio+"_"+i+"']").attr("class","button-selected");
+                            break;
+                        }
+                        else{
+                            group.attr("class","button-no-selected");
+                        }
+                    };
+                    (channel_selected == channel_t) ? all.attr("class","button-selected"): all.attr("class","button-no-selected");
+                    none.attr("class","button-no-selected");
+                });
+            }
+        },
+    
+        SubmitButton = function(radio,opmode){
+            $$("button:hidden").attr("class") == "button-no-selected" ;
+            if (opmode == "sta" || opmode == "wds_sta"){
+    
+            }
+            else{
+                if($$("button[name='all"+radio+"']").attr("class") == "button-selected"){  // All
+                    $$("input[name='channel_enable"+radio+"']").val("0");
+                    $$("input:enabled[name='channel_list"+radio+"']").val("auto");
+                    $$("input[name='channel_status"+radio+"']").val("1");
+                }
+                else{
+                    var channel_list = "";
+                    $$("input[name='channel_status"+radio+"']").val("4");
+                    $$("button[name^='ChInfo"+radio+"']").filter(function(){
+                        if ($$(this).attr("class") == "button-selected"){
+                            channel_list += (channel_list == "") ? $$(this).val() : ","+$$(this).val();
+                        }
+                    });
+                    $$("input:enabled[name='channel_list"+radio+"']").val(channel_list);
+                    if (channel_list.split(",").length == 1){
+                        $$("input[name='channel_enable"+radio+"']").val("0");
+                        $$("input[name='channel"+radio+"']").val(channel_list);
+                    }
+                    else{
+                        $$("input[name='channel_enable"+radio+"']").val("1");
+                        $$("input[name='channel"+radio+"']").val("auto");
+                    }
+                };
+                if($$("button[name='none"+radio+"']").attr("class") == "button-selected"){  // NONE
+                    $$("input[name='disable_radio"+radio+"']").val("1");
+                    $$("input[name='channel_status"+radio+"']").val("2");
+                }
+                else{
+                    $$("input[name='disable_radio"+radio+"']").val("0");
+                }
+    
+                $$("button[name^='group"+radio+"']").each(function(){        //GROUP
+                    if ($$(this).attr("class") == "button-selected"){
+                        $$("input[name='channel_status"+radio+"']").val("3");
+                        $$("input[name='channel_group"+radio+"']").val($$(this).attr("name").split("_")[1]);
+                   }
+                })
+            }
+        };
+    
+        return{
+            init:init,
+            AllButton:AllButton,
+            NoneButton:NoneButton,
+            GroupButton:GroupButton,
+            ChannelButton:ChannelButton,
+            SubmitButton:SubmitButton
+        };
+    }());
+    
+    $$(function()
+    {
+        var hwmode_2g = window.opener.$$('select[name="cbid.wireless.wifi0.hwmode"]').val();
+        var country_change_chan = window.opener.$$("input[name='country_change_chan']").val();
+        var green0 = (window.opener.$$('input[type="checkbox"][name$$="wifi0.obeyregpower"]').is(':checked')) ? "1" : "0";
+        var green1 = (window.opener.$$('input[type="checkbox"][name$$="wifi1.obeyregpower"]').is(':checked')) ? "1" : "0";
+        var htmode_2g = window.opener.$$('select[name="cbid.wireless.wifi0.htmode"]').val();
+        var htmode_5g = window.opener.$$('select[name="cbid.wireless.wifi1.htmode"]').val();
+        var countryCode = window.opener.$$("select[name$$=country]").val();
+
+        if(chan_data5G["nochannel"] == 1)
+        {
+            document.getElementById('5g_title').style.display = "none";
+            document.getElementById('all_none5G').style.display = "none";
+            document.getElementById('Group5G').style.display = "none";
+            document.getElementById('ChInfo5G').style.display = "none";
+        }
+    
+        ajax_getChannelList(window.opener.$$("select[name$$=country]").val(),htmode_2g, htmode_5g, green0,green1);
+    
+        //JAPAN support channel 14 only for 11b
+        if(window.opener.$$('select[name="cbid.wireless.wifi0.country"]').val() == '392'){
+            if(hwmode_2g != '11b')
+                $$("button[name='ChInfo2G14']").hide();
+            else
+                $$("button[name='ChInfo2G14']").show();
+        }
+    
+        //--------- 2.4G group button ---------
+        if($$('button[name="ChInfo2G13"]').length>0){
+            var group2G = {"1":"1,6,11","2":"1,4,8,11","3":"1,7,13","4":"1,5,9,13"};
+        }
+        else{
+            var group2G = {"1":"1,6,11","2":"1,4,8,11","3":"1,7","4":"1,5,9"};
+        }
+    
+        for(i=1;i<=Object.keys(group2G).length;i++){
+            $$("td[name='Group2G']").append('<button type=\'button\' name="group2G_'+i+'" class="button-no-selected" value="'+group2G[i]+'">'+group2G[i]+'</button>&nbsp&nbsp&nbsp')
+        };
+        
+        //--------- 5G group button ---------
+        group_object = {"1":{start:36,end:48,val:"U-NII-1"},"2":{start:52,end:64,val:"U-NII-2A"},"3":{start:100,end:144,val:"U-NII-2C"},"4":{start:149,end:165,val:"U-NII-3"},"5":{start:169,end:181,val:"U-NII-4"}}
+
+    
+        for(i=1;i<=5;i++){
+            for (j=group_object[""+i+""].start;j<=group_object[""+i+""].end;j++)
+            {
+                if($$("button[value='"+j+"']").length){
+                    $$("td[name='Group5G']").append('<button type=\'button\' name="group5G_'+i+'" class="button-no-selected" value="'+group_object[""+i+""].val+'">'+group_object[""+i+""].val+'</button>&nbsp&nbsp&nbsp');
+                    break;
+                }
+            }
+        }
+    
+        var selectObject = {"all2G":$$('button[name="all2G"]'),"none2G":$$('button[name="none2G"]'),"group2G":$$('button[name^="group2G_"]'),"channel2G":$$('button[name^="ChInfo2G"]'),"all5G":$$('button[name="all5G"]'),"none5G":$$('button[name="none5G"]'),"group5G":$$('button[name^="group5G_"]'),"channel5G":$$('button[name^="ChInfo5G"]')} 
+    
+        //----- button click change class ----- 
+        $$('button').on('click',function(){
+            ($$(this).attr("class") == "button-no-selected") ? $$(this).attr("class","button-selected") : $$(this).attr("class","button-no-selected");
+        });
+    
+        $$('button').on('clickFake',function(){
+            ($$(this).attr("class") == "button-no-selected") ? $$(this).attr("class","button-selected") : $$(this).attr("class","button-no-selected");
+        });
+    
+        ButtonRule.AllButton(selectObject["all2G"],selectObject["none2G"],selectObject["group2G"],selectObject["channel2G"]);
+        ButtonRule.NoneButton(chan_data2G["opmode"],selectObject["all2G"],selectObject["none2G"],selectObject["group2G"],selectObject["channel2G"]);
+        ButtonRule.GroupButton(selectObject["all2G"],selectObject["none2G"],selectObject["group2G"],selectObject["channel2G"]);
+        ButtonRule.AllButton(selectObject["all5G"],selectObject["none5G"],selectObject["group5G"],selectObject["channel5G"]);
+        ButtonRule.NoneButton(chan_data5G["opmode"],selectObject["all5G"],selectObject["none5G"],selectObject["group5G"],selectObject["channel5G"]);
+        ButtonRule.GroupButton(selectObject["all5G"],selectObject["none5G"],selectObject["group5G"],selectObject["channel5G"]);
+    
+        ButtonRule.init("2G",country_change_chan,chan_data2G["opmode"],chan_data2G["disabled"],chan_data2G["ChannelStatus"],chan_data2G["channel_config_group"],chan_data2G["ChannelEnable"],chan_data2G["ChannelList"],chan_data2G["Channel"]);
+    
+        var group5G = {"1":"","2":"","3":"","4":"","5":""};
+        $$('button[name^="ChInfo5G"]').filter(function(){
+                if ($$(this).attr("value") <= 48){
+                   group5G["1"] += (group5G["1"] == "") ? $$(this).val() : ","+$$(this).val();
+                }
+                else if ($$(this).attr("value") >= 52 && $$(this).attr("value") <= 64){
+                   group5G["2"] += (group5G["2"] == "") ? $$(this).val() : ","+$$(this).val();
+                }
+                else if ($$(this).attr("value") >= 100 && $$(this).attr("value") <= 144){
+                   group5G["3"] += (group5G["3"] == "") ? $$(this).val() : ","+$$(this).val();
+                }            
+                else if ($$(this).attr("value") >= 149 && $$(this).attr("value") <= 165){
+                    group5G["4"] += (group5G["4"] == "") ? $$(this).val() : ","+$$(this).val();
+                }
+				else if ($$(this).attr("value") >= 169){
+                    group5G["5"] += (group5G["5"] == "") ? $$(this).val() : ","+$$(this).val();
+                }
+            });
+    
+        ButtonRule.init("5G",country_change_chan,chan_data5G["opmode"],chan_data5G["disabled"],chan_data5G["ChannelStatus"],chan_data5G["channel_config_group"],chan_data5G["ChannelEnable"],chan_data5G["ChannelList"],chan_data5G["Channel"]);
+        ButtonRule.ChannelButton("2G",chan_data2G["opmode"],channel_t["ChInfo2G"],group2G,selectObject["all2G"],selectObject["none2G"],selectObject["group2G"],selectObject["channel2G"]);
+        ButtonRule.ChannelButton("5G",chan_data5G["opmode"],channel_t["ChInfo5G"],group5G,selectObject["all5G"],selectObject["none5G"],selectObject["group5G"],selectObject["channel5G"]);
+    
+        //--------- submit -------------------
+        $$("input[name='channel_submit']").click(function(){
+            is_form_submit = "1";
+            var ch5i = 0;
+            var gr5i = 0;
+            var ch2i = 0;
+            var gr2i = 0;
+
+            $$("button[name^='ChInfo5G"+"']").filter(function(){
+                if ($$(this).attr("class") == "button-selected"){
+                    ch5i ++;
+                }
+            });
+
+            $$("button[name^='group5G"+"']").filter(function(){
+                if ($$(this).attr("class") == "button-selected"){
+                    gr5i ++;
+                }
+            });
+
+            $$("button[name^='ChInfo2G"+"']").filter(function(){
+                if ($$(this).attr("class") == "button-selected"){
+                    ch2i ++;
+                }
+            });
+
+            $$("button[name^='group2G"+"']").filter(function(){
+                if ($$(this).attr("class") == "button-selected"){
+                    gr2i ++;
+                }
+            });
+
+            if (!($$("button[name='all2G"+"']").attr("class") == "button-selected" || $$("button[name='none2G"+"']").attr("class") == "button-selected")){
+                if (ch2i > 1 && gr2i == 0){
+                    alert("$configuration_channel_method_not_supported");
+                    is_form_submit = "0"; 
+                }
+            }
+
+            if (!($$("button[name='all5G"+"']").attr("class") == "button-selected" || $$("button[name='none5G"+"']").attr("class") == "button-selected")){
+                if (ch5i > 1 && gr5i == 0){
+                    if (htmode_5g != "HT160"){
+                        alert("$configuration_channel_method_not_supported");
+                        is_form_submit = "0"; 
+                    }
+                }
+
+                if (htmode_5g == "HT160"){
+                    if (($$('button[name="ChInfo5G36"]').attr("class")=="button-selected") &&
+                        ($$('button[name="ChInfo5G40"]').attr("class")=="button-selected") &&
+                        ($$('button[name="ChInfo5G44"]').attr("class")=="button-selected") &&
+                        ($$('button[name="ChInfo5G48"]').attr("class")=="button-selected") &&
+                        ($$('button[name="ChInfo5G52"]').attr("class")=="button-selected") &&
+                        ($$('button[name="ChInfo5G56"]').attr("class")=="button-selected") &&
+                        ($$('button[name="ChInfo5G60"]').attr("class")=="button-selected") &&
+                        ($$('button[name="ChInfo5G64"]').attr("class")=="button-selected"))
+                        {
+                            //do nothing
+                        } 
+                        else if (($$('button[name="ChInfo5G100"]').attr("class")=="button-selected") &&
+                                ($$('button[name="ChInfo5G104"]').attr("class")=="button-selected") &&
+                                ($$('button[name="ChInfo5G108"]').attr("class")=="button-selected") &&
+                                ($$('button[name="ChInfo5G112"]').attr("class")=="button-selected") &&
+                                ($$('button[name="ChInfo5G116"]').attr("class")=="button-selected") &&
+                                ($$('button[name="ChInfo5G120"]').attr("class")=="button-selected") &&
+                                ($$('button[name="ChInfo5G124"]').attr("class")=="button-selected") &&
+                                ($$('button[name="ChInfo5G128"]').attr("class")=="button-selected"))
+                        {
+                            //do nothing
+                        } 
+                        else if (($$('button[name="ChInfo5G149"]').attr("class")=="button-selected") &&
+                                ($$('button[name="ChInfo5G153"]').attr("class")=="button-selected") &&
+                                ($$('button[name="ChInfo5G157"]').attr("class")=="button-selected") &&
+                                ($$('button[name="ChInfo5G161"]').attr("class")=="button-selected") &&
+                                ($$('button[name="ChInfo5G165"]').attr("class")=="button-selected") &&
+                                ($$('button[name="ChInfo5G169"]').attr("class")=="button-selected") &&
+                                ($$('button[name="ChInfo5G173"]').attr("class")=="button-selected") &&
+                                ($$('button[name="ChInfo5G177"]').attr("class")=="button-selected"))
+                        {
+                            //do nothing
+                        } 
+                        else if (ch5i == 1 && gr5i == 0)
+                        {
+                            //do nothing
+                        }
+                        else 
+                        {
+                            alert("$configuration_channel_method_not_supported");
+                            is_form_submit = "0";
+                        }
+                }
+                if (($$('button[name="ChInfo5G169"]').attr("class")=="button-selected") &&
+                    ($$('button[name="ChInfo5G173"]').attr("class")=="button-selected") &&
+                    ($$('button[name="ChInfo5G177"]').attr("class")=="button-selected"))
+                {
+                        if (!confirm("$unii4_tips"))
+                        {
+                            is_form_submit = "0";
+                        }
+                }
+            }
+
+            $$("input[name='htmode5G']").val(htmode_5g);
+            $$("input[name='htmode2G']").val(htmode_2g);
+
+            ButtonRule.SubmitButton("2G",chan_data2G["opmode"]);
+            ButtonRule.SubmitButton("5G",chan_data5G["opmode"]);
+            
+            if (is_form_submit == "1"){
+                $$("input[name='submitType']").val("wifi_Channel");
+                window.opener.updateChanges("wifi_Channel", $$('form').serialize());
+                window.close();
+            }
+        });
+    
+        //---------Add myid attribute for test-----------------------
+        $$('button').each(function(){
+            var orgId = ($$(this).attr('name')||"");
+                $$(this).attr("myid",idchange[orgId]);    
+    
+                if (orgId.match(/^ChInfo2G/))
+                {
+                    $$(this).attr("myid","24_"+orgId.split("ChInfo2G")[1]);
+                }
+                if (orgId.match(/^ChInfo5G/))
+                {
+                    $$(this).attr("myid","5_"+orgId.split("ChInfo5G")[1]);
+                }
+        });
+    });
+
+    $$(function(){
+    
+        if(window.opener.$$("select[name$$=country]").val() == '831' || window.opener.$$("select[name$$=country]").val() == '829')
+        {
+            $$('td[name$$="Group2G"]').find("button").attr("disabled", "disabled");
+            $$('td[name$$="ChInfo2G"]').find("button").attr("disabled", "disabled");
+            $$("button[name='all2G']").attr("disabled", "disabled");
+            $$("button[name='none2G']").triggerHandler('click');
+        }
+    
+    
+            $$(".cbi-button-save").attr("disabled", false);
+            $$('.cbi-button-save').css("color","white");
+    
+    });
+    </script>
+    <body>
+    <!--     						HTML	     			  	   -->
+    <form method="post" name="wifiChannel">
+    <input type="hidden" name="submitType"/>
+    <input type="hidden" name="anticsrf" value='<% generateToken("wifi_Channel") %>'>
+    <!--             for controller to set config     2.4G                 -->
+
+    <input type="hidden" name="disable_radio2G"/>
+    <input type="hidden" name="channel_enable2G"/>
+    <input type="hidden" name="channel2G"/>
+    <input type="hidden" name="channel_list2G"/>    <!-- Record channel list-->
+    <input type="hidden" name="channel_status2G"/>
+    <input type="hidden" value="0" name="channel_group2G"/>
+    
+    
+    <input type="hidden" name="disable_radio5G"/>
+    <input type="hidden" name="channel_enable5G"/>
+    <input type="hidden" name="channel5G"/>
+    <input type="hidden" name="channel_list5G"/>    <!-- Record channel list-->
+    <input type="hidden" name="channel_status5G"/>
+    <input type="hidden" value="0" name="channel_group5G"/>
+    
+    <input type="hidden" name="htmode5G"/>
+    <input type="hidden" name="htmode2G"/>
+    
+    <table style="table-layout:fixed;border-collapse:collapse;width:50%;margin-left:50px;">
+        <th class="title" style="width:450px;">2.4GHz</th>
+        <th id ="5g_title" class="title" style="width:450px;">5GHz</th>
+        <tr>
+            <td name="all_none2G" style="word-break:break-word; width:100px;">
+                <button type='button' name="all2G" class="button-no-selected">$all_channel</button>&nbsp&nbsp
+                <button type='button' name="none2G" class="button-no-selected">$auto_channel</button>
+            </td>
+    
+            <td id= "all_none5G" name="all_none5G" style="word-break:break-word; width:100px;">
+                <button type='button' name="all5G" class="button-no-selected">$all_channel</button>&nbsp&nbsp
+                <button type='button' name="none5G" class="button-no-selected">$auto_channel</button>
+            </td>
+        </tr>
+        <tr>
+            <td name="Group2G" style="word-break:break-word; width:100px;"></td>
+            <td id= "Group5G" name="Group5G" style="word-break:break-word; width:100px;"></td>
+        </tr>
+        <tr>
+            <td name="ChInfo2G" style="word-break:break-word; width:100px;"></td>
+            <td id= "ChInfo5G" name="ChInfo5G" style="word-break:break-word; width:100px;"></td>
+        </tr>
+    </table>
+    <br><br>
+    <div class="cbi-page-actions" style="margin-left:50px">
+    <!--input class="cbi-button cbi-button-apply" type="submit" name="cbi.apply" value="Save &#38; Apply" /-->
+        <input style="width:auto;" class="cbi-button-save" name="channel_submit" type="button" myid="button_ch_save" value="$save"/>&nbsp;<span class="btn_desc">$save_current_settings</span>
+    <!--input class="cbi-button cbi-button-reset" type="reset" value="Reset" /-->
+    </div>
+    </form>
+    </body>
+    </html>
+    
+    

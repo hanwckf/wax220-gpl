@@ -1,0 +1,58 @@
+<%#
+LuCI - Lua Configuration Interface
+Copyright 2008 Steven Barth <steven@midlink.org>
+Copyright 2008 Jo-Philipp Wich <xm@leipzig.freifunk.net>
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+	http://www.apache.org/licenses/LICENSE-2.0
+
+$Id: applyreboot.htm 8847 2012-07-01 20:05:05Z dgolle $
+
+-%>
+<%+header%>
+<html>
+	<head>
+		<title><%=luci.sys.hostname()%></title>
+		<script type="text/javascript" src="<%=resource%>/xhr.js"></script>
+		<script type="text/javascript" src="/luci-static/resources/cbi.js"></script>
+		<script type="text/javascript">//<![CDATA[
+		var myinterval;
+		var t = "<% if countdown then %><%=countdown%><% else %>60<% end %>";
+		myinterval = setInterval("a()", 1000);
+		function a()
+		{
+			if(t == 0)
+			{
+				window.clearInterval(myinterval);
+				location.href='<%=luci.dispatcher.build_url("admin/status/wireless_conn")%>';
+			}
+			document.getElementById("countdownString").innerHTML = String.format("<%:Please wait for %s %d %s secs. System is reloading.%>", "<span style='color:darkred;'>", t, "</span>");
+			t -= 1;
+		}
+		//]]></script>
+	</head>
+	<body>
+	<form name="reloading" action='<%=luci.dispatcher.build_url("admin/network/wifi_reload")%>'  method="post">
+		<div id="maincontainer">
+			<div id="maincontent">
+				<h2><a id="content" name="content" style="font-size: 24px; line-height: 36px;"><%:System%> - <% if title then %><%=title%><% else %><%:Loading...%><% end %></a></h2>
+				<fieldset class="cbi-section">
+					<p id="countdownString" style="font-size: 16px; line-height: 20px;"></p>
+					<p style="font-size: 16px; line-height: 20px;">
+						<% if msg then %><%=msg%><% else %><%:Changes applied.%><% end %>
+					</p>
+					<p style="font-size: 16px; line-height: 20px;">
+						<img src="<%=resource%>/icons/loading.gif" alt="<%:Loading%>" style="vertical-align:middle" />
+						<%:Waiting for changes to be applied...%>
+					</p>
+					<p id="redirectToLogin"></p>
+				</fieldset>
+			</div>
+		</div>
+		</form>
+	</body>
+</html>
+<%+footer%>

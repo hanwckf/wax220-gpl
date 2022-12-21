@@ -1,0 +1,272 @@
+<!DOCTYPE html
+	PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+
+<head>
+	<% new_hijack_flow_head() %>
+</head>
+<style>
+	.word_wrap {
+		word-wrap: break-word;
+		word-break: break-all;
+	}
+
+	td {
+		padding: 0;
+		width: 50%
+	}
+
+	.row .col.a5 {
+		width: 100%;
+	}
+
+	.row .col.a4 {
+		width: 50%;
+	}
+
+	.row .col.a3 {
+		margin-left: 25%;
+	}
+
+	.row .col.a2 {
+		margin-left: 13%;
+	}
+
+	.install-card .content .pin-desc>p {
+		color: #434343;
+	}
+
+	.btn-flat.disabled,
+	.btn-flat:disabled,
+	.btn-flat[disabled] {
+		color: #2C262D !important;
+		border: 1.5px solid #3A3A3A !important;
+		background-color: transparent !important;
+	}
+
+	.signal_wifi_4_bar {
+		font-weight: normal;
+		font-style: normal;
+		font-size: 24px;
+		line-height: 1;
+		letter-spacing: normal;
+		text-transform: none;
+		display: inline-block;
+		white-space: nowrap;
+		word-wrap: normal;
+		direction: ltr;
+		-webkit-font-feature-settings: 'liga';
+		-webkit-font-smoothing: antialiased;
+		width: 24px;
+		height: 24px;
+		background-image: url(image/signal_wifi_4_bar.png);
+	}
+</style>
+
+<body>
+	<% form_submit("apply", "BRS_orbi_complete.html" , "BRS_orbi_complete" ) %>
+		<script language="javascript" type="text/javascript">
+			var security_enhance_flag = "<% security_enhance_support() %>";
+
+			function printSucessPage() {
+				if (window.print)
+					window.print();
+				else {
+					alert("$not_support_print");
+				}
+			}
+
+			function redirect_login(){
+				var cf = document.forms[0];
+				cf.action="/apply.cgi?/to_internet_no_auth.htm timestamp="+ts;
+				cf.submitType.value = "hijack_save_time";
+				cf.anticsrf.value='<% generateToken("hijack_save_time") %>';
+				cf.target = "_top";
+				cf.submit();
+				window.close();
+			}
+		</script>
+
+		<!-- Orbi Configuration complete -->
+		<div id="container">
+			<div class="dialog-content">
+				<!-- Orbi Configuration complete -->
+				<div id="card-orbi-config-complete" class="install-card clearfix" style="width:100%; min-width: 750px;">
+					<div class="logos">
+						<div><img class="netgear-logo" src="image/netgear_business.png"></div>
+						<% hijack_logo_title() %>
+					</div>
+					<div class="content">
+						<div id="complete_text" class="desc-title" style="font-size:30px; margin-bottom:2px; display: none;">
+							<script>document.write("$orbi_complete");</script>
+						</div>
+						<div id="complete_text_1" class="desc-title" style="font-size:30px; margin-bottom:2px; margin-top:20px; display: none;">
+							<script>document.write("$orbi_complete_1");</script>
+						</div>
+						<div id="complete_text2" class="desc-title w3-xlarge" style="margin-bottom:2px;">
+							<script>document.write("$orbi_complete_msg2");</script>
+						</div>
+						<div id="wait_count" class="desc-title w3-xlarge">
+						</div>
+						<div class="desc-title w3-large">
+							<script>
+								if (security_enhance_flag)
+									document.write("Your new wireless network credentials are displayed below");
+								else
+									document.write("$orbi_complete_msg1");
+							</script>
+						</div>
+						<div class="col s3 " id="wifi_first_icon">
+							<div class="icon">
+								<i class="material-icons prefix">person</i>
+							</div>
+							<div class="pin-title word_wrap">
+								<p id="admin_name_info"><% cfg_get("http_username") %></p>
+							</div>
+							<div class="pin-desc word_wrap">
+								<p id="admin_pwd_info"><% cfg_sed_xss("http_passwd") %></p>
+							</div>
+						</div>
+						<div class="col s3 " id="ssid">
+							<div class="icon">
+								<!-- <i class="material-icons prefix">signal_wifi_4_bar</i> -->
+								<div class="signal_wifi_4_bar"></div>
+							</div>
+							<div class="word_wrap w3-large">
+								<span id="wifi_ssid_info" style="font-weight: 500;">
+									<script>
+										document.write("$orib_complete_msg8_1: ");
+									</script>
+								</span>
+								<span id="wifi_ssid_info"><% cfg_get_ssid_value("wl_ssid") %></span>
+							</div>
+							<div id="wifi_pwd_pwd" class="word_wrap w3-large">
+								<span style="font-weight: 500;">
+									<script>
+										document.write("$orib_complete_msg8_2: ");
+									</script>
+								</span>
+								<span>
+									<script>
+										var tmp = "";
+										for (var i = 0; i < '<% cfg_get("wl_psk", "wlg1") %>'.length; i++) {
+											tmp += "*";
+										}
+										document.write(tmp + "  ");
+									</script>
+								</span>
+								<img src="image/eye-slash.svg" onclick="change_pwd_show('show')">
+							</div>
+							<div id="wifi_pwd_text" class="word_wrap w3-large" style="display:none;">
+								<span style="font-weight: 500;">
+									<script>
+										document.write("$orib_complete_msg8_2: ");
+									</script>
+								</span>
+								<span><% cfg_get("wl_psk", "wlg1") %></span>
+								<img src="image/eye.svg" onclick="change_pwd_show('hide')">
+							</div>
+							<script>
+								function change_pwd_show(v) {
+									if (v == 'show') {
+										document.getElementById("wifi_pwd_pwd").style.display = 'none';
+										document.getElementById("wifi_pwd_text").style.display = '';
+									} else if (v == 'hide') {
+										document.getElementById("wifi_pwd_pwd").style.display = '';
+										document.getElementById("wifi_pwd_text").style.display = 'none';
+									}
+								}
+							</script>
+						</div>
+						<div class="desc-title"></div>
+						<div class="desc-title w3-large">
+							<script>document.write("$orbi_complete_msg4" + '<% cfg_get("lan_ipaddr") %>');</script>
+						</div>
+						<div class="desc-title w3-large" style="margin-bottom:4px;">
+							<script>
+								var model = '<% cat_file("/module_name") %>';
+
+								if (model == 'WAX220') {
+									document.write("$orbi_complete_msg5_1" + ' 1 ' + "$orbi_complete_msg5_3" + ' ' + "$orbi_complete_msg5_4");
+								} else if (model == 'WAX214v2') {
+									document.write("$orbi_complete_msg5_1" + ' 2 ' + "$orbi_complete_msg5_2" + ' ' + "$orbi_complete_msg5_4");
+								} else {
+
+								}
+							</script>
+						</div>
+						<div class="desc-title w3-large" style="margin-bottom:15px;">
+						</div>
+						<input type="hidden" name="hid_save_time" value="7">
+					</div>
+					<div class="buttons">
+						<button id="print_cred" class="btn button-nav" type="button" onclick="printSucessPage();">
+							<span>
+								<script>document.write("$orbi_print");</script>
+							</span>
+						</button>
+						<button id="btn_done" class="btn button-nav" type="button" onclick="redirect_login();" disabled>
+							<span>
+								<script>document.write("$orbi_done");</script>
+							</span>
+						</button>
+					</div>
+				</div>
+			</div>
+			<script>
+				var t = 120;
+				var countdown_handle;
+				var model = '<% cat_file("/module_name") %>';
+				var last = <% cfg_get("wizard_complete_uptime") %>;
+				var ts='<% cfg_get("hijack_save_time") %>';
+				var flag = new Date().getTime();
+
+				if (model == 'WAX220') {
+					t = 60;
+				} else if (model == 'WAX214v2') {
+					t = 120;
+				}
+
+				if (last < 0) {
+					t = 0;
+				} else if (t > last) {
+					t = t - last;
+				} else {
+					t = 0;
+				}
+
+				function countdown() {
+					var curr = new Date().getTime();
+					var last = t - parseInt((curr - flag) / 1000, 10);
+
+					if (last <= 0) {
+						clearInterval(countdown_handle);
+						document.getElementById("wait_count").innerHTML = "";
+						document.getElementById("complete_text").style.display = "";
+						document.getElementById("complete_text_1").style.display = "";
+						document.getElementById("complete_text2").style.display = "none";
+						document.getElementById("btn_done").disabled = false;
+					} else {
+						document.getElementById("wait_count").innerHTML = "$orbi_complete_msg3_1" + "&nbsp" + last.toString() + "&nbsp" + "$orbi_complete_msg3_2";
+					}
+				}
+
+				document.getElementById("btn_done").disabled = true;
+				clearInterval(countdown_handle);
+				countdown_handle = setInterval(function (){countdown();}, 1000);
+				countdown();
+			</script>
+		</div>
+		<a id="login" target="_blank" href="/sysauth.html" style="display:none;"></a>
+		<script>
+			if (security_enhance_flag) {
+				document.getElementById("wifi_first_icon").style.display = "none";
+				document.getElementById("ssid").className += "a5";
+			} else {
+				document.getElementById("wifi_first_icon").className += "a3";
+			}
+		</script>
+	</form>
+</body>
+
+</html>

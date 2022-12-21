@@ -1,0 +1,26 @@
+#
+# Copyright (C) 2009 OpenWrt.org
+#
+
+
+. /lib/mediatek.sh
+
+preinit_network_init() {
+	mii_mgr_cl45 -s -p 6 -d 0x1e -r 0x75f3 -v 0x30c 1>/dev/null 2>&1
+	mii_mgr_cl45 -s -p 6 -d 0x1e -r 0x697a -v 0x2 1>/dev/null 2>&1
+	mii_mgr_cl45 -s -p 6 -d 0x7 -r 0x0 -v 0x3200 1>/dev/null 2>&1
+
+	bash -c /sbin/753x.sh
+	local disableTelnet=$(uci get system.@system[0].disableTelnet 2>/dev/null)
+	local factory_mode=`envctl factory get factory_mode`
+	if [ "$factory_mode" != "off" ] || [ "$disableTelnet" != "1" ]; then
+		telnetd &
+	fi
+
+	local factory_mode=`envctl factory get factory_mode`
+	if [ "$factory_mode" != "off" ]; then
+		( brctl addbr br-lan | true ) && ( ifconfig br-lan up | true ) && ( ifconfig eth1 up | true ) && ( brctl addif br-lan eth1 | true ) && ( ifconfig br-lan 192.168.0.100 | true ) &
+	fi
+}
+
+boot_hook_add preinit_main preinit_network_init

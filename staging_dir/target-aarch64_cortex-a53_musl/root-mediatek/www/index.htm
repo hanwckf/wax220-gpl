@@ -1,0 +1,361 @@
+<% http_header("style/basic.css", "style/modalBoxControl.css", "script/jquery-1.12.4.min.js", "script/cbi.js", "script/common.js", "script/basic.js", "script/top.js") %>
+<body onload="loadvalue();" onResize="change_size(); setHeight_for_IE6();">
+<!--[if IE 6]>
+<script type="text/javascript">
+document.execCommand("BackgroundImageCache", false, true);
+</script>
+<![endif]-->
+<script>
+var back_flag=0;//for click browser "back"
+var timeoutfunc;
+var enable_action=1;
+var enabled_wds="<% wds_enable() %>";
+var enabled_wps="<% wps_menu() %>";
+var type="basic";
+var page_id="basic";
+var internet_label='<% cat_file("/tmp/internet_page_type") %>';
+var charcount=0;
+var file_version=0;
+var file_region="";
+var netgear_version=0;
+var netgear_region="<% get_firmware_region() %>"
+var help_info="_index";
+var wps_charcount=0;
+var wps_endis_configured=1;     // 1 for unconfigured, 5 for configured
+var wps_an_endis_configured=1;  // 1 for unconfigured, 5 for configured
+var folder_path="";     //save the browser's folder path, and show in USB creat/edit page
+var qos_check_time=0;
+var pin_refresh_time=0;
+var select_basic='<% cfg_get("internet_type") %>';
+var select_type='<% cfg_get("internet_ppp_type") %>';
+var endis_wl_radio='<% enable_ap_orNot("bgn") %>';
+var endis_wla_radio='<% enable_ap_orNot("an") %>';
+var endis_wla_2nd_radio='<% enable_ap_orNot("tri") %>';
+var wps_process=0;
+var enable_ap_flag='<% cfg_get("ap_mode") %>';//bug 24666 according to the page 128 of spec 2.0,add AP mode
+var enable_extender_flag='<% cfg_get("extender_mode") %>'; 
+var enable_bridge_flag='<% cfg_get("bridge_mode") %>';
+var ParentalControl = '<% cfg_get("ParentalControl") %>';
+var set_wireless_tag = '<% cfg_get("set_wireless_tag") %>';
+var show_plex = '<% cfg_get("show_plex") %>';
+var show_netdisk = '<% cfg_get("show_netdisk") %>';
+var run_green_time=0;
+var green_download_items;
+var green_refresh_time=0;
+var green_download_item_num=0;
+var green_downloading_item_num=0;
+var green_download_item_queuen_num=0;
+var mlnet_error=0;
+var jp_multiPPPoE = '<% cfg_get("jp_multiPPPoE") %>';
+var language_change_status='<% lang_change_status() %>';
+var to_multipppoe = 0;
+<% plc_devs_detection() %>
+<% web_flag() %>
+<% refresh_timestamp("wds") %>
+<% cfg_set("have_click_take_me_to_internet", "0") %>
+<% hijack_success_page() %>
+<% lang_change_status_finish() %>
+<% armor_mark() %>
+
+var gui_region='<% cfg_get("GUI_Region") %>';
+var auto_change_lang = 0;//bug 28482
+<% cfg_set("show_ap", "0") %>
+<% cfg_set("show_bridge", "0") %>
+
+var disk_num = '<% cat_file("/tmp/usbdisknum") %>';
+disk_num = parseInt(disk_num);
+if(isNaN(disk_num)) disk_num = 0;
+
+var is_ru_version=(((netgear_region.toUpperCase() == "WW" || netgear_region == "") && gui_region == "Russian" ) || netgear_region.toUpperCase() == "RU") ? 1 : 0;
+var is_pr_version=(((netgear_region.toUpperCase() == "WW" || netgear_region == "") && gui_region == "Chinese" ) || netgear_region.toUpperCase() == "PR") ? 1 : 0;
+var is_gr_version=(((netgear_region.toUpperCase() == "WW" || netgear_region == "") && gui_region == "German" ) || netgear_region.toUpperCase() == "GR") ? 1 : 0;
+var is_jp_version=(((netgear_region.toUpperCase() == "WW" || netgear_region == "") && gui_region == "Japanese" ) || netgear_region.toUpperCase() == "JP") ? 1 : 0;
+
+//Failover & Loadbalance
+var multi_wan_mode="none";  // none, multi
+var multi_wan_mode_ether="0";//0:unconfigured, 1:configured
+var multi_wan_mode_mobile="0";//0:unconfigured, 1:configured
+
+var broadband_mode='<% cfg_get("dango_det_wan_type") %>';
+var old_div= "";
+var click_lte_sim=0;
+var download_type = '<% cfg_get("download_type") %>';
+var basic_dynamic_page = '<% cfg_get("basic_dynamic_page") %>';
+var enable_mapt='<% cfg_get("mapt_enable") %>';
+var qos_edit_mac = "";
+var qos_edit_ip = "";
+var qos_edit_name = "";
+var qos_priority = "";
+var pre_url = document.referrer;
+var access_guest_manage = '<% cfg_get("access_guest_manage") %>';
+<% cfg_set("access_guest_manage","0") %>;
+
+var master = '<% cfg_get("http_loginname") %>';
+var lang_select = '<% cfg_get("Language_Selection") %>';
+var browser_lang = '<% get_browser_language() %>';
+var bgn_pr_wds_support_wpa=0;
+var an_pr_wds_support_wpa=0;
+var old_wds_endis_fun='<% cfg_get("wds_endis_fun") %>';
+var security_mode='<% cfg_get("wl_sectype") %>';
+var old_wds_endis_fun_a='<% cfg_get("wla_wds_endis_fun") %>';
+var security_mode_a='<% cfg_get("wla_sectype") %>';
+var dis_lang_crl = '<% cfg_get("Enable_GUIStringTable") %>';
+var device_mode = '<% cfg_get("modem_mode") %>';
+var select_dev_flag;
+var success_url='<% ntgr_success_url("1") %>';
+var armor_jump_token = '<% generateToken("armor_jump") %>';
+if( wds_support_wpa == 1 && gui_region == "Chinese" && (netgear_region == "" || netgear_region.toUpperCase() == "WW"))
+{
+	if((security_mode=="3" ||  security_mode=="4" || security_mode == "5") && old_wds_endis_fun == "1")
+		bgn_pr_wds_support_wpa=1;
+
+	if(an_router_flag == 1 )
+	{
+		if( (security_mode_a == "3" || security_mode_a == "4" || security_mode_a == "5") && old_wds_endis_fun_a == "1" )
+			an_pr_wds_support_wpa=1;
+
+	}	
+}
+
+
+function loadvalue()
+{	
+	change_size();
+	
+	/*if(lang_select == "Auto" && browser_lang != gui_region)
+	{
+		if(bgn_pr_wds_support_wpa == 1 || an_pr_wds_support_wpa == 1 || dis_lang_crl == "0" )
+			auto_change_lang = 0;
+		else
+			auto_change_lang = 1;
+	}*/
+	if(pre_url.indexOf("GuestManage") != -1 && access_guest_manage == "1" )
+	{
+		basic_menu_color_change('guest');
+		goto_formframe('GuestManage_sub.htm');
+	
+	}
+	else if(set_wireless_tag == 1 )
+		click_action("wireless");
+	else if(show_plex == "1")
+		click_action("plex");
+	else if(show_netdisk == "1")
+		click_action("cloud_backup");
+	else if(jp_multiPPPoE=="1" && language_change_status=="1")/*Change language to JP fail should redirect to multi-pppoepage*/
+	{
+		to_multipppoe = 1;
+		click_action("internet");
+	}
+	else if( auto_change_lang == 0 )/* if auto_change_lang == 0, it will show basic home page, else it will go to lang_check.html */
+		click_action("device_status");
+	else if( master == "guest")
+		click_action("device_status");
+	if(window.location.href.indexOf("qq") != -1)
+		click_action("internet");
+	setHeight_for_IE6();
+
+	if(getTop(window).have_armor_flag == "1"){
+		var modal_armor = document.getElementById("modalBox_armor");
+		if(armor_note == "1")
+			modal_armor.style.display = "block";
+		else
+			modal_armor.style.display = "none";
+	}
+	if(getTop(window).have_app_ads == "1"){
+		document.getElementById("nighthawk_app").style.display = "";
+		if(getTop(window).r9000_router_flag == "1"){
+			document.getElementById("nighthawk_app").style.top = "425px";
+			document.getElementById("container").style.minHeight = "725px";
+			document.getElementById("top").style.minWidth = "950px";
+		}
+	}
+}
+	
+</script>
+
+<div id="top">
+	<iframe name="topframe" id="topframe" src="top.html" allowtransparency="true" height="100%" width="100%" frameborder="0"></iframe>
+</div>
+
+<div id="container" class="container_center">
+
+<div id="middle">
+<div id="menu" class="menu_common_words"><!--fix bug 30075-->
+	<div id="device_status" class="basic_button_purple" onclick="click_action('device_status');"><b><span id="basic_device_status">$menu_device_status</span></b></div>
+	<div id="connections" class="basic_button_purple" onclick="click_action('connections');"><b><span id="basic_connections">$menu_connections</span></b></div>
+	<div id="realtime" class="basic_button_purple" onclick="click_action('realtime');"><b><span id="basic_realtime">$menu_realtime</span></b></div>
+
+	<!-- <% basic_menu_3g()%>
+	<% basic_menu_wifi() %>
+	<div id="attached" class="basic_button" onclick="click_action('attached');"><b><span id="basic_attached">$attach_device</span></b></div>
+	<% basic_menu() %> -->
+</div>
+
+<!--Card starts-->
+<div class="card-nighthawk-app" id="nighthawk_app" style="display:none">
+  <div class="card-nighthawk-app-header">
+    <p> $app_basic_description2</p>
+       <span class="desktop"> <a href="https://www.netgear.com/home/apps-services/nighthawk-app/" target="_blank">$app_basic_description3</a></span> 
+    <span class="store"> <a href="https://itunes.apple.com/us/app/netgear-up/id1124666597" target="_blank">$app_basic_description3</a></span>
+    <span class="app"> <a href="https://play.google.com/store/apps/details?id=com.netgear.netgearup"  target="_blank">$app_basic_description3</a></span> </div>
+        
+  <div class="device-content">
+    <div class="disp-cell"> </div>
+    <div class="disp-cell"><div class="app-icon-nighthawk"></div> <a href="http://nighthawk-app.com" class="mb app-store" target="_blank"></a> <a href="http://nighthawk-app.com" class="google-store" target="_blank"></a></div>
+  </div>
+  <div class="card-nighthawk-app-footer"></div>
+</div>
+<!--Card ends-->
+
+<!--Script--> 
+<script>     
+function getMobileOperatingSystem() {
+  var userAgent = navigator.userAgent || navigator.vendor || window.opera;
+
+      // Windows Phone must come first because its UA also contains "Android"
+    if (/windows phone/i.test(userAgent)) {
+        return "Windows Phone";
+    }
+
+    if (/android/i.test(userAgent)) {
+        return "Android";
+    }
+
+    // iOS detection from: http://stackoverflow.com/a/9039885/177710
+    if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
+        return "iOS";
+    }
+
+    return "unknown";
+}
+    
+var isMobile = getMobileOperatingSystem();
+    if(isMobile== "Android") { 
+/*    	$$(".google-store").show();
+        $$(".app-store").hide();
+        $$('.device-content').addClass('v-middle');*/
+        $$(".app").show();
+        $$(".store").hide();
+        $$(".desktop").hide();
+}
+    if(isMobile== "iOS") { 
+/*        $$(".google-store").hide();
+        $$(".app-store").show();
+	$$('.device-content').addClass('v-middle');*/
+        $$(".app").hide();
+        $$(".store").show();
+        $$(".desktop").hide();
+}    
+</script>
+
+<div id="formframe_div">
+		<iframe name="formframe" id="formframe" allowtransparency="true" height="100%" width="100%" scrolling="auto" frameborder="0" style="display:none;">
+		</iframe>
+		<div id="pls_wait_div" style="background-color:#fff; width:100%; height:100%;overflow:hidden;font-size:10pt;font-family: Arial;">
+			<div align="center"><br /><br /><b>$wizard_pls_wait</b><br /><br /></div>
+			<div align="center"><img id="please_wait" src="image/wait30.gif" /></div>
+		</div>
+</div>
+
+<div id="footer" class="footer">
+	<img class="footer_img" src="image/footer.gif">
+<div id="support">
+	<b> $help_and_support</b> &nbsp;
+	<script>
+		if( is_jp_version == 1)
+			document.write("<a target=\"_blank\" href=\"http://www.netgear.jp/supportInfo/\">$docu_head</a> | <a target=\"_blank\" href=\"https://www.netgear.jp/supportInfo/Contact/\">$online_support</a> | <a target=\"_blank\" href=\"http://www.netgear.jp/supportInfo/\">$router_faq</a> |");
+		else
+			document.write("<a target=\"_blank\" href=\"http://downloadcenter.netgear.com/\">$docu_head</a> | <a target=\"_blank\" href=\"http://support.netgear.com\">$online_support</a> | <a target=\"_blank\" href=\"http://kb.netgear.com/app/answers/detail/a_id/12923\">$router_faq</a> |");
+	</script>
+		<a target="_blank" href="license.htm">GNU GPL</a>
+</div>
+<div id="search" align=right>
+	<b> $search_help </b>
+	<input type="text" name="search" value="$ent_srh_item" onkeypress="detectEnter('num',event);" onFocus="this.value='';" onblur="(this.value=='')?(this.value='$ent_srh_item'):''" />
+	<input id="search_button" class="search_button" type="button" name="dosearch" value="$go_mark" onClick="do_search();">
+</div>
+</div>
+</div>
+</div>
+<!-- Add Armor Avaliable Note -->
+<form id="armorForm" name="armorForm">
+<% refresh_timestamp("armor_jump") %>
+<input type=hidden name=submitType value="armor_jump">
+<input type="hidden" name="hidden_armor_jump" value="0">
+<script>
+var armorts='<% cfg_get("armor_jump") %>';
+var armor_flag = 0;
+</script>
+<div id="modalBox_armor" name="modalBox_armor" class="modal" style="display: none;">
+	<div class="modal-content">
+		<div class="modal-header" style="padding-top:16px">
+			<span id="armor_close" name="armor_close" class="armor-close"><img src="image/armor_close.png" style="width:13px;height:13px;margin:6px"></span>
+			<div class="modalBox-title_armor">$netgear_armor</div>
+			<div class="circle-disney-logo" style="text-align:center"><img src="image/armor_white.png" style="width:90px;height:101px"></div>
+		</div>
+		<div class="modal-body-armor">
+		<script>
+		if(armor_time == "0") {
+			document.write("<p style=\"color:#fff; font-family: Avenir-Medium; font-size: 16px; letter-spacing: -0.53px;\">$armor_str1</p><p style=\"color:#fff; font-family: Avenir-Medium; font-size: 11px; letter-spacing: -0.37px; text-align: center;\">$nh_armor_str2</p>");
+		} else {
+			document.write("<p p style=\"color:#fff; font-family: Avenir-Medium; font-size: 16px; letter-spacing: -0.53px;\">$armor_str1</p><p style=\"color:#fff; font-family: Avenir-Medium; font-size: 11px; letter-spacing: -0.37px; text-align: center;\">$nh_armor_str3</p>");
+		}
+		</script>
+		<div class="modalButton-armor-QR" id="armor_app" name="armor_app"><img src="image/armor_QR.png" style="width:62px;height:62.76px"><p>$scan_nighthawk_app</p></div>
+		<div class="modalButton-armor" id="armor_nvrm" name="armor_nvrm">$never_remind</div>
+		<div class="modalButton-armor-done" id="armor_done" style="display:none"><img src="image/armor_updated.png" style="width:16px; height: 16px; color: #FFFFFF;"> &nbsp;&nbsp;$prefer_update</div>
+		</div>
+	</div>
+</div>
+<script>
+$$("#formframe").load(function(){
+	try{
+		window.onpopstate = function(event) {
+			var path = window.frames["formframe"].document.referrer.toString();
+			var page = get_page(path);
+			
+			if(page != "" && page != "index.htm" && page != "adv_index.htm")
+				window.frames["formframe"].document.location.href = page;
+			else
+				this.location = document.location;
+		};
+		window.history.pushState('forward', null, 'index.htm');
+		window.history.forward(1);
+	}
+	catch(e){
+	}
+});
+$$("#armor_close").click(function(){
+	if(armor_flag == 0 ) {
+		ajax_normal({
+			url: '<% action_url("apply.cgi", "index.htm") %>',
+			type: "POST",
+			data: { "submitType": "armor_jump",
+				"hidden_armor_jump": "0",
+				"anticsrf": armor_jump_token
+			},
+			dataType: 'json',
+			contentType: "application/json; charset=utf-8",
+			success: jump_armor()
+		});
+	} else 
+		jump_armor();
+});
+$$("#armor_nvrm").click(function(){
+	ajax_normal({
+		url: '<% action_url("apply.cgi", "index.htm") %>',
+		type: "POST",
+		data: {	"submitType": "armor_jump",
+			"hidden_armor_jump": "1",
+			"anticsrf": armor_jump_token
+		},
+		dataType: 'json',
+		contentType: "application/json; charset=utf-8",
+		success: armor_done()
+	});
+	armor_flag = 1;
+});
+</script>
+</form>
+</body>
+</html>

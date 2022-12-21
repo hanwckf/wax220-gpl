@@ -1,0 +1,26 @@
+From 2b2507f43e9bed85337511b6b1f63a928c7a66db Mon Sep 17 00:00:00 2001
+From: caojingzhe <caojingzhe@twsh.com>
+Date: Tue, 24 May 2022 15:53:12 +0800
+Subject: [PATCH] 2
+
+---
+ .../target-aarch64_cortex-a53_musl/iwpriv.c          | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/iwpriv.c b/iwpriv.c
+index 4172fe2c..3a439efd 100644
+--- a/iwpriv.c
++++ b/iwpriv.c
+@@ -259,7 +259,8 @@ set_private_cmd(int		skfd,		/* Socket */
+ 		int		priv_num)	/* Number of descriptions */
+ {
+   struct iwreq	wrq;
+-  u_char	buffer[4096];	/* Only that big in v25 and later */
++  //u_char	buffer[4096];	/* Only that big in v25 and later */
++  u_char	buffer[IW_SCAN_MAX_DATA];	/* this buffer size for get_site_survey length */
+   int		i = 0;		/* Start with first command arg */
+   int		k;		/* Index in private description table */
+   int		temp;
+-- 
+2.13.1
+

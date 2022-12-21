@@ -1,0 +1,7 @@
+conninfra.ko
+libc.so
+libgcc_s.so.1
+mt_wifi.ko
+mtk_warp.ko
+mtk_warp_proxy.ko
+mtkhnat.ko

@@ -1,0 +1,31 @@
+From af768edcf0ac07c7280dc8661e50f66c84d54e7a Mon Sep 17 00:00:00 2001
+From: caojingzhe <caojingzhe@twsh.com>
+Date: Wed, 31 Aug 2022 10:57:20 +0800
+Subject: [PATCH] 222
+
+---
+ .../mt_wifi/mt_wifi/embedded/ap/ap_autoChSel.c                      | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/mt_wifi/embedded/ap/ap_autoChSel.c b/mt_wifi/embedded/ap/ap_autoChSel.c
+index 0ac1b06b7..cb5bd4393 100755
+--- a/mt_wifi/embedded/ap/ap_autoChSel.c
++++ b/mt_wifi/embedded/ap/ap_autoChSel.c
+@@ -67,10 +67,12 @@ static inline INT Get56GBandChOffset(
+ #ifdef A_BAND_SUPPORT
+ 
+ 		if ((Channel == 36) || (Channel == 44) || (Channel == 52) || (Channel == 60) || (Channel == 100) || (Channel == 108) ||
+-			(Channel == 116) || (Channel == 124) || (Channel == 132) || (Channel == 149) || (Channel == 157))
++			(Channel == 116) || (Channel == 124) || (Channel == 132) || (Channel == 140) || (Channel == 149) || (Channel == 157) ||
++			(Channel == 165) || (Channel == 173))
+ 			return 1;
+ 		else if ((Channel == 40) || (Channel == 48) || (Channel == 56) || (Channel == 64) || (Channel == 104) || (Channel == 112) ||
+-				 (Channel == 120) || (Channel == 128) || (Channel == 136) || (Channel == 153) || (Channel == 161))
++				 (Channel == 120) || (Channel == 128) || (Channel == 136) || (Channel == 144) || (Channel == 153) || (Channel == 161) ||
++				 (Channel == 169) || (Channel == 177))
+ 			return -1;
+ 
+ #endif /* A_BAND_SUPPORT */
+-- 
+2.13.1
+

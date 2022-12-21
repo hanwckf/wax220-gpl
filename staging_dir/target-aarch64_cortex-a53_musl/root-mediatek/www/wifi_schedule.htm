@@ -1,0 +1,143 @@
+<% http_header("style/cascade.css", "style/cascade2.css", "style/cascade-custom.css", "script/jquery-1.12.4.min.js", "script/cbi.js", "script/common.js", "script/md5.js", "script/xhr.js", "script/wifi_schedule.js") %>
+<body onLoad="please_wait(false);">
+<!--
+<% local uci = luci.model.uci.cursor() %>
+<%+header%>
+<% if uci:get('functionlist','functionlist','SUPPORT_MYID') == '1' then %>
+<%+myid%>
+<% end %>-->
+<style>
+	input[type='radio']{
+		margin-right: 3px;
+	}
+	input[type='checkbox']{
+		margin-right: 9px;
+	}
+	input[name^='day_']{
+		width:30px;
+	}
+</style>
+<!--<%
+		local uci = require "luci.model.uci".cursor()
+		local opmode_24g, opmode_5g, opmode_5g_2
+		opmode_24g = uci:get("wireless", "wifi0", "opmode") or "none"
+		opmode_5g = uci:get("wireless", "wifi1", "opmode") or "none"
+		opmode_5g_2 = uci:get("wireless", "wifi2", "opmode") or "none"
+		enjet1_en = uci:get("wireless", "wifi1", "qboost_enable") or 0
+		radioNum = 0
+%>-->
+
+<form name="form" id="wifi_schedule_form" method="post">
+<fieldset class="cbi-section">
+	<table>
+		<tr>
+			<td colspan="2" class="title">$auto_reboot_setting</td>
+		</tr>
+		<tr class="title-option">
+			<td style="width:20%;"><label for="power_RB_enable">$status</label></td>
+			<td>
+				<input type="radio" name="power_en" id="power_RB_enable" value="1" onclick="auto_reboot()"/>
+				<label for="power_RB_enable">$enable</label>&nbsp;&nbsp;
+				<input type="radio" name="power_en" id="power_RB_disable" value="0" onclick="auto_reboot()" checked/>
+				<label for="power_RB_disable">$disable</label>
+			</td>
+		</tr>
+		<tr class="title-option">
+			<td style="width:20%;">$timer</td>
+			<td>
+				<input value="0" name="auto_reboot_day" id='sunday' type="checkbox" onclick="auto_reboot()"/>$sunday
+				<input value="1" name="auto_reboot_day" id='monday' type="checkbox" onclick="auto_reboot()"/>$monday
+				<input value="2" name="auto_reboot_day" id='tuesday' type="checkbox" onclick="auto_reboot()"/>$tuesday
+				<input value="3" name="auto_reboot_day" id='wednesday' type="checkbox" onclick="auto_reboot()"/>$wednesday
+				<input value="4" name="auto_reboot_day" id='thursday' type="checkbox" onclick="auto_reboot()"/>$thursday
+				<input value="5" name="auto_reboot_day" id='friday' type="checkbox" onclick="auto_reboot()"/>$friday
+				<input value="6" name="auto_reboot_day" id='saturday' type="checkbox" onclick="auto_reboot()"/>$saturday
+			</td>
+		</tr>
+		<tr class="title-option">
+			<td style="width:20%;"></td>
+			<td>
+				<input value="0" name="auto_reboot_hour" size="5" style="width:100px;" type="text"/> :
+				<input value="0" name="auto_reboot_minute" size="5" style="width:100px;" type="text"/> $hour_24
+			</td>
+		</tr>
+	</table>
+</fieldset>
+
+<!--<% if hideSch == "1" then %>
+<fieldset class="cbi-section" style="display: none">
+<% else %>-->
+<fieldset class="cbi-section">
+<!--<% end %>-->
+	<table>
+		<tr>
+			<td colspan="2" class="title">$wifi_scheduler</td>
+		</tr>
+		<tr class="title-option">
+			<td style="width:20%;">$status</td>
+			<td style="line-height: 18px;">
+				<input type="radio" name="schedule_en" value="1" id="schedule_enable" onclick="schedule.status()"/><label for="schedule_enable">$enable</label>
+				&nbsp;&nbsp;
+				<input type="radio" name="schedule_en" value="0" id="schedule_disable" onclick="schedule.status()" checked/><label for="schedule_disable">$disable</label>
+				<br/>
+				<span style="color: red;">$note:</span>$wifi_scheduler_note1
+			</td>
+		</tr>
+<% if uci:get('functionlist','functionlist','SUPPORT_COMBINED_SSID_SETTING') ~= '1' then %>
+		<tr class="title-option" <% if uci:get('functionlist','functionlist','SUPPORT_WIFI_SCH_ALL') == "1" then %> style="display: none" <% end %> >
+			<td style="width:20%;">$wireless_radio</td>
+			<td>
+				<select name="wifi_schedule_radio" id="wifi_schedule_radio" onchange="schedule.ssidOption()">
+<% if uci:get('functionlist','functionlist','SUPPORT_WLAN24G') == '1' then %>
+					<option value="0">2.4GHz</option>
+<% end %>
+<% if uci:get('functionlist','functionlist','SUPPORT_WLAN5G') == '1' then %>
+					<option value="1">5GHz</option>
+<% end %>
+				</select>
+			</td>
+		</tr>
+<% end %>
+		<tr class="title-option" >
+			<td style="width:20%;">$ssid_selection</td>
+			<td id="wifi_schedule_ssid"></td>
+		</tr>
+		<tr class="title-option">
+			<td style="width:20%;">$schedule_templates</td>
+			<td>
+				<select name="wifi_schedule_templates" id="wifi_schedule_templates" onchange="schedule.templateInvoke(this.value)">
+					<option value="0">$choose_template</option>
+					<option value="1">$always_available</option>
+					<option value="2">$available_8_to_17_daily</option>
+					<option value="3">$available_8_to_17_daily_except_weekends</option>
+					<option value="4">$custom_schedule</option>
+				</select>
+			</td>
+		</tr>
+	</table>
+	<table>
+		<tr class="title-option">
+			<td style="width:20%;" rowspan="9">$schedule_table</td>
+		</tr>
+		<tr>
+			<td class="title" style="width:15%">$day</td>
+			<td class="title" style="width:25%">$available</td>
+			<td class="title" style="width:60%">$duration</td>
+		</tr>
+		<script>
+			schedule.showDay();
+		</script>
+	</table>
+</fieldset>
+<br>
+<div class="cbi-page-actions">
+	<input type="hidden" id="submitType" name="submitType" value="wifi_schedule_edit"/>
+	<input type="hidden" name="anticsrf" value='<% generateToken("wifi_schedule_edit") %>'>
+<!--<%if luci.model.uci.cursor():get('functionlist','functionlist','HAS_ALL_APPLY') == '1' then%>
+	<input class="cbi-button cbi-button-save" onclick="return savechanges('1')" type="submit" value="$apply" name="cbi.apply" myid="button_save" class="cbi-button cbi-button-apply" >&nbsp;<span class="btn_desc">$apply_saved_settings_to_take_effect</span>
+<%else%>-->	
+	<input class="cbi-button cbi-button-save" onclick="return savechanges('0')" type="submit" value="$apply" myid="button_save" class="cbi-button cbi-button-save">&nbsp;<span class="btn_desc">$apply_saved_settings_to_take_effect</span>
+<!--<%end%>	
+</div>
+</form>
+</body>

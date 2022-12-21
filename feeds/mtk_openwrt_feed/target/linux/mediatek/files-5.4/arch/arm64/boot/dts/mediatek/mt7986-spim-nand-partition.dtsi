@@ -1,0 +1,93 @@
+/ {
+	nmbm_spim_nand {
+		compatible = "generic,nmbm";
+
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		lower-mtd-device = <&spi_nand>;
+		forced-create;
+
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			partition@0 {
+				label = "BL2";
+				reg = <0x00000 0x0100000>;
+				read-only;
+			};
+
+			partition@100000 {
+				label = "u-boot-env";
+				reg = <0x0100000 0x0080000>;
+			};
+
+			factory: partition@180000 {
+				label = "Factory";
+				reg = <0x180000 0x0200000>;
+			};
+
+			partition@380000 {
+				label = "FIP";
+				reg = <0x380000 0x0200000>;
+			};
+
+			partition@580000 {
+				label = "ubi";
+				reg = <0x580000 0x3d40000>;
+			};
+
+			partition@42c0000 {
+				label = "CFG";
+				reg = <0x42c0000 0x0400000>;
+			};
+
+			partition@46c0000 {
+				label = "RAE";
+				reg = <0x46c0000 0x0400000>;
+			};
+
+			partition@4ac0000 {
+				label = "POT";
+				reg = <0x4ac0000 0x0100000>;
+			};
+
+			partition@4bc0000 {
+				label = "Language";
+				reg = <0x4bc0000 0x0400000>;
+			};
+
+			partition@4fc0000 {
+				label = "Traffic";
+				reg = <0x4fc0000 0x0200000>;
+			};
+
+			partition@51c0000 {
+				label = "Cert";
+				reg = <0x51c0000 0x0100000>;
+			};
+
+			partition@52c0000 {
+				label = "NTGRcryptK";
+				reg = <0x52c0000 0x0100000>;
+			};
+
+			partition@53c0000 {
+				label = "NTGRcryptD";
+				reg = <0x53c0000 0x0500000>;
+			};
+
+			partition@58c0000 {
+				label = "LOG";
+				reg = <0x58c0000 0x0100000>;
+			};
+
+			partition@59c0000 {
+				label = "User_data";
+				reg = <0x59c0000 0x1640000>;
+			};
+		};
+	};
+};

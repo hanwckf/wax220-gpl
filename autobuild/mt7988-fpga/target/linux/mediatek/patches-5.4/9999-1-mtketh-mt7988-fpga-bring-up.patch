@@ -1,0 +1,81 @@
+diff --git a/drivers/net/ethernet/mediatek/mtk_eth_dbg.c b/drivers/net/ethernet/mediatek/mtk_eth_dbg.c
+index 4c5918f7..ece1a17c 100644
+--- a/drivers/net/ethernet/mediatek/mtk_eth_dbg.c
++++ b/drivers/net/ethernet/mediatek/mtk_eth_dbg.c
+@@ -28,6 +28,8 @@
+ #include "mtk_eth_soc.h"
+ #include "mtk_eth_dbg.h"
+ 
++#define MT7988_FPGA 1
++
+ u32 hw_lro_agg_num_cnt[MTK_HW_LRO_RING_NUM][MTK_HW_LRO_MAX_AGG_CNT + 1];
+ u32 hw_lro_agg_size_cnt[MTK_HW_LRO_RING_NUM][16];
+ u32 hw_lro_tot_agg_cnt[MTK_HW_LRO_RING_NUM];
+@@ -824,6 +826,7 @@ int dbg_regs_read(struct seq_file *seq, void *v)
+ 			   mtk_r32(eth, MTK_FE_GDM1_FSM));
+ 		seq_printf(seq, "| FE_GDM2_FSM	: %08x |\n",
+ 			   mtk_r32(eth, MTK_FE_GDM2_FSM));
++#if !defined(MT7988_FPGA)
+ 		seq_printf(seq, "| SGMII_EFUSE	: %08x |\n",
+ 			   mtk_dbg_r32(MTK_SGMII_EFUSE));
+ 		seq_printf(seq, "| SGMII0_RX_CNT : %08x |\n",
+@@ -832,6 +835,7 @@ int dbg_regs_read(struct seq_file *seq, void *v)
+ 			   mtk_dbg_r32(MTK_SGMII_FALSE_CARRIER_CNT(1)));
+ 		seq_printf(seq, "| WED_RTQM_GLO	: %08x |\n",
+ 			   mtk_dbg_r32(MTK_WED_RTQM_GLO_CFG));
++#endif
+ 	}
+ 
+ 	mtk_w32(eth, 0xffffffff, MTK_INT_STATUS);
+diff --git a/drivers/net/ethernet/mediatek/mtk_eth_soc.c b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
+index 51c1b833..2a93ea8d 100644
+--- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
++++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
+@@ -28,6 +28,8 @@
+ #include "mtk_hnat/nf_hnat_mtk.h"
+ #endif
+ 
++#define MT7988_FPGA 1
++
+ static int mtk_msg_level = -1;
+ module_param_named(msg_level, mtk_msg_level, int, 0);
+ MODULE_PARM_DESC(msg_level, "Message level (-1=defaults,0=none,...,16=all)");
+@@ -2377,8 +2379,10 @@ static int mtk_dma_busy_wait(struct mtk_eth *eth)
+ 				return 0;
+ 		}
+ 
++#if !defined(MT7988_FPGA)
+ 		if (time_after(jiffies, t_start + MTK_DMA_BUSY_TIMEOUT))
+ 			break;
++#endif
+ 	}
+ 
+ 	dev_err(eth->dev, "DMA init timeout\n");
+@@ -2821,9 +2825,11 @@ static int mtk_hw_init(struct mtk_eth *eth)
+ 	pm_runtime_enable(eth->dev);
+ 	pm_runtime_get_sync(eth->dev);
+ 
++#if !defined(MT7988_FPGA)
+ 	ret = mtk_clk_enable(eth);
+ 	if (ret)
+ 		goto err_disable_pm;
++#endif
+ 
+ 	if (MTK_HAS_CAPS(eth->soc->caps, MTK_SOC_MT7628)) {
+ 		ret = device_reset(eth->dev);
+@@ -3496,6 +3502,7 @@ static int mtk_probe(struct platform_device *pdev)
+ 			return -ENXIO;
+ 		}
+ 	}
++#if !defined(MT7988_FPGA)
+ 	for (i = 0; i < ARRAY_SIZE(eth->clks); i++) {
+ 		eth->clks[i] = devm_clk_get(eth->dev,
+ 					    mtk_clks_source_name[i]);
+@@ -3511,6 +3518,7 @@ static int mtk_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
++#endif
+ 	eth->msg_enable = netif_msg_init(mtk_msg_level, MTK_DEFAULT_MSG_ENABLE);
+ 	INIT_WORK(&eth->pending_work, mtk_pending_work);
+ 

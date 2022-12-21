@@ -1,0 +1,28 @@
+--- a/networking/ntpd.c
++++ b/networking/ntpd.c
+@@ -243,6 +243,7 @@
+ 
+ #define MAX_KEY_NUMBER  65535
+ #define KEYID_SIZE      sizeof(uint32_t)
++#define UBUS_NTPD_SYNC_MSG_SYNSUCC_STR "ubus send ntpd_sync_message '{\"messagetype\":\"sysTimeSync\", \"info\":\"\"}'"
+ 
+ enum {
+ 	NTP_VERSION     = 4,
+@@ -1547,11 +1548,17 @@
+ 	 * of the last clock filter sample, which must be earlier than
+ 	 * the current time.
+ 	 */
++	int ret = 0;
+ 	VERB4 bb_error_msg("disc_state=%d last update offset=%f recv_time=%f",
+ 			disc_state, offset, recv_time);
+ 	G.discipline_state = disc_state;
+ 	G.last_update_offset = offset;
+ 	G.last_update_recv_time = recv_time;
++	ret = system(UBUS_NTPD_SYNC_MSG_SYNSUCC_STR);
++	if (ret != 0)
++	{
++	    bb_error_msg("ntpd send ubus msg sync error ret(%d)", ret);
++	}
+ }
+ /* Return: -1: decrease poll interval, 0: leave as is, 1: increase */
+ static NOINLINE int

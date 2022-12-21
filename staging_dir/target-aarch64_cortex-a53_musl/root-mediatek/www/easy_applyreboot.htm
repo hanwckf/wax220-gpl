@@ -1,0 +1,69 @@
+<%#
+LuCI - Lua Configuration Interface
+Copyright 2008 Steven Barth <steven@midlink.org>
+Copyright 2008 Jo-Philipp Wich <xm@leipzig.freifunk.net>
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+	http://www.apache.org/licenses/LICENSE-2.0
+
+$Id: applyreboot.htm 8847 2012-07-01 20:05:05Z dgolle $
+
+-%>
+
+<html>
+	<head>
+		<title><%=luci.sys.hostname()%></title>
+		<link rel="stylesheet" type="text/css" media="screen" href="<%=media%>/cascade.css" />
+		<link rel="stylesheet" type="text/css" media="screen" href="<%=media%>/cascade-custom.css" />
+		<script type="text/javascript" src="<%=resource%>/xhr.js"></script>
+		<script type="text/javascript" src="/luci-static/resources/cbi.js"></script>
+		<script type="text/javascript">//<![CDATA[
+		var myinterval, target = 'http://<%=addr or luci.http.getenv("SERVER_NAME")%>/';
+		var t = "<% if countdown then %><%=countdown%><% else %>60<% end %>";
+		myinterval = setInterval("a()", 1000);
+		function a()
+		{
+			if(t == 0)
+			{
+				window.clearInterval(myinterval);
+				location.href = target;
+			}
+			document.getElementById("countdownString").innerHTML = String.format("<%:Please wait for %s %d %s secs. System is rebooting.%>", "<span style='color:darkred;'>", t, "</span>");
+			t -= 1;
+		}
+			var interval = window.setInterval(function() {
+				var img = new Image();
+
+				img.onload = function() {
+					window.clearInterval(interval);
+					
+					//document.getElementById('redirectToLogin').innerHTML='<a href="'+target+'"><%:Click here, the device is ready.%></a>';
+					location.href = 'http://<%=addr or luci.http.getenv("SERVER_NAME")%>/';
+				};
+
+				img.src = 'http://<%=addr or luci.http.getenv("SERVER_NAME")%><%=resource%>/icons/loading.gif?' + Math.random();
+			}, <% if delay then %><%=delay%><% else %>5000<% end %>);
+		//]]></script>
+	</head>
+	<body>
+		<div id="maincontainer">
+			<div id="maincontent">
+				<h2><a id="content" name="content"><%:System%> - <% if title then %><%=title%><% else %><%:Rebooting...%><% end %></a></h2>
+				<fieldset class="cbi-section">
+					<p id="countdownString"></p>
+					<p>
+						<% if msg then %><%=msg%><% else %><%:Changes applied.%><% end %>
+					</p>
+					<p>
+						<img src="<%=resource%>/icons/loading.gif" alt="<%:Loading%>" style="vertical-align:middle" />
+						<%:Waiting for changes to be applied...%>
+					</p>
+					<p id="redirectToLogin"></p>
+				</fieldset>
+			</div>
+		</div>
+	</body>
+</html>

@@ -1,0 +1,18 @@
+#!/bin/sh /etc/rc.common
+
+START=68
+USE_PROCD=1
+
+start_service() {
+	local model
+	model=$(uci get system.@system[0].model  2>/dev/null)
+
+	if [ "x$model" = "x" ]; then
+		model="WAX206"
+	fi
+
+	procd_open_instance
+	procd_set_param command /usr/sbin/ssk -t $model
+	procd_set_param respawn
+	procd_close_instance
+}

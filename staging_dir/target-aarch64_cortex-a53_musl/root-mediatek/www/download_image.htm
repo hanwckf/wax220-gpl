@@ -1,0 +1,67 @@
+<% http_header("style/cascade2.css", "style/cascade-custom.css", "style/form.css", "script/cbi.js", "script/jquery-1.12.4.min.js", "script/common.js") %>
+
+<body onLoad="please_wait(false);">
+	<fieldset class="cbi-section">
+		<form method="post" id="fw_up">
+			<table>
+				<tr>
+					<td class="title">$wait_upg_head</td>
+				</tr>
+				<tr>
+                    <td><br/><br/><progress id="download_percent" class="prgbar3" style="height:30px; width:100%;" value="0" max="100"><br/></progress></td>
+				</tr>
+				<tr>
+					<td style="width: 35%;" colspan="2"><br/>$downloading_ver $wizard_pls_wait<br/><br/></td>
+				</tr>
+				<tr>
+					<td nowrap colspan=2 align=center>
+						<script>
+							function cancel_download_image()
+							{
+							    var url, data = 0;
+							    url = '<% action_url("func.cgi", "download_image.htm") %>';
+							    data = {anticsrf:'<% generateToken("cancel_image") %>', submitType:"cancel_image"};
+							    ajax_normal({
+							        async: false,
+							        type : "POST",
+							        url:url,
+							        data:data,
+							        success: function() {
+							        }
+							    });
+								getTop(window).location.href="index.htm";
+							}
+							document.write("<br/>"+"<input type='button' class='cbi-button' name='cancel_down' value='Cancel' onclick='cancel_download_image();'>");
+						</script>
+					</td>
+				</tr>
+				
+				<script>
+				    var percent;
+					var timer = setInterval(function () {
+						var url, data;
+					    url = '<% action_url("apply.cgi", "download_image.htm") %>';
+					    data = {anticsrf:'<% generateToken("online_image_status") %>', submitType:"online_image_status"};
+					    ajax_normal({
+					        async: false,
+					        type : "POST",
+					        url  : url,
+					        data : data,
+					        dataType: "JSON",
+					        error:function(){},
+					        success:function(result){
+	                            document.getElementById("download_percent").value = result.percent;
+								percent = result.percent;
+					        }
+					    });
+						if (percent >= 100) {
+							clearInterval(timer);
+							document.location.href="upgrade_checking_image.htm";
+						}
+				    }, 1000)
+				</script>
+			</table>
+		</form>
+		<br/>
+	</fieldset>
+</body>

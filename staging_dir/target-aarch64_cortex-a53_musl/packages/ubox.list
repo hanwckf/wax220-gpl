@@ -1,0 +1,13 @@
+./
+./host
+./usr
+./usr/bin
+./usr/bin/getrandom
+./usr/sbin
+./usr/sbin/kmodloader
+./usr/sbin/lsbloader
+./usr/sbin/validate_data
+./usr/sbin/logd
+./usr/sbin/logread
+./usr/lib
+./usr/lib/libvalidate.so

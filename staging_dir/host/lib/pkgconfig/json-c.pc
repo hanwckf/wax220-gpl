@@ -1,0 +1,12 @@
+prefix=/home2/caojingzhe/mtk7986_openwrt2/opt2102/staging_dir/host
+exec_prefix=/home2/caojingzhe/mtk7986_openwrt2/opt2102/staging_dir/host
+libdir=/home2/caojingzhe/mtk7986_openwrt2/opt2102/staging_dir/host/lib
+includedir=/home2/caojingzhe/mtk7986_openwrt2/opt2102/staging_dir/host/include
+
+Name: json-c
+Description: A JSON implementation in C
+Version: 0.15
+Requires:
+Libs.private: 
+Libs: -L${libdir} -ljson-c
+Cflags: -I${includedir} -I${includedir}/json-c

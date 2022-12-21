@@ -1,0 +1,113 @@
+<%+header%>
+<%
+local uci = require("luci.model.uci").cursor()
+local disp = require "luci.dispatcher"
+%>
+
+<%+cbi/apply_xhr%>
+<%+admin_uci/changelog%>
+<%- cbi_apply_xhr('uci-apply', configs, 'wizard_meshlist') -%>
+
+<script>
+if ("<%=menu%>"==0)
+	document.getElementById('menu_right_style').style.display = "none";
+$("#maincontent").removeClass();
+$("#maincontent").css('margin','auto');
+$("#maincontent").css('padding-top','30px');
+$("#maincontent").css('padding-bottom','50px');
+$("#maincontent").css('width','80%');
+
+var myinterval;
+var t = "<% if countdown then %><%=countdown%><% else %>60<% end %>";
+myinterval = setInterval("connect_checking()", 1000);
+var connectedNode;
+
+function refreshLog()
+{
+	var url, container, data ;
+	var meshlist, maclist = "";
+	var mac, i, j, k, batctl_mac, strength;
+	var match = 0;
+	var obj, jsonlist;
+	url = '<%=luci.dispatcher.build_url("admin/network/ajax_getMeshList")%>';
+
+	ajax_normal({
+		async: false,
+		type : "GET",
+		url:url,
+		dataType:"json",
+		error:function(){
+		},
+		success:function(result){
+			if(result[0].meshData!="")
+			{
+				result[0].meshData=result[0].meshData.replace(/\\/g, '');
+				result[0].meshData=result[0].meshData.replace(/u0022/g, '"');
+				result[0].meshData=result[0].meshData.replace(/},{/g, '},\n{');
+				meshlist = result[0].meshData ;
+				maclist = result[0].macData ;
+			}
+		}
+	});
+
+	if(maclist != "")
+	{
+		macdata = maclist.split("\n");
+		meshdata = meshlist.split("\n");
+
+		if(macdata=="No batman nodes in range ...")
+			connectedNode = 0;
+		else
+			connectedNode = macdata.length;
+	}
+}
+
+function connect_checking()
+{
+	if(t == 0)
+	{
+		window.clearInterval(myinterval);
+		refreshLog();
+		if(connectedNode==0)
+		{
+			if ("<%=menu%>"==0)
+				location.href = '<%=luci.dispatcher.build_url("admin/network/wizard_mesh").."?menu=0"%>';
+			else
+				location.href = '<%=luci.dispatcher.build_url("admin/network/wizard_mesh").."?menu=1"%>';
+		}
+		else
+		{
+			if ("<%=menu%>"==0)
+				location.href = '<%=luci.dispatcher.build_url("admin/network/wizard_meshlist").."?menu=0"%>';
+			else
+				location.href = '<%=luci.dispatcher.build_url("admin/network/wizard_meshlist").."?menu=1"%>';
+		}
+	}
+	document.getElementById("countdownString").innerHTML = String.format("Checking the Mesh connection.....wait %d seconds.", t);
+	t -= 1;
+}
+
+function copyto()
+{
+
+}
+</script>
+
+<body onLoad="copyto();">
+<form name="wizard_connecting" action="<%=REQUEST_URI%>" method="post">
+<div id="start_wizard" style="padding-left:20px;padding-right:20px">
+	<div id="mesh_connecting">
+		<table>
+			<tr ><td>&nbsp;</td></tr>
+			<tr style="height: 8px;font-size: 22px;color: #000000;vertical-align: middle;background-color:#ffffff">
+				<td style="text-align:center;">
+					<p id="countdownString"></p><br><br>
+					<img src="<%=media%>/pictures/connect-cheking.gif" height="300">
+				</td>
+			</tr>
+		</table>
+	</div>
+</div>
+</form>
+</body>
+<%+footer%>

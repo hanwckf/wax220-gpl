@@ -1,0 +1,55 @@
+From bd718443059055ca7c9280aabc691413d6be05b0 Mon Sep 17 00:00:00 2001
+From: caojingzhe <caojingzhe@twsh.com>
+Date: Wed, 20 Jul 2022 14:19:40 +0800
+Subject: [PATCH] 2
+
+---
+ .../target-aarch64_cortex-a53_musl/wappd/dhcp_ctl/dhcp_ctl.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/dhcp_ctl/dhcp_ctl.c b/dhcp_ctl/dhcp_ctl.c
+index 72dcbc7fd..1bc23e307 100755
+--- a/dhcp_ctl/dhcp_ctl.c
++++ b/dhcp_ctl/dhcp_ctl.c
+@@ -128,14 +128,14 @@ int get_bridge_ip(char* br_name, char *ip_buf)
+ static int get_br_defalut_ip (char *ip_buf)
+ {
+ 	FILE *fp;
+-	char command [100] = {0};
++	char command [200] = {0};
+ 
+ 	if (NULL == ip_buf) {
+ 		DBGPRINT(RT_DEBUG_ERROR, "[%s],INPUT parameter ip_buf is NULL!\n\n", __func__);
+ 		return -1;
+ 	}
+ 
+-	if (sprintf(command, "uci -q get network.lan.ipaddr > /tmp/temp_file_br_ip") < 0)
++	if (sprintf(command, "ubus call network.interface.lan status | grep \"\\\"address\\\"\" | grep -oE '[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}' | awk 'NR==1' > /tmp/temp_file_br_ip") < 0)
+ 		DBGPRINT(RT_DEBUG_ERROR, "ipaddr not found!\n");
+ 	system(command);
+ 	DBGPRINT(RT_DEBUG_TRACE,"command: %s\n",command);
+@@ -184,8 +184,8 @@ int set_br_default_ip(char *br_name){
+ 	memset (cmd, 0, sizeof(cmd));
+ 
+ 	if (get_br_defalut_ip(br_ip_str) != 0) {
+-		DBGPRINT(RT_DEBUG_OFF, "Set Default ip: 192.168.1.1\n");
+-		memcpy(br_ip_str, "192.168.1.1", strlen("192.168.1.1"));
++		DBGPRINT(RT_DEBUG_OFF, "Set Default ip: 192.168.0.100\n");
++		memcpy(br_ip_str, "192.168.0.100", strlen("192.168.0.100"));
+ 	}
+ 
+ 	ret = os_snprintf(cmd, sizeof(cmd), "ifconfig %s %s up;", br_name, br_ip_str);
+@@ -329,8 +329,8 @@ int enable_dhcp_server(char *br_name){
+ 	disable_dhcp_client(br_name);
+ 	disable_dhcp_server();
+ 	if (0 != get_br_defalut_ip(br_ip_str)){
+-		DBGPRINT(RT_DEBUG_OFF, "Set Default ip: 192.168.1.1\n");
+-		memcpy(br_ip_str,"192.168.1.1",strlen("192.168.1.1"));
++		DBGPRINT(RT_DEBUG_OFF, "Set Default ip: 192.168.0.100\n");
++		memcpy(br_ip_str,"192.168.0.100",strlen("192.168.0.100"));
+ 	}
+ 
+ 	ret = os_snprintf(cmd, sizeof(cmd), "ifconfig %s %s up; uci set dhcp.lan.ignore=\"\"; uci commit; /etc/init.d/dnsmasq reload",
+-- 
+2.13.1
+

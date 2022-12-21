@@ -1,0 +1,449 @@
+
+<html>
+
+    <style>
+    .cbi-button[disabled] {
+        background-color: #f5f5f5;
+        border-color: #DDDDDD;
+        opacity: 0.65;
+    }
+    .cbi-button{
+        margin-top:10px;
+        width:200px !important;
+    }
+    .button-selected{
+        margin-top:10px;
+        -moz-border-bottom-colors: none;
+        -moz-border-image: none;
+        -moz-border-left-colors: none;
+        -moz-border-right-colors: none;
+        -moz-border-top-colors: none;
+        background-repeat: no-repeat;
+        background-color: #CDCDCD;
+        border-color: #CCCCCC #CCCCCC #BBBBBB;
+        border-radius: 4px 4px 4px 4px;
+        border-style: solid;
+        border-width: 1px;
+        box-shadow: 0 1px 0 rgba(255, 255, 255, 0.2) inset, 0 1px 2px rgba(0, 0, 0, 0.05);
+        color: #333333;
+        cursor: pointer;
+        display: inline-block;
+        font-size: 16px;
+        line-height: normal;
+        padding: 5px 14px 6px;
+        text-shadow: 0 1px 1px rgba(255, 255, 255, 0.75);
+        width:200px !important; 
+        height: auto;
+    }
+    
+    .circle{
+        width:100px;
+        height:100px;
+        border-radius:50px;
+        font-size:20px;
+        color:#FFF;
+        line-height:100px;
+        text-align:center;
+        background:#FFF;
+        cursor: pointer;
+    }
+    
+    .circleSelected{
+        padding-top:-4px; 
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: #fff;
+        border: 4px solid #9e9e9e;
+        box-shadow: 0 0 0 1px #fff;
+        margin: -4px -4px;
+    }
+    
+    .circleNoCursor{
+        width:100px;
+        height:100px;
+        border-radius:50px;
+        font-size:20px;
+        color:#FFF;
+        line-height:100px;
+        text-align:center;
+        background:#FFF;
+    }
+    
+    .tbl-name {
+        border-bottom: 1px solid #EEEEEE;
+        color: #000000;
+        font-size: 16px;
+        height: 27px;
+    }
+    
+    #wifi0.progressBar {
+      width: 100%;
+      background-color: #DDDDDD;
+    }
+    #wifi0.progress {
+      width: 1%;
+      height: 30px;
+      background-color: #4CAF50;
+    }
+    </style>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="style/cascade.css">
+    <link rel="stylesheet" href="style/cascade-custom.css">
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="script/jquery-1.12.4.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script src="script/common.js"></script>
+    <script type="text/javascript" src="script/cbi.js"></script>
+    <script>
+    
+    function isFloat(n)
+    {
+        return n % 1 !== 0;
+    }
+    
+    var rate_tbl =   [1,2,5.5,6,9,11,12,18,24,36,48,54];
+    var rate_tbl2 = [2,4,11,12,18,22,24,36,48,72,96,108];
+    var percent_tbl = [];
+    var i = 0 ;
+    for ( i = 0 ; i < rate_tbl.length ; i++ )
+    {
+        percent_tbl[i] = 100 * (rate_tbl[i]-rate_tbl[0]) / (rate_tbl[rate_tbl.length-1]-rate_tbl[0]);
+    }
+    for ( i = 1 ; i < percent_tbl.length ; i++ )
+    {
+        if ( ( percent_tbl[i] - percent_tbl[i-1] ) < 1 && isFloat(rate_tbl[i-1]) )
+            percent_tbl[i] = percent_tbl[i-1] + 2;
+    
+    }
+    
+    function initDots(device)
+    {
+        var i = 0;
+        var $$element = document.getElementById(device+".progressBar");
+        var rect = $$element.getBoundingClientRect();
+    
+        var $$dotDiv ;
+        for ( i = 0 ; i < percent_tbl.length - 1 ; i++ )
+        {
+            var dotId = device+".dot."+i;
+            $$dotDiv = $$("<div class='circle' id='"+dotId+"' name='"+dotId+"'></div>");
+            $$dotDiv.css({
+                //background: '#FFFFFF', 
+                position: 'absolute',
+                left: rect.left+(rect.right-rect.left)*percent_tbl[i]/100+2,
+                top: rect.top+2, 
+                width: '6',
+                height: '6'
+            });
+            $$("[name$$='"+device+".progressBar']").append($$dotDiv);
+            $$dotDiv.css("zIndex",0);
+            $$dotDiv.addClass('alpha');
+            $$dotDiv.attr('value',rate_tbl[i]);
+            $$dotDiv.attr('thisDot',false);
+            if ( (device != "wifi0" && ( i < 3 || i == 5 )) || i == 9 || i == 10 )
+                $$dotDiv.css("display","none");
+        }
+        i = percent_tbl.length - 1 ;
+        var dotId = device+".dot."+i;
+        $$dotDiv = $$("<div class='circle' id='"+dotId+"' name='"+dotId+"'></div>");
+        $$dotDiv.css({
+            //background: '#FFFFFF', 
+            position: 'absolute',
+            left: rect.right-10,
+            top: rect.top+2, 
+            width: '6',
+            height: '6'
+        });
+        $$("[name$$='"+device+".progressBar']").append($$dotDiv);
+        $$dotDiv.css("zIndex",0);
+        $$dotDiv.addClass('alpha');
+        $$dotDiv.attr('value',rate_tbl[i]);
+        $$dotDiv.attr('thisDot',false);
+        $$dotDiv.css("display","none");
+    }
+    
+    var opmode = {
+        opmode_2G:window.opener.$$('select[name$$="wifi0.opmode"]').val(),
+        opmode_5G:window.opener.$$('select[name$$="wifi1.opmode"]').val(),
+        opmode_5G_2:window.opener.$$('select[name$$="wifi2.opmode"]').val()
+    }
+    
+    $$(function()
+    {
+    	 var i = 0;
+        //----- button click change class ----- 
+        $$('button').on('click',function(){    
+            ($$(this).attr("class") == "cbi-button") ? $$(this).attr("class","button-selected") : $$(this).attr("class","cbi-button");
+        });
+    
+        $$('button').on('clickFake',function(){
+            ($$(this).attr("class") == "cbi-button") ? $$(this).attr("class","button-selected") : $$(this).attr("class","cbi-button");
+        });
+    
+        //--------- submit -------------------
+        $$("input[name='rate_submit']").click(function(){
+            var wifi0_val=1,wifi1_val=6,wifi2_val=6;
+            
+            $$("div[name*='wifi0.dot.']").each(function(){
+                if ( $$(this).attr('thisDot') == 'true' )
+                    wifi0_val = $$(this).attr('value');
+        })
+
+	for ( i = 0 ; i < rate_tbl.length ; i++ )
+	{
+		if(wifi0_val == rate_tbl[i]){
+			wifi0_val = rate_tbl2[i];
+			break;
+		}
+	}
+
+        $$("input:hidden[name='wireless.wifi0.min_rate']").val(wifi0_val);
+        $$("input:hidden[name='wireless.wifi0.min_rate_enable']").val((opmode["opmode_2G"]=="sta" || opmode["opmode_2G"]=="wds_sta")?"0":"1");
+        
+            
+        $$("div[name*='wifi1.dot.']").each(function(){
+                if ( $$(this).attr('thisDot') == 'true' )
+                    wifi1_val = $$(this).attr('value');
+        })
+
+        for ( i = 0 ; i < rate_tbl.length ; i++ )
+        {
+		if(wifi1_val == rate_tbl[i]){
+			wifi1_val = rate_tbl2[i];
+			break;
+		}
+	}
+            
+        $$("input:hidden[name='wireless.wifi1.min_rate']").val(wifi1_val);
+        $$("input:hidden[name='wireless.wifi1.min_rate_enable']").val((opmode["opmode_5G"]=="sta" || opmode["opmode_5G"]=="wds_sta")?"0":"1");
+            
+            
+            $$('#submitType').val("wifi_SupportRate");
+            window.opener.updateChanges("wifi_Rate", $$('form').serialize());
+            window.close(); 
+        });
+    
+    
+            $$(".cbi-button-save").attr("disabled", false);
+            $$('.cbi-button-save').css("color","white");
+    });
+    
+    function setClick(device,id)
+    {
+        $$("div[name*='"+device+".dot']").each(function(){
+            //$$(this).css("background-color","blue");
+            if(($$(this).attr("value")>24)||( (device!="wifi0") && ($$(this).attr("value")==11) ))
+            {
+                $$(this).attr('thisDot',false);
+                $$(this).attr('class','circleNoCursor');
+            }
+            else
+            {
+                $$(this).attr('thisDot',false);
+                $$(this).attr('class','circle');
+            }
+        });
+        $$("div[name='"+id+"']").each(function(){
+            //$$(this).css("background-color","green");
+            $$(this).attr('thisDot',true);
+            $$(this).attr('class','circleSelected');
+        });
+    }
+    
+    $$(document).ready(function(){
+        
+        var i = 0;
+    
+        
+            initDots('wifi0');
+        
+        
+            initDots('wifi1');
+        
+        
+    
+        
+        if(opmode["opmode_2G"]!="sta" && opmode["opmode_2G"]!="wds_sta"){
+        $$("div[name*='wifi0.dot']").click(function(){
+            if ( $$(this).attr("value") > 24 )
+                return;
+            var clickId = $$(this).attr('id');
+            var $$clickElement = document.getElementById(clickId);
+            var $$zeroElement = document.getElementById("wifi0.progressBar");
+            var clickRect = $$clickElement.getBoundingClientRect();
+            var zeroRect = $$zeroElement.getBoundingClientRect();
+            setClick("wifi0",clickId);
+            $$("[name$$='wifi0.progress']").width(clickRect.right - zeroRect.left);
+            if ( $$(this).attr("value") > 11 )
+                $$("[name='warningMsg']").css("display","inline-block");
+            else
+                $$("[name='warningMsg']").css("display","none");
+        });
+       }else{
+        document.getElementById("wifi0.progressBar").style.backgroundColor = "#999999";
+        $$("[name='warningMsg']").css("display","none");
+        $$("div[name*='wifi0.dot']").each(function(){
+            $$(this).attr('class','circleNoCursor');
+        });
+       }
+        
+    
+        
+        if(opmode["opmode_5G"]!="sta" && opmode["opmode_5G"]!="wds_sta"){
+        $$("div[name*='wifi1.dot']").click(function(){
+            if ( $$(this).attr("value") > 24 || $$(this).attr("value") == 11 )
+                return;
+            var clickId = $$(this).attr('id');
+            var $$clickElement = document.getElementById(clickId);
+            var $$zeroElement = document.getElementById("wifi1.progressBar");
+            var clickRect = $$clickElement.getBoundingClientRect();
+            var zeroRect = $$zeroElement.getBoundingClientRect();
+            setClick("wifi1",clickId);
+            $$("[name$$='wifi1.progress']").width(clickRect.right - zeroRect.left);
+        });
+        }else{
+        document.getElementById("wifi1.progressBar").style.backgroundColor = "#999999";
+        $$("div[name*='wifi1.dot']").each(function(){
+            $$(this).attr('class','circleNoCursor');
+        });
+        }
+        
+    
+        
+    
+        
+        var min_rate_2G=$$("input:hidden[name='wireless.wifi0.min_rate']").val()/2;
+        if ( min_rate_2G == 5 )
+            min_rate_2G = 5.5;
+        for ( i = 0 ; i < rate_tbl.length ; i++ )
+        {
+            if ( rate_tbl[i] == min_rate_2G )
+                break;
+        }
+        $$("div[name*='wifi0.dot."+i+"']").triggerHandler("click");
+        
+    
+        
+        var min_rate_5G=$$("input:hidden[name='wireless.wifi1.min_rate']").val()/2;
+        for ( i = 0 ; i < rate_tbl.length ; i++ )
+        {
+            if ( rate_tbl[i] == min_rate_5G )
+                break;
+        }
+        $$("div[name*='wifi1.dot."+i+"']").triggerHandler("click");
+        
+    
+        
+        
+    });
+    
+    function showRate(device,width)
+    {
+        width = width || 60;
+        var percent = 0;
+        var i = 0;
+        var s="";
+        for ( i = 0 ; i < rate_tbl.length ; i++ )
+        {
+            percent = percent_tbl[i+1]-percent_tbl[i];
+            percent = ( percent < 1 && isFloat(rate_tbl[i]) ) ? 1.5 : (percent) ;
+            if ( (device != "wifi0" && ( i < 3 || i == 5 )) || i == 9 )
+                s+='<font size="2" style="width:'+percent+'%;display:inline-block; color:#DDDDDD;">'+rate_tbl[i]+'</font>';
+            else if ( i == rate_tbl.length - 1 )
+                s+='<font size="2" style="display:inline-block;color:#DDDDDD;">'+rate_tbl[rate_tbl.length-1]+'</font>';
+            else if ( i == rate_tbl.length - 2 )
+                s+='<font size="2" style="width:'+(percent-1.4)+'%;display:inline-block;color:#DDDDDD;">'+rate_tbl[i]+'</font>';
+            else
+                s+='<font size="2" style="width:'+percent+'%;display:inline-block;">'+rate_tbl[i]+'</font>';
+        }
+    
+        document.write(s);
+        document.close();
+    }
+    
+    
+    </script>
+    <body>
+    
+    <!--     						HTML	     			  	   -->
+    <form method="post" name="wifiRate">
+    
+    <input type="hidden" name="wireless.wifi0.min_rate" value='<% cfg_get("wl_min_rate") %>'>
+    <input type="hidden" name="wireless.wifi0.min_rate_enable">
+    
+    
+    <input type="hidden" name="wireless.wifi1.min_rate" value='<% cfg_get("wla_min_rate") %>'>
+    <input type="hidden" name="wireless.wifi1.min_rate_enable">
+    
+    
+    <input type="hidden" id="submitType" name="submitType" value="0">
+    <input type="hidden" name="anticsrf" value='<% generateToken("wifi_SupportRate") %>'>
+    <table style="table-layout:fixed;border-collapse:collapse;width:50%;margin-left:50px;">
+        <th class="title" style="width:1200px;">2.4GHz</th>
+        <tr>
+            <td style="height: 60px; vertical-align:middle;">
+                <font size="4px" style="display:inline-block; width:20%;">$minimum_bitrate (Mbps)</font>
+                <font name="warningMsg" size="4px" style="display:inline-block; color: #F01F1F;">&#9888;$devices_802_11b_not_supported</font>
+            </td>
+        </tr>
+        <tr>
+            <td style="height: 40px; vertical-align:bottom;">
+                <font size="3px" style="display:inline-block; width:50%;">$lower_data_rate</font><font size="3px" style="display:inline-block; width:50%; text-align: right;">$higher_data_rate</font>
+            </td>
+        </tr>
+        <tr>
+            <td style="height: 30px; vertical-align:bottom;">
+                <div name="wifi0.progressBar" id="wifi0.progressBar" style="background: #21A9F3; width: 100%; height: 10px;">
+                    <div name="wifi0.progress" id="wifi0.progress" style="background: #DDDDDD; width: 10%; height: 10px;"></div>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <script>showRate("wifi0",1000)</script>
+            </td>
+        </tr>
+    </table>
+    
+    
+    <table style="table-layout:fixed;border-collapse:collapse;width:50%;margin-left:50px;">
+    
+        <th class="title" style="width:1200px;">5GHz</th>
+    
+        <tr>
+            <td style="height: 60px; vertical-align:middle;">
+                <font size="4px" style="display:inline-block; width:20%;">$minimum_bitrate (Mbps)</font>
+            </td>
+        </tr>
+        <tr>
+            <td style="height: 40px; vertical-align:bottom;">
+                <font size="3px" style="display:inline-block; width:50%;">$lower_data_rate</font><font size="3px" style="display:inline-block; width:50%; text-align: right;">$higher_data_rate</font>
+            </td>
+        </tr>
+        <tr>
+            <td style="height: 30px; vertical-align:bottom;">
+                <div name="wifi1.progressBar" id="wifi1.progressBar" style="background: #21A9F3; width: 100%; height: 10px;">
+                    <div name="wifi1.progress" id="wifi1.progress" style="background: #DDDDDD; width: 10%; height: 10px;"></div>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <script>showRate("wifi1",1000)</script>
+            </td>
+        </tr>
+    </table>
+    
+    
+    <br><br>
+    <div class="cbi-page-actions" style="margin-left:50px">
+    <!--input class="cbi-button cbi-button-apply" type="submit" name="cbi.apply" value="Save &#38; Apply" /-->
+        <input style="width:auto;" class="cbi-button-save" name="rate_submit" type="button" myid="button_rate_save" value="$save"/>&nbsp;<span class="btn_desc">$save_current_settings</span>
+    <!--input class="cbi-button cbi-button-reset" type="reset" value="Reset" /-->
+    </div>
+    </form>
+    </body>
+    </html>
+    
+    

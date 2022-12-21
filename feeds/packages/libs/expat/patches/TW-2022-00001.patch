@@ -1,0 +1,25 @@
+From e493d0b969e6e0cdf8541a91f558fd3404ce43dd Mon Sep 17 00:00:00 2001
+From: jiangdingyong <jiangdingyong@twsh.com>
+Date: Fri, 15 Apr 2022 16:28:41 +0800
+Subject: [PATCH] 2
+
+---
+ lib/xmlparse.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lib/xmlparse.c b/lib/xmlparse.c
+index dfc316ca..cb59cfa2 100755
+--- a/lib/xmlparse.c
++++ b/lib/xmlparse.c
+@@ -102,7 +102,7 @@ typedef unsigned __int32 uintptr_t;
+ #  define LOAD_LIBRARY_SEARCH_SYSTEM32 0x00000800
+ #endif
+ 
+-#if ! defined(HAVE_GETRANDOM) && ! defined(HAVE_SYSCALL_GETRANDOM)             \
++#if 0//! defined(HAVE_GETRANDOM) && ! defined(HAVE_SYSCALL_GETRANDOM)             \
+     && ! defined(HAVE_ARC4RANDOM_BUF) && ! defined(HAVE_ARC4RANDOM)            \
+     && ! defined(XML_DEV_URANDOM) && ! defined(_WIN32)                         \
+     && ! defined(XML_POOR_ENTROPY)
+-- 
+2.13.1
+

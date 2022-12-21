@@ -1,0 +1,66 @@
+<% http_header( "script/jquery-1.12.4.min.js", "style/cascade2.css", "style/cascade.css", "style/cascade-custom.css", "script/common.js", "script/wireless_connections.js") %>
+<% noload_header("wireless_connections", "wireless_connections.htm", "save_deny_mac") %>
+<input type="hidden" name="networkname" value="">
+<input type="hidden" name="mac" value="">
+<fieldset id="loading" class="cbi-section" style="display:none">
+	<legend><img src="/image/loading.gif" alt="$loading" style="vertical-align:middle" />$collecting_data</legend>
+</fieldset>
+<fieldset id="connection_display" class="cbi-section" style="display:none">
+</fieldset>
+<!-- <%
+if uci:get('functionlist','functionlist','SUPPORT_RENEW_CONNECT_STATUS_BY_BUTTON') == '1' then -----#### SUPPORT_RENEW_CONNECT_STATUS_BY_BUTTON START ###
+%> -->
+<br>
+<div class="cbi-page-actions left">
+		<input class="cbi-button cbi-button-save" id="renew_connection" type="button" value="$refresh" onclick='refresh_devs();' />
+</div>
+<!-- <%
+end-----####  SUPPORT_RENEW_CONNECT_STATUS_BY_BUTTON END #### 
+%> -->
+<!-- <%
+if uci:get('functionlist','functionlist','SUPPORT_MESH_SETTING') == '2' then
+	if uci:get('wireless','wifi0_mesh','disabled') == '0' or uci:get('wireless','wifi1_mesh','disabled') == '0'  then
+%> -->
+<!-- <form name="mesh_connections" action="<%=REQUEST_URI%>" method="post">
+<input type="hidden" name="mesh_action" value="1">
+<input type="hidden" name="deleteDevice" value="">
+<input type="hidden" id="submitType" value="1" name="submitType"/>
+
+<fieldset id="mesh_table" class="cbi-section" style="display: none;">
+	<div id="no_mesh_device" class="cbi-page-actions" style="display:none">
+	<table >
+		<tr>
+			<td colspan="6" class="title"><%:NO Mesh Device connected....%></td>
+		</tr>
+	</table>
+	</div>
+	<div id="device_list" class="cbi-page-actions" style="display:none">
+	<table >
+		<tr>
+			<td colspan="6" class="title"><%:Mesh Device List%></td>
+		</tr>
+		<tr class="title-option"  >
+			<td ><%:Select%></td>
+			<td ><%:Device Type%></td>
+			<td ><%:Device Name%></td>
+			<td ><%:IP Address%></td>
+			<td ><%:MAC Address%></td>
+			<td ><%:Strength%></td>
+		</tr>
+		<tr style="display:none"><td></td></tr>
+		<script>refreshLog();</script>
+	</table>
+	</div>
+<div id = "save" class="cbi-page-actions" >
+	<input class="cbi-button cbi-button-save" onclick="return savechanges(2)" type="submit" value="<%:Refresh%>" class="cbi-button cbi-button-save">
+	<input id ="del_mesh" class="cbi-button cbi-button-save" onclick="return savechanges(1)" type="submit" value="<%:Delete Selected%>" class="cbi-button cbi-button-save">
+	<script>hide_delete_button();</script>	
+</div>
+</fieldset>
+</form> -->
+<!-- <%
+	end
+end
+%> -->
+</form>
+</body>

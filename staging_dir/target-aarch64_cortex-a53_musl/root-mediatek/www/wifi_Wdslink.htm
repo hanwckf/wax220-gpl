@@ -1,0 +1,164 @@
+
+<html>
+    <%local uci = luci.model.uci.cursor() %> 
+    <%local networkName = luci.http.formvalue("networkName")%>
+    <%
+    if uci:get('functionlist','functionlist','SUPPORT_WLAN5G_2') == '1' then --[[ #### WLAN5G_2 feature ### --]]
+        WLAN5G_2="1"
+    end --[[ #### WLAN5G_2 feature ### --]]
+    %>
+    <%
+        local WDS_MAC_ADDR_NUM = tonumber(uci:get("functionlist","vendorlist","WDS_MAC_ADDR_NUM")) or 4
+        if uci:get("wireless",networkName,"mode_display") == "wds_ap" then
+            WDS_MAC_ADDR_NUM = 4
+        else
+            WDS_MAC_ADDR_NUM = 8
+        end
+    %>
+<script type="text/javascript">
+function wds_setvalue() {
+<%
+    local key = tostring(uci:get("wireless",networkName,"key") or "")
+    key = string.gsub(key,"^([s][:])","")
+    key = striptags(string.gsub(key," ","mynbsp"))
+    key = string.gsub(key,"mynbsp"," ")
+
+%>
+    var _wlanwdswepkey = '<%=uci:get("wireless",networkName,"wlanwdswepkey")%>'.replace("s:","")||"" ;
+    <% if WLAN5G_2=="1" then %>
+        var devName = '<%=uci:get("wireless",networkName,"device")%>'=="wifi1" ? "<%:WDS Link Settings - 5GHz -1%>" : '<%=uci:get("wireless",networkName,"device")%>'=="wifi2" ? "<%:WDS Link Settings - 5GHz -2%>" : "<%:WDS Link Settings - 2.4GHz%>" ;
+    <% else %>
+        var devName = '<%=uci:get("wireless",networkName,"device")%>'=="wifi1"?"<%:WDS Link Settings - 5GHz%>":"<%:WDS Link Settings - 2.4GHz%>" ;
+    <% end %>
+
+    var mode = '<%=uci:get("wireless",networkName,"mode_display")%>';
+    var k_size = _wlanwdswepkey.length
+    var k_index = 10;
+    if(k_size==5||k_size==10){
+        k_index = 10;
+    }else if(k_size==13||k_size==26){
+         k_index = 26;
+    }else if (k_size==16||k_size==32){
+        k_index = 32;
+    }
+
+    
+    $('select[name="<%="cbid.wireless."..networkName..".nawds_encr"%>"]').val('<%=uci:get("wireless",networkName,"nawds_encr")%>'||"none");
+    $('input:text[name="<%="cbid.wireless."..networkName..".wlanwdswepkey"%>"]').val(_wlanwdswepkey);
+    $('input:hidden[name="<%="cbid.wireless."..networkName..".WLANWDSPeer"%>"]').val('<%=uci:get("wireless",networkName,"WLANWDSPeer")%>'||"");           
+    $('select[name="<%="cbid.wireless."..networkName..".index_dummy"%>"]').val(k_index);  
+    $('th[id$="<%=networkName.."_wds_name"%>"]').text(devName);        
+
+
+    if(mode =="wds_ap" || mode =="wds_bridge"){
+        $('<%="#"..networkName.."_wep"%>').remove();
+        $('select[name="<%="cbid.wireless."..networkName..".nawds_encr"%>"]').find('option[value="wep"]').remove();
+    }
+};
+</script>
+<span id ='<%=luci.http.formvalue("networkName").."_cbi"%>' style="display:none">
+         <%
+            local cbi = require "luci.cbi"
+            local tpl = require "luci.template"
+            local netId = luci.http.formvalue("netId")  
+            --luci.cbi.load("admin_network/wifi_iface2",netId)[1]:render()
+    %>
+ </span>       
+<span id = '<%=luci.http.formvalue("networkName")%>' >
+    
+
+        <table class="ecm-tbl" id='<%=luci.http.formvalue("networkName").."_security"%>'>
+           
+			<tr>
+				<th id = '<%=networkName.."_wds_name"%>'><%:WDS Link Settings - 2.4GHz%></th>
+				<th></th>
+			</tr>
+			<tr>
+				<td class="tbl-blank"></td>
+				<td class="tbl-blank"></td>
+			</tr>
+ 
+			<tr>
+				<td class="tbl-name" width="30%" id='<%="cbid-wireless-"..luci.http.formvalue("networkName").."-nawds_encr_title"%>'><%:Security%></td>
+				<td class="tbl-value" width="70%">
+					<div id="">
+						<select id='<%="cbid-wireless-"..luci.http.formvalue("networkName").."-nawds_encr"%>' name=<%="cbid.wireless."..luci.http.formvalue("networkName")..".nawds_encr"%> >
+							<option value="none"><%:None%></option>
+							<option value="wep">WEP</option>
+							<option value="ccmp">AES</option>
+						</select>
+					</div>
+				</td>
+			</tr>
+			<tr id = '<%=networkName.."_wep"%>'>
+				<td class="tbl-name" id='<%="cbid-wireless-"..luci.http.formvalue("networkName").."-wlanwdswepkey_title"%>'><%:WEP Key%></td>
+				<td class="tbl-value">
+					<div id="">
+					<input type="text" name=<%="cbid.wireless."..luci.http.formvalue("networkName")..".wlanwdswepkey"%>  id='<%="cbid-wireless-"..luci.http.formvalue("networkName").."-wlanwdswepkey"%>' value="" maxlength="32" size="32" >
+					</div>
+					<div id="">
+						<select name=<%="cbid.wireless."..luci.http.formvalue("networkName")..".index_dummy"%> id='<%="cbid-wireless-"..luci.http.formvalue("networkName").."-index_dummy"%>'>
+							<option value="10"><%:40/64-bit(10 hex digits)%></option>
+							<option value="26"><%:104/128-bit(26 hex digits)%></option>
+							<option value="32"><%:128/152-bit(32 hex digits)%></option>
+						</select>
+					</div>
+				</td>
+			</tr>
+
+
+            <tr id='<%=networkName.."_ccmp"%>'>
+                <td class="tbl-name" id='<%="cbid-wireless-"..luci.http.formvalue("networkName").."-key_title"%>'><%:AES Passphrase%></td>
+                <td class="tbl-value">
+                    <div id="">
+                    <input id='<%="cbid-wireless-"..luci.http.formvalue("networkName").."-key"%>' type="text" name=<%="cbid.wireless."..luci.http.formvalue("networkName")..".key"%>  value='<%=key%>' maxlength="64" size="64" >
+                    </div><br>
+                    <div id="">
+                        (<%:8-63 ASCII characters or 64 hexadecimal digits%>)
+                    </div>
+                </td>
+            </tr>                                                        
+        </table>
+    
+    <div id="" class="table bottommargin"></div>
+        <!--span  class="tbl-value">
+        <span class="msg_type_mark">Caution:</span>
+        NAWDS is enabled, please assign the Channel on both frequency bands manually for settings to take effect.
+        </span-->
+        <table class="ecm-tbl" id= '<%=luci.http.formvalue("networkName").."_macfilter"%>'>
+        <span class="tbl-value" id ='<%=networkName.."_caution"%>' style="display:none">
+            <span class="msg_type_mark"><%:Caution%>:</span><%:WDS is enabled, please assign the Channel on both frequency bands manually for settings to take effect.%>
+         </span>            
+                <tr>
+                    <td class="tbl-grey" width="30%"><%:MAC Address%></td>
+                    <td class="tbl-grey" width="30%"><%:Mode%></td>
+                </tr>
+<%for i=0,WDS_MAC_ADDR_NUM-1  do%>
+
+                <tr id='<%=i..networkName%>'>                  
+                    <td  width="70%" class="tbl-value">
+                            <input id='<%=i..networkName.."maca0"%>' type="text" name='<%=i..networkName.."maca0"%>' maxlength="2" size="2">
+                            :
+                            <input id='<%=i..networkName.."maca1"%>' type="text" name='<%=i..networkName.."maca1"%>' maxlength="2" size="2">
+                            :
+                            <input id='<%=i..networkName.."maca2"%>' type="text" name='<%=i..networkName.."maca2"%>' maxlength="2" size="2">
+                            :
+                            <input id='<%=i..networkName.."maca3"%>' type="text" name='<%=i..networkName.."maca3"%>' maxlength="2" size="2">
+                            :
+                            <input id='<%=i..networkName.."maca4"%>' type="text" name='<%=i..networkName.."maca4"%>' maxlength="2" size="2">
+                            :
+                            <input id='<%=i..networkName.."maca5"%>' type="text" name='<%=i..networkName.."maca5"%>' maxlength="2" size="2">
+                    </td>
+                    <td  width="30%">
+                            <select id='<%=i..networkName.."mac_select"%>' name='<%=i..networkName.."mac_select"%>'>
+                                <option value="v"><%:Enable%></option>
+                                <option value="x" selected><%:Disable%></option>  
+                            </select>
+                    </td>
+                </tr>  
+<%end%>                                               
+        </table>
+                    <input type="hidden" name='<%="cbid.wireless."..networkName..".WLANWDSPeer"%>'>
+   </span> 
+
+</html>

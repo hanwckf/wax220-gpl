@@ -1,0 +1,25 @@
+From c688d0f522ab010b3abdda9802726d1918591d08 Mon Sep 17 00:00:00 2001
+From: caojingzhe <caojingzhe@twsh.com>
+Date: Tue, 24 May 2022 16:34:14 +0800
+Subject: [PATCH] 2
+
+---
+ .../linux-mediatek_mt7986/mt_wifi/mt_wifi/embedded/fsm/fsm_cntl.c       | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mt_wifi/embedded/fsm/fsm_cntl.c b/mt_wifi/embedded/fsm/fsm_cntl.c
+index e1897a9a..45cd6efe 100644
+--- a/mt_wifi/embedded/fsm/fsm_cntl.c
++++ b/mt_wifi/embedded/fsm/fsm_cntl.c
+@@ -580,7 +580,7 @@ BOOLEAN cntl_scan_conf(
+ #ifdef CONFIG_MULTI_CHANNEL
+ 			bss_table_maintenance(pAd, &pStaCfg->wdev, ScanTab, 120, 4);
+ #else
+-			bss_table_maintenance(pAd, &pStaCfg->wdev, ScanTab, 120, 2);
++			bss_table_maintenance(pAd, &pStaCfg->wdev, ScanTab, 120, 25);
+ #endif /* !CONFIG_MULTI_CHANNEL */
+ 		}
+ 		RTMPSendWirelessEvent(pAd, IW_SCAN_COMPLETED_EVENT_FLAG, NULL, BSS0, 0);
+-- 
+2.13.1
+

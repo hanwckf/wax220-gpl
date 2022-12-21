@@ -1,0 +1,453 @@
+<%+header%>
+<%
+local uci = require("luci.model.uci").cursor()
+local band = uci:get('network', 'sys', 'meshband')
+local country = uci:get('wireless','wifi1','country');
+local mesh, ssid, channel, passwd, encryption
+local mesh_5g, ssid_5g, channel_5g, passwd_5g, encryption_5g
+
+mesh = uci:get("wireless","wifi0_mesh","disabled")
+passwd = uci:get("wireless","wifi0_mesh","aeskey")
+ssid = uci:get("wireless","wifi0_mesh","ssid")
+channel = uci:get("wireless","wifi0","channel")
+encryption = uci:get("wireless","wifi0_mesh","nawds_encr")
+mesh_5g = uci:get("wireless","wifi1_mesh","disabled")
+passwd_5g = uci:get("wireless","wifi1_mesh","aeskey")
+ssid_5g = uci:get("wireless","wifi1_mesh","ssid")
+channel_5g = uci:get("wireless","wifi1","channel")
+encryption_5g = uci:get("wireless","wifi1_mesh","nawds_encr")
+connectType = uci:get("wireless","wifi0_mesh","MeshConnectType")
+connectType_5g = uci:get("wireless","wifi1_mesh","MeshConnectType")
+mesh_ID = uci:get("wireless","wifi0_mesh","Mesh_id")
+mesh_ID_5g = uci:get("wireless","wifi1_mesh","Mesh_id")
+
+	ssid  = string.gsub(ssid,"\\","\\\\")
+	ssid  = string.gsub(ssid,"\"","\\\"")
+	ssid_5g  = string.gsub(ssid_5g,"\\","\\\\")
+	ssid_5g  = string.gsub(ssid_5g,"\"","\\\"")
+	passwd  = string.gsub(passwd,"\\","\\\\")
+	passwd  = string.gsub(passwd,"\"","\\\"")
+	passwd_5g  = string.gsub(passwd_5g,"\\","\\\\")
+	passwd_5g  = string.gsub(passwd_5g,"\"","\\\"")
+
+%>
+<script>document.getElementById('menu_right_style').style.display = "none";
+$("#maincontent").removeClass();
+$("#maincontent").css('margin','auto');
+$("#maincontent").css('padding-top','20px');
+$("#maincontent").css('width','100%');
+</script>
+<script src="/luci-static/web_NTGR/jquery-1.12.4.min.js"></script>
+<script type="text/javascript">
+function saveChanges(){
+	var f = document.join_mesh;
+	var passwd = document.getElementsByName("passwd")[0].value;
+	var passwd_5g = document.getElementsByName("passwd_5g")[0].value;
+	var ssid = document.getElementsByName("ssid")[0].value;
+	var ssid_5g = document.getElementsByName("ssid_5g")[0].value;
+
+	if( document.getElementsByName("band")[0].checked == true ) // 2.4G
+	{
+		var passwd = document.getElementsByName("passwd")[0].value;
+		var ssid = document.getElementsByName("ssid")[0].value;
+		var encryption = f.encryption.selectedIndex;
+		var connectType = (document.getElementsByName("connectType")[0].checked == true)?"0":"1";
+		var mesh_ID = document.getElementsByName("mesh_ID")[0].value;				
+	}
+	else
+	{
+		var passwd = document.getElementsByName("passwd_5g")[0].value;
+		var ssid = document.getElementsByName("ssid_5g")[0].value;
+		var encryption = f.encryption_5g.selectedIndex;
+		var connectType = (document.getElementsByName("connectType_5g")[0].checked == true)?"0":"1";
+		var mesh_ID = document.getElementsByName("mesh_ID_5g")[0].value;				
+	}
+
+	if(ssid == "")
+	{
+   		alert("<%:The SSID cannot be empty%>");
+		return false;
+	}
+	if( connectType == "1")
+	{
+		if ( mesh_ID == "")
+		{
+	        alert("<%:The Mesh ID cannot be empty%>");
+				return false;
+		}
+		for( var i =0; i<mesh_ID.length;i++)
+		{	
+			if(mesh_ID[i] < "0" ||  mesh_ID[i] > "9")
+			{
+	        	alert("<%:The Mesh ID should between 0~9%>");
+				return false;
+			}
+		}
+	}
+	else
+	{
+	    if(ssid == "")
+	    {
+   			alert("<%:The SSID cannot be empty%>");
+			return false;
+	    }
+	}
+	if(connectType == "1") // mesh ID
+	{
+		if(passwd.length < 8 || passwd.length > 63)
+		{
+			alert("<%:Please fill the key  match the selected input type and key length!%>");
+			return false;
+		}
+	}	
+	else if(encryption == 1) // aes
+	{
+		if(passwd.length < 8 || passwd.length > 64)
+		{
+			alert("<%:Please fill the key  match the selected input type and key length!%>");
+			return false;
+		}
+		if( passwd.length == 64)
+		{
+			for( var i =0; i<passwd.length;i++)
+			{	
+	    		if ( (passwd.charAt(i) >= '0' && passwd.charAt(i) <= '9') ||
+				(passwd.charAt(i) >= 'a' && passwd.charAt(i) <= 'f') ||
+				(passwd.charAt(i) >= 'A' && passwd.charAt(i) <= 'F') )
+	    			continue;
+   		    	alert("<%:Invalid pre-shared key value. It should be in hexadecimal number: 0-9 or a-f%>");
+					return false;
+			}
+			document.getElementsByName("passwd_type")[0].value = '1';
+		}		
+	}
+	document.getElementsByName("meshband")[0].value  = (document.getElementsByName("band")[0].checked == true)?"0":"1";
+	document.getElementsByName("mesh_connectType")[0].value  = (document.getElementsByName("connectType")[0].checked == true)?"0":"1";
+	document.getElementsByName("mesh_connectType_5g")[0].value  = (document.getElementsByName("connectType_5g")[0].checked == true)?"0":"1";
+	return true;
+}
+function copyto()
+{
+	var f = document.join_mesh;
+	change("<%=band%>");
+    document.getElementsByName("band")[0].checked = ("<%=band%>"==0)?true:false;
+    document.getElementsByName("band")[1].checked = ("<%=band%>"==1)?true:false;
+	//f.channel.selectedIndex ="<%=channel%>";
+	//f.channel_5g.selectedIndex ="<%=channel_5g%>";
+}
+function changeSecType(value)
+{
+	document.getElementById('show_passwd_24g').style.display = (value==0)?"none":"";
+}
+function changeSecType2(value)
+{
+	document.getElementById('show_passwd_5g').style.display = (value==0)?"none":"";
+}
+function ajax_getChannelList(countryCode){
+
+    var url , container ,data;
+    url = '<%=luci.dispatcher.build_url("admin/network/ajax_getChannelList")%>';
+    //container = "#cbi_set";
+    data = {countryCode:countryCode};
+    ajax_normal({
+		async: false,
+        type : "GET",
+        url:url,
+        data:data,
+        dataType:"json",
+        error:function(){
+            // ajax_getChannelList(countryCode);
+        },
+        success:function(result){
+            var channel_now = jQuery.parseJSON(result);
+            for (var key in channel_now) {
+
+            var obj = channel_now[key];
+            for (var prop in obj) {
+                if(key == "ChInfo2G"){
+                    var s = String.format(
+                        '<option  name="%s%s" value="%s">%s</option>',key,obj[prop]["Value"],obj[prop]["Value"],obj[prop]["Channel"]
+                    )
+                    $("select[name='channel']").append(s);
+                }
+                else
+                {
+                    var s = String.format(
+                        '<option  name="%s%s" value="%s">%s</option>',key,obj[prop]["Value"],obj[prop]["Value"],obj[prop]["Channel"]
+                    )
+                    $("select[name='channel_5g']").append(s);
+                }
+			}
+            }
+        }
+    });
+}
+
+function change(value)
+{
+	var f = document.join_mesh;
+
+    document.getElementsByName("ssid")[0].value = "<%=ssid%>";
+	document.getElementsByName("ssid_5g")[0].value = "<%=ssid_5g%>";
+    document.getElementsByName("passwd")[0].value = "<%=passwd%>";
+	document.getElementsByName("passwd_5g")[0].value = "<%=passwd_5g%>";	
+    f.encryption.selectedIndex = ("<%=encryption%>"=="none")?0:1;
+    f.encryption_5g.selectedIndex = ("<%=encryption_5g%>"=="none")?0:1; 
+    ajax_getChannelList("<%=country%>");
+    document.getElementsByName("channel")[0].value = "<%=channel%>";
+    document.getElementsByName("channel_5g")[0].value = "<%=channel_5g%>";
+    document.getElementsByName("connectType")[0].checked = ("<%=connectType%>"=="0")?true:false;
+    document.getElementsByName("connectType")[1].checked = ("<%=connectType%>"=="1")?true:false;
+    document.getElementsByName("connectType_5g")[0].checked = ("<%=connectType_5g%>"=="0")?true:false;
+    document.getElementsByName("connectType_5g")[1].checked = ("<%=connectType_5g%>"=="1")?true:false;
+    document.getElementsByName("mesh_ID")[0].value = "<%=mesh_ID%>";
+    document.getElementsByName("mesh_ID_5g")[0].value = "<%=mesh_ID_5g%>";
+
+    if(value==0)
+	    changeSecType(f.encryption.selectedIndex);
+    else
+	    changeSecType2(f.encryption_5g.selectedIndex);
+	document.getElementById('mesh_band').style.display = "";
+	if(value==0)
+	{
+		document.getElementById('show_ssid_24g').style.display = "";
+		document.getElementById('show_ssid_5g').style.display = "none";
+		document.getElementById('show_channel_24g').style.display = "";
+		document.getElementById('show_channel_5g').style.display = "none";
+		document.getElementById('show_encryption_24g').style.display = "";
+		document.getElementById('show_encryption_5g').style.display = "none";
+		document.getElementById('show_passwd_5g').style.display = "none";
+		document.getElementById('show_connectType_24g').style.display = "";
+		document.getElementById('show_connectType_5g').style.display = "none";
+		if(document.getElementsByName("connectType")[0].checked == true)
+		{
+			changeConnectType(1);
+		}
+		else
+		{
+			changeConnectType(0);
+		}		
+	}
+	else
+	{
+		document.getElementById('show_ssid_24g').style.display = "none";
+		document.getElementById('show_ssid_5g').style.display = "";
+		document.getElementById('show_channel_24g').style.display = "none";
+		document.getElementById('show_channel_5g').style.display = "";
+		document.getElementById('show_encryption_24g').style.display = "none";
+		document.getElementById('show_encryption_5g').style.display = "";
+		document.getElementById('show_passwd_24g').style.display = "none";
+		document.getElementById('show_connectType_24g').style.display = "none";
+		document.getElementById('show_connectType_5g').style.display = "";
+		if(document.getElementsByName("connectType_5g")[0].checked == true)
+		{
+			changeConnectType_5g(1);
+		}
+		else
+		{
+			changeConnectType_5g(0);
+		}
+	}
+}
+
+function changeConnectType(value)
+{
+	var f = document.join_mesh;
+
+	if( value == 0)
+	{
+		document.getElementById('show_ssid_24g').style.display = "none";
+		document.getElementById('show_encryption_24g').style.display = "none";
+		document.getElementById('show_Mesh_ID_24g').style.display = "";
+		document.getElementById('show_Mesh_ID_5g').style.display = "none";
+		document.getElementById('show_passwd_24g').style.display = "";
+
+	}
+	else
+	{
+		document.getElementById('show_ssid_24g').style.display = "";
+		document.getElementById('show_encryption_24g').style.display = "";
+		document.getElementById('show_Mesh_ID_24g').style.display = "none";
+		document.getElementById('show_Mesh_ID_5g').style.display = "none";
+   		changeSecType(f.encryption.selectedIndex);
+	}
+}
+function changeConnectType_5g(value)
+{
+	var f = document.join_mesh;
+
+	if( value == 0)
+	{
+		document.getElementById('show_ssid_5g').style.display = "none";
+		document.getElementById('show_encryption_5g').style.display = "none";
+		document.getElementById('show_Mesh_ID_24g').style.display = "none";
+		document.getElementById('show_Mesh_ID_5g').style.display = "";
+		document.getElementById('show_passwd_5g').style.display = "";
+	}
+	else
+	{
+		document.getElementById('show_ssid_5g').style.display = "";
+		document.getElementById('show_encryption_5g').style.display = "";
+		document.getElementById('show_Mesh_ID_24g').style.display = "none";
+		document.getElementById('show_Mesh_ID_5g').style.display = "none";
+		changeSecType2(f.encryption_5g.selectedIndex);
+	}
+}
+</script>
+<body onLoad="copyto();">
+<form name="join_mesh" action="<%=REQUEST_URI%>" method="post">
+<input type="hidden" name="mesh_disable" value="1">
+<input type="hidden" name="mesh_disable_5g" value="1">
+<input type="hidden" name="meshband" value="1">
+<input type="hidden" name="passwd_type" value="0">
+<input type="hidden" name="mesh_connectType" value="1">
+<input type="hidden" name="mesh_connectType_5g" value="1">
+<div>
+<table>
+	<tr>
+		<td>
+			<div style="border-bottom: 1px solid #1B489C;border-top: 1px solid #1B489C;border-left: 1px solid #1B489C;border-right: 1px solid #1B489C;margin-left 0px; width:200px">
+			<table>
+			<tr style="background-color: #1B489C;font-weight:bold;padding-left: 10px;color:#ffffff;height: 31px;border-bottom: 1px solid #1B489C;">
+			<td style="padding-bottom: 10px;padding-top: 10px;">
+				<span style="font-size: 16px"><%:Step 1.%></span><br>
+				<span style="font-size: 14px"><%:Set up Mesh network settings%></span>
+			</td></tr>
+			<tr style="font-size: 18px;padding-left: 10px;border-bottom: 1px solid #1B489C;color:#000000;height: 31px;">
+			<td style="padding-bottom: 10px;padding-top: 10px;">
+				<span style="font-size: 16px"><%:Step 2.%></span><br>
+				<span style="font-size: 14px"><%:Set up the Wireless Security/Device Password%></span>
+			</td></tr>
+			<tr style="font-size: 18px;padding-left: 10px;color:#000000;height: 31px;">
+			<td style="padding-top: 10px;">
+				<span style="font-size: 16px"><%:Step 3.%></span><br>
+				<span style="font-size: 14px"><%:Check the Status and Save Settings%></span>
+			</td></tr>
+			</table>
+			</div>
+		</td>
+		<td style="width:100%">
+			<div >
+				<table >
+					<tr class="title" style="background: url('<%=media%>/banner_model.png');">
+						<td style="color:#ffffff;padding-left:20px;">
+							<%:Step 1.Set up Mesh network settings%>
+						</td>
+					</tr>
+				</table>
+			</div>
+			<div><table><tr><td></td></tr></table></div>
+	<div style="border-bottom: 1px solid #1B489C;border-top: 1px solid #1B489C;border-left: 1px solid #1B489C;border-right: 1px solid #1B489C;padding-left:20px;padding-right:20px;padding-bottom:20px;">
+	<table>
+		<tr style="font-size: 16px;vertical-align: middle;color:#000000;height: 8px;">
+		<td colspan="4">
+			<br><%:Please enter the same settings from the existing Mesh network settings%><br><br>
+		</td>
+		</tr>
+		<tr id="show_connectType_24g" class="title-option" style="display:none">
+			<td><%:Mesh Connection Type%></td>
+			<td><input type="radio"  maxlength="12" onchange="changeConnectType(1);" name="connectType" id="connectType_SSID">
+				<%:By SSID%>
+				<input type="radio"  maxlength="12" onchange="changeConnectType(0);" name="connectType" id="connectType_ID">
+				<%:By ID (1~6 digits)%>
+			</td>
+		</tr>
+		<tr id = "ch_bk_color" class="title-option" style="display:none"><td></td></tr>
+		<tr id="show_connectType_5g" class="title-option" style="display:none">
+			<td><%:Mesh Connection Type%></td>
+			<td><input type="radio"  maxlength="12" onchange="changeConnectType_5g(1);" name="connectType_5g" id="connectType_SSID_5g">
+				<%:By SSID%>
+				<input type="radio"  maxlength="12" onchange="changeConnectType_5g(0);" name="connectType_5g" id="connectType_ID_5g">
+				<%:By ID (1~6 digits)%>
+			</td>
+		</tr>		
+		<tr id = "mesh_band"class="title-option" style="display:none">
+			<td><%:Mesh Band%></td>
+			<td>
+			<input type="radio" maxlength="12" name="band" onclick="change(0);" id="band_24g">
+			<%:2.4GHz%>
+			<input type="radio" maxlength="12" name="band" onclick="change(1);" id="band_5g">
+			<%:5GHz%>
+			</td>
+		</tr>
+		<tr id="show_ssid_24g" class="title-option" style="display:none">
+			<td><%:Mesh SSID %></td>
+			<td><input type="text"  name="ssid" id="ssid" maxlength="255" style="height:27px;">
+			</td>
+		</tr>
+		<tr id = "ch_bk_color2" class="title-option" style="display:none"><td></td></tr>		
+		<tr id="show_Mesh_ID_24g" class="title-option" style="display:none">
+			<td><%:Mesh ID%></td>
+			<td><input type="text" maxlength="6" name="mesh_ID" id="mesh_ID" style="height:27px;">
+			</td>
+		</tr>
+		<tr id="show_channel_24g" class="title-option" style="display:none">
+			<td><%:Channel%></td>
+			<td><select name="channel" id="channel" style="height:27px;">
+				</select>
+			</td>
+		</tr>
+		<tr id="show_ssid_5g" class="title-option" style="display:none">
+			<td><%:Mesh SSID %></td>
+			<td><input type="text"  name="ssid_5g" id="ssid_5g" maxlength="255" style="height:27px;">
+			</td>
+		</tr>
+		<tr id = "ch_bk_color3" class="title-option" style="display:none"><td></td></tr>		
+		<tr id="show_Mesh_ID_5g" class="title-option" style="display:none">
+			<td><%:Mesh ID%></td>
+			<td><input type="text" maxlength="6" name="mesh_ID_5g" id="mesh_ID_5g" style="height:27px;">
+			</td>
+		</tr>
+		<tr id="show_channel_5g" class="title-option" style="display:none">
+			<td><%:Channel%></td>
+			<td><select name="channel_5g" id="channel_5g" style="height:27px;">
+				</select>
+			</td>
+		</tr>
+
+		<tr id="show_encryption_24g" class="title-option" style="display:none">
+			<td><%:Encryption%></td>
+			<td><select name="encryption" onChange="changeSecType(this.options[this.selectedIndex].value);" id="encryption" style="height:27px;">
+			<option value="0"><%:Disable%></option>
+			<option value="1"><%:WPA Pre-Shared key%></option>
+			</select>
+			</td>
+		</tr>
+		<tr id="show_passwd_24g" class="title-option" style="display:none">
+			<td><%:Password%></td>
+			<td><input type="text" name="passwd" id="passwd" maxlength="64" style="height:27px;">
+			</td>
+		</tr>
+		<tr id="show_encryption_5g" class="title-option" style="display:none">
+			<td><%:Encryption%></td>
+			<td><select name="encryption_5g" onChange="changeSecType2(this.options[this.selectedIndex].value);" id="encryption_5g" style="height:27px;">
+			<option value="0"><%:Disable%></option>
+			<option value="1"><%:WPA Pre-Shared key%></option>
+			</select>
+			</td>
+		</tr>
+
+		<tr id="show_passwd_5g" class="title-option" style="display:none">
+			<td><%:Password%></td>
+			<td><input type="text" name="passwd_5g" id="passwd_5g" maxlength="64" style="height:27px;">
+			</td>
+		</tr>
+	</table>
+	</div>
+	</td>
+	</tr>
+</table>
+</div>
+<div>
+	<table>
+		<tr>
+			<td style="text-align:center"><input class="cbi-button cbi-button-save" onclick="return saveChanges();" type="submit" value="<%:Next%>">
+			<input type="hidden" id="submitType" value="1" name="submitType"/></td>
+		</tr>
+</table>
+</div>
+
+</form>
+</body>
+<%+footer%>
+

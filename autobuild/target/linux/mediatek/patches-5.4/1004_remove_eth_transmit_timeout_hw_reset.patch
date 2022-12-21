@@ -1,0 +1,14 @@
+Index: linux-5.4.143/drivers/net/ethernet/mediatek/mtk_eth_soc.c
+===================================================================
+--- linux-5.4.143.orig/drivers/net/ethernet/mediatek/mtk_eth_soc.c
++++ linux-5.4.143/drivers/net/ethernet/mediatek/mtk_eth_soc.c
+@@ -2483,9 +2483,7 @@ static void mtk_tx_timeout(struct net_de
+ 	eth->netdev[mac->id]->stats.tx_errors++;
+ 	netif_err(eth, tx_err, dev,
+ 		  "transmit timed out\n");
+-	schedule_work(&eth->pending_work);
+ }
+-
+ static irqreturn_t mtk_handle_irq_rx(int irq, void *priv)
+ {
+ 	struct mtk_napi *rx_napi = priv;

@@ -1,0 +1,10 @@
+./
+./host
+./usr
+./usr/lib
+./usr/lib/liblldpctl.so
+./usr/lib/liblldpctl.so.4
+./usr/lib/liblldpctl.so.4.8.0
+./usr/include
+./usr/include/lldpctl.h
+./usr/include/lldp-const.h

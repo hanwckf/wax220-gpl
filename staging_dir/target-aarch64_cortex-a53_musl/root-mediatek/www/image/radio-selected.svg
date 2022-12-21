@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" style="background:#f2f2f2" viewBox="0 0 24 24">
+    <g fill="none" fill-rule="evenodd" stroke="#00D76F">
+        <circle cx="12" cy="12" r="11"/>
+        <circle cx="12" cy="12" r="6.286" fill="#00D76F" stroke-width=".778"/>
+    </g>
+</svg>

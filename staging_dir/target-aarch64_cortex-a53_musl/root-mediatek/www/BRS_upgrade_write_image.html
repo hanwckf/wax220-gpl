@@ -1,0 +1,179 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+
+<head>
+<% new_hijack_flow_head() %>
+</head>
+<body>
+	<% cfg_set("hijack_config_status", "7") %>
+<% form_submit("apply", "to_internet_no_auth.htm", "hijack_save_time")%>
+<div id="container">
+	<div class="dialog-content">
+		<!--checking new formware-->
+          <div id="card-checking-for-updates" class="install-card" style="min-width: 750px;">
+            <div class="logos">
+				<div><img class="netgear-logo" src="image/netgear_business.png"></div>
+		    <% hijack_logo_title() %>
+            </div>
+            <img class="card-image" src="<% product_img_path() %>" onerror="this.onerror=null; this.src='image/robot.png'">
+		   <div class="content">
+			   <!-- <div class="desc-title w3-xlarge"><script>document.write("$firmware_updating")</script></div> -->
+				<div class="desc-title w3-xlarge" id="upg_msg"><script>document.write("$orbi_write_flash")</script></div>
+				<div class="col s3 " id="ssid" style="display: none;">
+					<div class="word_wrap w3-large">
+						<span id="wifi_ssid_info" style="font-weight: 500;">
+							<script>
+								document.write("$orib_complete_msg8_1: ");
+							</script>
+						</span>
+						<span id="wifi_ssid_info"><% cfg_get_ssid_value("wl_ssid") %></span>
+					</div>
+					<div id="wifi_pwd_pwd" class="word_wrap w3-large">
+						<span style="font-weight: 500;">
+							<script>
+								document.write("$orib_complete_msg8_2: ");
+							</script>
+						</span>
+						<span>
+							<script>
+								var tmp = "";
+								for (var i = 0; i < '<% cfg_get("wl_psk", "wlg1") %>'.length; i++) {
+									tmp += "*";
+								}
+								document.write(tmp + "  ");
+							</script>
+						</span>
+						<img src="image/eye-slash.svg" onclick="change_pwd_show('show')">
+					</div>
+					<div id="wifi_pwd_text" class="word_wrap w3-large" style="display:none;">
+						<span style="font-weight: 500;">
+							<script>
+								document.write("$orib_complete_msg8_2: ");
+							</script>
+						</span>
+						<span><% cfg_get("wl_psk", "wlg1") %></span>
+						<img src="image/eye.svg" onclick="change_pwd_show('hide')">
+					</div>
+					<script>
+						function change_pwd_show(v) {
+							if (v == 'show') {
+								document.getElementById("wifi_pwd_pwd").style.display = 'none';
+								document.getElementById("wifi_pwd_text").style.display = '';
+							} else if (v == 'hide') {
+								document.getElementById("wifi_pwd_pwd").style.display = '';
+								document.getElementById("wifi_pwd_text").style.display = 'none';
+							}
+						}
+					</script>
+				</div>
+				<div class="loader" id="loader_img">
+					<div class="preloader-wrapper small active">
+						<div class="spinner-layer">
+							<div class="circle-clipper left">
+								<div class="circle"></div>
+								</div><div class="gap-patch">
+								<div class="circle"></div>
+								</div><div class="circle-clipper right">
+								<div class="circle"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="desc-text w3-large" id="wait_text"><script>document.write("$orbi_pls_wait");</script></div>
+			</div>
+			<div class="buttons">
+				<button id="back_btn" class="btn-flat button-nav-skip" type="button" onclick="location.href='BRS_orbi_complete.html';" style="display:none;">
+					<span>
+						<script>document.write("$orbi_back_mark");</script>
+					</span>
+				</button>
+				<button id="next_btn" class="btn button-nav" type="submit" onclick="return toInternet();" style="display:none;">
+					<span><script>document.write("$orbi_next_mark");</script></span>
+			  </button>
+			 </div>
+          </div>
+	</div>
+</div>
+<script>
+function toInternet()
+{
+	var cf = document.forms[0];
+	cf.target = "_top";
+	return true;
+}
+function display_upg_fail(msg)
+{
+		document.getElementById("upg_msg").innerHTML = msg;
+		document.getElementById("next_btn").style.display = "";
+		document.getElementById("back_btn").style.display = "";
+		document.getElementById("loader_img").style.display = "none";
+		document.getElementById("wait_text").style.display = "none";
+}
+
+function createXMLHttpRequest()
+{
+        if(typeof XMLHttpRequest == "undefined")
+                XMLHttpRequest = function(){
+                        try{return new ActiveXObject("Msxml2.XMLHTTP.6.0");}
+                                catch(e){}
+                        try{return new ActiveXObject("Msxml2.XMLHTTP.3.0");}
+                                catch(e){}
+                        try{return new ActiveXObject("Msxml2.XMLHTTP");}
+                                catch(e){}
+                        return false;
+                }
+        return new XMLHttpRequest();
+}
+
+function check_write_image()
+{
+	var url = "get_upgrade_status.txt?ts=" + new Date().getTime();
+	var xmlHttp = createXMLHttpRequest();
+	var handle=void 0;
+	
+	xmlHttp.onreadystatechange=function()
+	{
+		if(xmlHttp.readyState == 4 && xmlHttp.status == 200)
+		{
+			var result=xmlHttp.responseText;
+			var upg_status = result.split("*")[0];
+			if (upg_status >= 10000)
+			{
+				if(upg_status == 10006 || upg_status == 10000)
+					display_upg_fail("$download_confile_fail");
+				else
+					display_upg_fail("$firmware_incorrect");
+			}
+			else if (upg_status == 1100){
+				document.getElementById("upg_msg").innerHTML = "$orbi_device_reboot";
+				document.getElementById("ssid").style.display = '';
+				clearTimeout(handle);
+				handle = setTimeout("go_to_success()", 180000); 
+			}
+			else if (upg_status != "")
+			{
+				setTimeout("check_write_image()", 2000);
+			}
+		}
+		else if(xmlHttp.readyState == 4 && (xmlHttp.status == 404 || xmlHttp.status == 502)) {
+			document.getElementById("upg_msg").innerHTML = "$orbi_device_reboot";
+			document.getElementById("ssid").style.display = '';
+			clearTimeout(handle);
+			handle = setTimeout("go_to_success()", 180000); 
+		}
+	}
+	xmlHttp.open("GET", url, true);
+	xmlHttp.send();	
+}
+
+function go_to_success()
+{
+	location.href="BRS_upgrade_success.html";
+	setTimeout("go_to_success()",5000);
+}
+
+check_write_image();
+</script>
+</form>
+</body>
+</html>

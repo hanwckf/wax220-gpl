@@ -1,0 +1,674 @@
+Index: mt_wifi/mt_wifi/embedded/ap/ap.c
+===================================================================
+--- mt_wifi.orig/mt_wifi/embedded/ap/ap.c
++++ mt_wifi/mt_wifi/embedded/ap/ap.c
+@@ -4873,6 +4873,182 @@ VOID ApUpdateAccessControlList(RTMP_ADAP
+ 	}
+ }
+ 
++// [TW MrLiu 2022-06-30 add start]
++
++/*
++	==========================================================================
++	Description:
++		Check if the specified STA pass the Mac Filter List checking.
++		If fails to pass the checking, then no authentication nor association
++		is allowed
++	Return:
++		MLME_SUCCESS - this STA passes Mac Filter list checking
++
++	==========================================================================
++*/
++BOOLEAN ApCheckMacFilterList(RTMP_ADAPTER *pAd, UCHAR *pAddr, UCHAR Apidx)
++{
++	BOOLEAN Result = TRUE;
++#ifdef ACL_BLK_COUNT_SUPPORT
++	ULONG idx;
++#endif
++	if (!VALID_MBSS(pAd, Apidx))
++		return FALSE;
++
++	if (pAd->ApCfg.MBSSID[Apidx].MacFilterList.Policy == 0)       /* Mac Filter is disabled */
++		Result = TRUE;
++	else {
++		ULONG i;
++
++		if (pAd->ApCfg.MBSSID[Apidx].MacFilterList.Policy == 1)   /* Mac Filter is a positive list */
++			Result = FALSE;
++		else                                              /* Mac Filter is a negative list */
++			Result = TRUE;
++
++		for (i = 0; i < pAd->ApCfg.MBSSID[Apidx].MacFilterList.Num; i++) {
++			if (MAC_ADDR_EQUAL(pAddr, pAd->ApCfg.MBSSID[Apidx].MacFilterList.Entry[i].Addr)) {
++				Result = !Result;
++				break;
++			}
++		}
++	}
++#ifdef ACL_BLK_COUNT_SUPPORT
++		if (pAd->ApCfg.MBSSID[Apidx].MacFilterList.Policy != 2) {
++			for (idx = 0; idx < pAd->ApCfg.MBSSID[Apidx].MacFilterList.Num; idx++)
++				(pAd->ApCfg.MBSSID[Apidx].MacFilterList.Entry[idx].Reject_Count) = 0;
++		}
++#endif
++
++	if (Result == FALSE) {
++#ifdef ACL_BLK_COUNT_SUPPORT
++		if (pAd->ApCfg.MBSSID[Apidx].MacFilterList.Policy == 2) {
++			for (idx = 0; idx < pAd->ApCfg.MBSSID[Apidx].MacFilterList.Num; idx++) {
++				if (MAC_ADDR_EQUAL(pAddr, pAd->ApCfg.MBSSID[Apidx].MacFilterList.Entry[idx].Addr)) {
++						(pAd->ApCfg.MBSSID[Apidx].MacFilterList.Entry[idx].Reject_Count) += 1;
++					break;
++				}
++			}
++		}
++#endif/*ACL_BLK_COUNT_SUPPORT*/
++		MTWF_DBG(pAd, DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_INFO, MACSTR" failed in Mac Filter list checking\n",
++				 MAC2STR(pAddr));
++	}
++
++	return Result;
++}
++
++
++/*
++	==========================================================================
++	Description:
++		This routine update the current MAC table based on the current Mac Filter list.
++		If Mac Filter list change causing an associated STA become un-authorized. This STA
++		will be kicked out immediately.
++	==========================================================================
++*/
++VOID ApUpdateMacFilterList(RTMP_ADAPTER *pAd, UCHAR Apidx)
++{
++	USHORT   AclIdx, MacIdx;
++	BOOLEAN  Matched;
++	PUCHAR      pOutBuffer = NULL;
++	NDIS_STATUS NStatus;
++	ULONG       FrameLen = 0;
++	HEADER_802_11 DisassocHdr;
++	USHORT      Reason = REASON_DECLINED;
++	MAC_TABLE_ENTRY *pEntry;
++	BSS_STRUCT *pMbss;
++	BOOLEAN drop;
++
++	ASSERT(Apidx < MAX_MBSSID_NUM(pAd));
++
++	if (Apidx >= MAX_MBSSID_NUM(pAd))
++		return;
++
++	MTWF_DBG(pAd, DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_INFO, "ApUpdateMacFilterList : Apidx = %d\n", Apidx);
++	/* Mac Filter list is disabled. Do nothing about the MAC table. */
++	pMbss = &pAd->ApCfg.MBSSID[Apidx];
++
++	if (pMbss->MacFilterList.Policy == 0)
++		return;
++
++	for (MacIdx = 0; VALID_UCAST_ENTRY_WCID(pAd, MacIdx); MacIdx++) {
++		pEntry = &pAd->MacTab.Content[MacIdx];
++
++		if (!IS_ENTRY_CLIENT(pEntry))
++			continue;
++
++		/* We only need to update associations related to Mac Filter list of MBSSID[Apidx]. */
++		if (pEntry->func_tb_idx != Apidx)
++			continue;
++
++		drop = FALSE;
++		Matched = FALSE;
++
++		for (AclIdx = 0; AclIdx < pMbss->MacFilterList.Num; AclIdx++) {
++			if (MAC_ADDR_EQUAL(&pEntry->Addr[0], pMbss->MacFilterList.Entry[AclIdx].Addr)) {
++				Matched = TRUE;
++				break;
++			}
++		}
++
++		if ((Matched == FALSE) && (pMbss->MacFilterList.Policy == 1)) {
++			drop = TRUE;
++			MTWF_DBG(pAd, DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_INFO, "STA not on positive Mac Filter list. remove it...\n");
++		} else if ((Matched == TRUE) && (pMbss->MacFilterList.Policy == 2)) {
++			drop = TRUE;
++			MTWF_DBG(pAd, DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_INFO, "STA on negative Mac Filter list. remove it...\n");
++		}
++
++		if (drop == TRUE) {
++			MTWF_DBG(pAd, DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_INFO, "Apidx = %d\n", Apidx);
++			MTWF_DBG(pAd, DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_INFO, "pAd->ApCfg.MBSSID[%d].MacFilterList.Policy = %ld\n", Apidx,
++					 pMbss->MacFilterList.Policy);
++
++			/* Before delete the entry from MacTable, send disassociation packet to client. */
++			if (pEntry->Sst == SST_ASSOC) {
++				/* send out a DISASSOC frame */
++				NStatus = MlmeAllocateMemory(pAd, &pOutBuffer);
++
++				if (NStatus != NDIS_STATUS_SUCCESS) {
++					MTWF_DBG(pAd, DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_ERROR, " MlmeAllocateMemory fail  ..\n");
++					return;
++				}
++
++				Reason = REASON_DECLINED;
++				MTWF_DBG(pAd, DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_ERROR, "ASSOC - Send DISASSOC  Reason = %d frame  TO %x %x %x %x %x %x\n",
++						 Reason, PRINT_MAC(pEntry->Addr));
++				MgtMacHeaderInit(pAd, &DisassocHdr, SUBTYPE_DISASSOC, 0,
++								 pEntry->Addr,
++								 pMbss->wdev.if_addr,
++								 pMbss->wdev.bssid);
++				MakeOutgoingFrame(pOutBuffer, &FrameLen, sizeof(HEADER_802_11), &DisassocHdr, 2, &Reason, END_OF_ARGS);
++				MiniportMMRequest(pAd, 0, pOutBuffer, FrameLen);
++				MlmeFreeMemory(pOutBuffer);
++				RtmpusecDelay(5000);
++			}
++#ifdef WIFI_DIAG
++			if (pEntry && IS_ENTRY_CLIENT(pEntry))
++				diag_conn_error(pAd, pEntry->func_tb_idx, pEntry->Addr, DIAG_CONN_ACL_BLK, 0);
++#endif
++#ifdef CONN_FAIL_EVENT
++			if (IS_ENTRY_CLIENT(pEntry))
++				ApSendConnFailMsg(pAd,
++					pAd->ApCfg.MBSSID[pEntry->func_tb_idx].Ssid,
++					pAd->ApCfg.MBSSID[pEntry->func_tb_idx].SsidLen,
++					pEntry->Addr,
++					REASON_DECLINED);
++#endif
++#ifdef MAP_R2
++			if (IS_ENTRY_CLIENT(pEntry) && IS_MAP_ENABLE(pAd) && IS_MAP_R2_ENABLE(pAd))
++				wapp_handle_sta_disassoc(pAd, pEntry->wcid, Reason);
++#endif
++
++			mac_entry_delete(pAd, pEntry);
++		}
++	}
++}
++
++// [TW MrLiu 2022-06-30 add end]
+ 
+ #ifdef DOT11_N_SUPPORT
+ #ifdef DOT11N_DRAFT3
+Index: mt_wifi/mt_wifi/embedded/ap/ap_cfg.c
+===================================================================
+--- mt_wifi.orig/mt_wifi/embedded/ap/ap_cfg.c
++++ mt_wifi/mt_wifi/embedded/ap/ap_cfg.c
+@@ -479,6 +479,15 @@ INT Set_L2WhiteMacListDelAllEntry_Proc(R
+ INT Set_L2WhiteMacListShowAllEntry_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+ //[TW Jiangdingyong 2022.4.11 add end]
+ 
++// [TW MrLiu 2022-06-30 add start]
++INT Set_MacFilterPolicy_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
++
++INT Set_MacFilterAddEntry_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
++
++INT Set_MacFilterClearAll_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
++
++INT Set_MacFilterShowAll_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
++// [TW MrLiu 2022-06-30 add end]
+ 
+ INT Set_SiteSurvey_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+ 
+@@ -1246,6 +1255,13 @@ static struct {
+ 	{"L2WhiteMacListShowAll",			Set_L2WhiteMacListShowAllEntry_Proc},
+ //[TW Jiangdingyong 2022.4.11 add end]
+ 
++// [TW MrLiu 2022-06-30 add start]
++	{"MacFilterPolicy",				Set_MacFilterPolicy_Proc},
++	{"MacFilterAddEntry",			Set_MacFilterAddEntry_Proc},
++	{"MacFilterShowAll",			Set_MacFilterShowAll_Proc},
++	{"MacFilterClearAll",			Set_MacFilterClearAll_Proc},
++// [TW MrLiu 2022-06-30 add end]
++
+ 	{"WPAPSK",					Set_SecWPAPSK_Proc},
+ 	{"RadioOn",					Set_RadioOn_Proc},
+ 	{"Lp",	Set_Lp_Proc},
+@@ -14976,6 +14992,360 @@ INT	Set_ACLClearAll_Proc(
+ 	return TRUE;
+ }
+ 
++// [TW MrLiu 2022-06-30 add start]
++
++/*
++    ==========================================================================
++    Description:
++	Set Mac Filter policy
++    Return:
++	TRUE if all parameters are OK, FALSE otherwise
++    ==========================================================================
++*/
++INT	Set_MacFilterPolicy_Proc(
++	IN	PRTMP_ADAPTER	pAd,
++	IN	RTMP_STRING *arg)
++{
++	POS_COOKIE pObj = (POS_COOKIE) pAd->OS_Cookie;
++	UINT ifIndex = pObj->ioctl_if;
++
++	if (!VALID_MBSS(pAd, ifIndex)) {
++		MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR, "invalid ioctl_if %d\n", ifIndex);
++		return FALSE;
++	}
++
++#ifdef ACL_BLK_COUNT_SUPPORT
++	if (os_str_tol(arg, 0, 10) != 2) {
++		int count = 0;
++
++		for (count = 0; count < pAd->ApCfg.MBSSID[ifIndex].MacFilterList.Num; count++)
++			pAd->ApCfg.MBSSID[ifIndex].MacFilterList.Entry[count].Reject_Count = 0;
++	}
++#endif
++	switch (os_str_tol(arg, 0, 10)) {
++	case 0: /*Disable */
++		pAd->ApCfg.MBSSID[ifIndex].MacFilterList.Policy = 0;
++		break;
++
++	case 1: /* Allow All, and Mac Filter list is positive. */
++		pAd->ApCfg.MBSSID[ifIndex].MacFilterList.Policy = 1;
++		break;
++
++	case 2: /* Reject All, and Mac Filter list is negative. */
++		pAd->ApCfg.MBSSID[ifIndex].MacFilterList.Policy = 2;
++		break;
++
++	default: /*Invalid argument */
++		MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR, "Invalid argument (=%s)\n", arg);
++		return FALSE;
++	}
++
++	/* check if the change in Mac Filter list affects any existent association */
++	ApUpdateMacFilterList(pAd, ifIndex);
++	MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_INFO, "IF(ra%d) Set_AccessPolicy_Proc::(AccessPolicy=%ld)\n",
++			 ifIndex, pAd->ApCfg.MBSSID[ifIndex].MacFilterList.Policy);
++	return TRUE;
++}
++
++/*
++    ==========================================================================
++    Description:
++	Add one entry or several entries(if allowed to)
++		into Mac Filter mac table list
++    Return:
++	TRUE if all parameters are OK, FALSE otherwise
++    ==========================================================================
++*/
++INT	Set_MacFilterAddEntry_Proc(
++	IN	PRTMP_ADAPTER	pAd,
++	IN	RTMP_STRING *arg)
++{
++	UCHAR					macAddr[MAC_ADDR_LEN];
++	/*	RT_802_11_ACL			acl; */
++	RT_802_11_ACL			*pacl = NULL;
++	RTMP_STRING *this_char;
++	RTMP_STRING *value;
++	INT						i, j;
++	BOOLEAN					isDuplicate = FALSE;
++	POS_COOKIE pObj = (POS_COOKIE) pAd->OS_Cookie;
++	UINT 					ifIndex = pObj->ioctl_if;
++
++	if (!VALID_MBSS(pAd, ifIndex)) {
++		MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR, "invalid ioctl_if %d\n", ifIndex);
++		return FALSE;
++	}
++
++	if (pAd->ApCfg.MBSSID[ifIndex].MacFilterList.Num >= (MAX_NUM_OF_ACL_LIST - 1)) {
++		MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_WARN,
++				 "The MacFilterList is full, and no more entry can join the list!\n");
++		return FALSE;
++	}
++
++	/* allocate memory */
++	os_alloc_mem(NULL, (UCHAR **)&pacl, sizeof(RT_802_11_ACL));
++
++	if (pacl == NULL) {
++		MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR, "Allocate memory fail!\n");
++		return FALSE;
++	}
++
++	NdisZeroMemory(pacl, sizeof(RT_802_11_ACL));
++	NdisMoveMemory(pacl, &pAd->ApCfg.MBSSID[ifIndex].MacFilterList, sizeof(RT_802_11_ACL));
++
++	while ((this_char = strsep((char **)&arg, ";")) != NULL) {
++		if (*this_char == '\0') {
++			MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_WARN, "An unnecessary delimiter entered!\n");
++			continue;
++		}
++
++		if (strlen(this_char) != 17) { /*Mac address acceptable format 01:02:03:04:05:06 length 17 */
++			MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR, "illegal MAC address length!\n");
++			continue;
++		}
++
++		for (i = 0, value = rstrtok(this_char, ":"); value; value = rstrtok(NULL, ":")) {
++			if ((strlen(value) != 2) || (!isxdigit(*value)) || (!isxdigit(*(value + 1)))) {
++				MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR, "illegal MAC address format or octet!\n");
++				/* Do not use "continue" to replace "break" */
++				break;
++			}
++
++			AtoH(value, &macAddr[i++], 1);
++		}
++
++		if (i != MAC_ADDR_LEN)
++			continue;
++
++		/* Check if this entry is duplicate. */
++		isDuplicate = FALSE;
++
++		for (j = 0; j < pacl->Num; j++) {
++			if (memcmp(pacl->Entry[j].Addr, &macAddr, 6) == 0) {
++				isDuplicate = TRUE;
++				MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_WARN, "You have added an entry before :\n");
++				MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_WARN, "The duplicate entry is "MACSTR"\n",
++						 MAC2STR(macAddr));
++			}
++		}
++
++		if (!isDuplicate)
++			NdisMoveMemory(pacl->Entry[pacl->Num++].Addr, &macAddr, MAC_ADDR_LEN);
++
++		if (pacl->Num == MAX_NUM_OF_ACL_LIST) {
++			MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_WARN,
++					 "The MacFilterList is full, and no more entry can join the list!\n");
++			MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_WARN, "The last entry of Mac Filter list is "MACSTR"\n",
++					 MAC2STR(macAddr));
++			break;
++		}
++	}
++
++	ASSERT(pacl->Num < MAX_NUM_OF_ACL_LIST);
++	NdisZeroMemory(&pAd->ApCfg.MBSSID[ifIndex].MacFilterList, sizeof(RT_802_11_ACL));
++	NdisMoveMemory(&pAd->ApCfg.MBSSID[ifIndex].MacFilterList, pacl, sizeof(RT_802_11_ACL));
++	/* check if the change in Mac Filter list affects any existent association */
++	ApUpdateMacFilterList(pAd, ifIndex);
++	MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_INFO,
++			 "Set (Policy=%ld, Entry#=%ld)\n",
++			  pAd->ApCfg.MBSSID[ifIndex].MacFilterList.Policy,
++			  pAd->ApCfg.MBSSID[ifIndex].MacFilterList.Num);
++#ifdef DBG
++	MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_INFO,
++			 "=============== Entry ===============\n");
++
++	for (i = 0; i < pAd->ApCfg.MBSSID[ifIndex].MacFilterList.Num; i++) {
++		MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_INFO, "Entry #%02d: ", i + 1);
++
++		MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_INFO,
++				 MACSTR"\n", MAC2STR(pAd->ApCfg.MBSSID[ifIndex].MacFilterList.Entry[i].Addr));
++	}
++
++#endif
++
++	if (pacl != NULL)
++		os_free_mem(pacl);
++
++	return TRUE;
++}
++
++/* for Mac Filter policy message */
++#define MF_POLICY_TYPE_NUM	3
++char const *pMF_PolicyMessage[MF_POLICY_TYPE_NUM] = {
++	"the Mac Filter feature is disabled",						/* 0 : Disable */
++	"only the following entries are allowed to join this BSS",			/* 1 : Allow */
++	"all the following entries are rejected to join this BSS",			/* 2 : Reject */
++};
++
++/*
++    ==========================================================================
++    Description:
++	Dump all the entries in the Mac Filter
++		mac table list of a specified BSS
++    Return:
++	TRUE if all parameters are OK, FALSE otherwise
++    ==========================================================================
++*/
++INT	Set_MacFilterShowAll_Proc(
++	IN	PRTMP_ADAPTER	pAd,
++	IN	RTMP_STRING *arg)
++{
++	/* RT_802_11_ACL			acl; */
++	RT_802_11_ACL			*pacl = NULL;
++	BOOLEAN					bDumpAll = FALSE;
++	POS_COOKIE pObj = (POS_COOKIE) pAd->OS_Cookie;
++	INT						i;
++	UINT 					ifIndex = pObj->ioctl_if;
++	struct wifi_dev *wdev;
++
++	bDumpAll = os_str_tol(arg, 0, 10);
++
++	if (bDumpAll == 1)
++		bDumpAll = TRUE;
++	else if (bDumpAll == 0) {
++		MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_WARN, "Your input is 0!\n");
++		MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_WARN, "The Mac Filter List will not be dumped!\n");
++		return TRUE;
++	} else {
++		return FALSE;  /* Invalid argument */
++	}
++
++	if (!VALID_MBSS(pAd, ifIndex)) {
++		MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR, "invalid ioctl_if %d\n", ifIndex);
++		return FALSE;
++	}
++
++	/* allocate memory */
++	os_alloc_mem(NULL, (UCHAR **)&pacl, sizeof(RT_802_11_ACL));
++
++	if (pacl == NULL) {
++		MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR, "Allocate memory fail!!!\n");
++		return FALSE;
++	}
++
++	NdisZeroMemory(pacl, sizeof(RT_802_11_ACL));
++	NdisMoveMemory(pacl, &pAd->ApCfg.MBSSID[ifIndex].MacFilterList, sizeof(RT_802_11_ACL));
++
++	wdev = &pAd->ApCfg.MBSSID[ifIndex].wdev;
++
++	/* Check if the list is already empty. */
++	if (pacl->Num == 0) {
++		MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF, "The Mac Filter List is empty!\n");
++		os_free_mem(pacl);
++		return TRUE;
++	}
++
++	ASSERT(((bDumpAll == 1) && (pacl->Num > 0)));
++	/* Show the corresponding policy first. */
++	MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF,
++			 "=============== Mac Filter Policy ===============\n");
++	MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF,
++			 "%s Policy is %ld : ", wdev->if_dev->name, pacl->Policy);
++	MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF,
++			 "%s\n", pMF_PolicyMessage[pacl->Policy]);
++	/* Dump the entry in the list one by one */
++	MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF,
++			 "===============  Mac Filter List  ===============\n");
++
++	for (i = 0; i < pacl->Num; i++) {
++		MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF,
++				 "Entry #%02d: ", i + 1);
++
++		MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF,
++				 MACSTR"\n", MAC2STR(pacl->Entry[i].Addr));
++	}
++
++	os_free_mem(pacl);
++
++	return TRUE;
++}
++
++/*
++    ==========================================================================
++    Description:
++	Clear all the entries in the Mac Filter
++		mac table list of a specified BSS
++    Return:
++	TRUE if all parameters are OK, FALSE otherwise
++    ==========================================================================
++*/
++INT	Set_MacFilterClearAll_Proc(
++	IN	PRTMP_ADAPTER	pAd,
++	IN	RTMP_STRING *arg)
++{
++	/*	RT_802_11_ACL			acl; */
++	RT_802_11_ACL			*pacl = NULL;
++	BOOLEAN					bClearAll = FALSE;
++	POS_COOKIE pObj = (POS_COOKIE) pAd->OS_Cookie;
++	UINT 					ifIndex = pObj->ioctl_if;
++
++	bClearAll = os_str_tol(arg, 0, 10);
++
++	if (bClearAll == 1)
++		bClearAll = TRUE;
++	else if (bClearAll == 0) {
++		MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_WARN, "Your input is 0!\n");
++		MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_WARN, "The Mac Filter List will be kept unchanged!\n");
++		return TRUE;
++	} else {
++		return FALSE;  /* Invalid argument */
++	}
++
++	if (!VALID_MBSS(pAd, ifIndex)) {
++		MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR, "invalid ioctl_if %d\n", ifIndex);
++		return FALSE;
++	}
++
++	/* allocate memory */
++	os_alloc_mem(NULL, (UCHAR **)&pacl, sizeof(RT_802_11_ACL));
++
++	if (pacl == NULL) {
++		MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR, "Allocate memory fail!!!\n");
++		return FALSE;
++	}
++
++	NdisZeroMemory(pacl, sizeof(RT_802_11_ACL));
++	NdisMoveMemory(pacl, &pAd->ApCfg.MBSSID[ifIndex].MacFilterList, sizeof(RT_802_11_ACL));
++
++	/* Check if the list is already empty. */
++	if (pacl->Num == 0) {
++		MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_WARN, "The Mac Filter List is empty!\n");
++		MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_WARN, "No need to clear the Mac Filter List!\n");
++
++		if (pacl != NULL)
++			os_free_mem(pacl);
++
++		return TRUE;
++	}
++
++	ASSERT(((bClearAll == 1) && (pacl->Num > 0)));
++
++	/* Clear the entry in the list one by one */
++	/* Keep the corresponding policy unchanged. */
++	do {
++		NdisZeroMemory(pacl->Entry[pacl->Num - 1].Addr, MAC_ADDR_LEN);
++#ifdef ACL_BLK_COUNT_SUPPORT
++		pacl->Entry[pacl->Num - 1].Reject_Count = 0;
++#endif
++		pacl->Num -= 1;
++	} while (pacl->Num > 0);
++
++	ASSERT(pacl->Num == 0);
++	NdisZeroMemory(&(pAd->ApCfg.MBSSID[ifIndex].MacFilterList), sizeof(RT_802_11_ACL));
++	NdisMoveMemory(&(pAd->ApCfg.MBSSID[ifIndex].MacFilterList), pacl, sizeof(RT_802_11_ACL));
++	/* check if the change in Mac Filter list affects any existent association */
++	ApUpdateMacFilterList(pAd, ifIndex);
++
++	if (pacl != NULL)
++		os_free_mem(pacl);
++
++	MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_INFO, "Set (Policy=%ld, Entry#=%ld)\n",
++			 pAd->ApCfg.MBSSID[ifIndex].MacFilterList.Policy,
++			 pAd->ApCfg.MBSSID[ifIndex].MacFilterList.Num);
++	return TRUE;
++}
++
++// [TW MrLiu 2022-06-30 add end]
++
+ #ifdef DBG
+ static void _rtmp_hexdump(int level, const char *title, const UINT8 *buf,
+ 						  size_t len, int show)
+Index: mt_wifi/mt_wifi/embedded/fsm/ap_mgmt_assoc.c
+===================================================================
+--- mt_wifi.orig/mt_wifi/embedded/fsm/ap_mgmt_assoc.c
++++ mt_wifi/mt_wifi/embedded/fsm/ap_mgmt_assoc.c
+@@ -1958,7 +1958,8 @@ static VOID ap_cmm_peer_assoc_req_action
+ 		(pMbss->wdev.WscControl.bWscTrigger) &&
+ 		(pMbss->wdev.WscControl.WscV2Info.bEnableWpsV2) &&
+ 		(pMbss->wdev.WscControl.WscV2Info.bWpsEnable) &&
+-		(pMbss->AccessControlList.Policy == 1))
++		((pMbss->MacFilterList.Policy == 1) ||	/* [TW MrLiu 2022-06-30 add] */
++		(pMbss->AccessControlList.Policy == 1)))
+ 		;
+ 	else
+ #endif /* WSC_V2_SUPPORT */
+@@ -1970,7 +1971,8 @@ static VOID ap_cmm_peer_assoc_req_action
+ #endif /*  MAP_BL_SUPPORT */
+ 
+ 			/* set a flag for sending Assoc-Fail response to unwanted STA later. */
+-			if (!ApCheckAccessControlList(pAd, ie_list->Addr2, pEntry->func_tb_idx))
++			if (!ApCheckMacFilterList(pAd, ie_list->Addr2, pEntry->func_tb_idx) ||	/* [TW MrLiu 2022-06-30 add] */
++				!ApCheckAccessControlList(pAd, ie_list->Addr2, pEntry->func_tb_idx))
+ 				bACLReject = TRUE;
+ 
+ #if defined(CONFIG_MAP_SUPPORT) && defined(MAP_BL_SUPPORT)
+Index: mt_wifi/mt_wifi/embedded/fsm/ap_mgmt_auth.c
+===================================================================
+--- mt_wifi.orig/mt_wifi/embedded/fsm/ap_mgmt_auth.c
++++ mt_wifi/mt_wifi/embedded/fsm/ap_mgmt_auth.c
+@@ -706,7 +706,8 @@ SendAuth:
+ 		(pMbss->wdev.WscControl.bWscTrigger) &&
+ 		(pMbss->wdev.WscControl.WscV2Info.bEnableWpsV2) &&
+ 		(pMbss->wdev.WscControl.WscV2Info.bWpsEnable) &&
+-		(pMbss->AccessControlList.Policy == 1))
++		((pMbss->MacFilterList.Policy == 1) ||	/* [TW MrLiu 2022-06-30 add] */
++		(pMbss->AccessControlList.Policy == 1)))
+ 		;
+ 	else
+ #endif /* WSC_V2_SUPPORT */
+@@ -718,7 +719,8 @@ SendAuth:
+ #endif /*  MAP_BL_SUPPORT */
+ 
+ 		/* fail in ACL checking => send an AUTH-Fail seq#2. */
+-		if (!ApCheckAccessControlList(pAd, pAuth_info->addr2, apidx)) {
++		if (!ApCheckMacFilterList(pAd, pAuth_info->addr2, apidx) ||	/* [TW MrLiu 2022-06-30 add] */
++			!ApCheckAccessControlList(pAd, pAuth_info->addr2, apidx)) {
+ 
+ #if defined(CONFIG_MAP_SUPPORT) && defined(MAP_BL_SUPPORT)
+ 			bACLReject = TRUE;
+Index: mt_wifi/mt_wifi/embedded/include/ap.h
+===================================================================
+--- mt_wifi.orig/mt_wifi/embedded/include/ap.h
++++ mt_wifi/mt_wifi/embedded/include/ap.h
+@@ -390,6 +390,10 @@ VOID ApUpdateCapabilityAndErpIe(RTMP_ADA
+ BOOLEAN ApCheckAccessControlList(RTMP_ADAPTER *pAd, UCHAR *addr, UCHAR apidx);
+ VOID ApUpdateAccessControlList(RTMP_ADAPTER *pAd, UCHAR apidx);
+ 
++// [TW MrLiu 2022-06-30 add start]
++BOOLEAN ApCheckMacFilterList(RTMP_ADAPTER *pAd, UCHAR *addr, UCHAR apidx);
++VOID ApUpdateMacFilterList(RTMP_ADAPTER *pAd, UCHAR apidx);
++// [TW MrLiu 2022-06-30 add end]
+ 
+ #ifdef AP_QLOAD_SUPPORT
+ VOID QBSS_LoadInit(RTMP_ADAPTER *pAd);
+Index: mt_wifi/mt_wifi/embedded/include/rtmp.h
+===================================================================
+--- mt_wifi.orig/mt_wifi/embedded/include/rtmp.h
++++ mt_wifi/mt_wifi/embedded/include/rtmp.h
+@@ -2862,6 +2862,10 @@ typedef struct _BSS_STRUCT {
+ 	RT_802_11_ACL AccessControlList;
+ 	RT_802_11_ACL L2WhiteMacList;
+ 
++// [TW MrLiu 2022-06-30 add start]
++	RT_802_11_ACL MacFilterList;
++// [TW MrLiu 2022-06-30 add end]
++
+ 	/* EDCA QoS */
+ 	/*BOOLEAN bWmmCapable;*/	/* 0:disable WMM, 1:enable WMM */
+ 	BOOLEAN bDLSCapable;	/* 0:disable DLS, 1:enable DLS */
+Index: mt_wifi/mt_wifi/os/linux/cfg80211/cfg80211_rx.c
+===================================================================
+--- mt_wifi.orig/mt_wifi/os/linux/cfg80211/cfg80211_rx.c
++++ mt_wifi/mt_wifi/os/linux/cfg80211/cfg80211_rx.c
+@@ -709,7 +709,8 @@ VOID CFG80211_AssocReqHandler(RTMP_ADAPT
+ 			else
+ #endif /* WSC_V2_SUPPORT */
+ 				/* set a flag for sending Assoc-Fail response to unwanted STA later. */
+-				if (!ApCheckAccessControlList(pAd, ie_list->Addr2, pEntry->func_tb_idx))
++				if (!ApCheckMacFilterList(pAd, ie_list->Addr2, pEntry->func_tb_idx) ||	/* [TW MrLiu 2022-06-30 add] */
++					!ApCheckAccessControlList(pAd, ie_list->Addr2, pEntry->func_tb_idx))
+ 					bACLReject = TRUE;
+ 		MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+ 				 ("assoc - MBSS(%d), receive reassoc request from "MACSTR"\n",

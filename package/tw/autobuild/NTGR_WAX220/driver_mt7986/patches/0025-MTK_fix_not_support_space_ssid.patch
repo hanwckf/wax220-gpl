@@ -1,0 +1,25 @@
+From db3e743787de7557096c1b67866c15d7b96892b7 Mon Sep 17 00:00:00 2001
+From: caojingzhe <caojingzhe@twsh.com>
+Date: Tue, 13 Sep 2022 14:41:25 +0800
+Subject: [PATCH] 2
+
+---
+ .../mt_wifi/mt_wifi/embedded/common/multi_profile.c                     | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mt_wifi/embedded/common/multi_profile.c b/mt_wifi/embedded/common/multi_profile.c
+index 58062020e..b3b683305 100755
+--- a/mt_wifi/embedded/common/multi_profile.c
++++ b/mt_wifi/embedded/common/multi_profile.c
+@@ -717,7 +717,7 @@ static INT multi_profile_merge_increase(
+ 			goto end;
+ 		}
+ 
+-		if (RTMPGetKeyParameter(tok_str, tmpbuf, MAX_PARAM_BUFFER_SIZE, buf2, TRUE)) {
++		if (RTMPGetKeyParameter(tok_str, tmpbuf, MAX_PARAM_BUFFER_SIZE, buf2, FALSE)) {
+ 			j = k + mpf->pf1_num;
+ 			snprintf(tok_str, TEMP_STR_SIZE, "%s%d", parm, j);
+ 			RTMPSetKeyParameter(tok_str, tmpbuf, MAX_PARAM_BUFFER_SIZE, final, TRUE);
+-- 
+2.13.1
+

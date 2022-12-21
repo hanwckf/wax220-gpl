@@ -1,0 +1,436 @@
+From c08d3cfe563335fcecad69b6d42672bc44163d09 Mon Sep 17 00:00:00 2001
+From: jiangdingyong <jiangdingyong@twsh.com>
+Date: Sun, 24 Apr 2022 16:34:42 +0800
+Subject: [PATCH] 2
+
+---
+ .../mt_wifi/mt_wifi/embedded/ap/ap_cfg.c           | 213 +++++++++++++++++++++
+ .../mt_wifi/mt_wifi/embedded/ap/ap_data.c          |  57 +++++-
+ .../mt_wifi/mt_wifi/embedded/common/cmm_profile.c  |  70 +++++++
+ .../mt_wifi/mt_wifi/embedded/include/rtmp.h        |   1 +
+ 4 files changed, 339 insertions(+), 2 deletions(-)
+
+diff --git a/mt_wifi/embedded/ap/ap_cfg.c b/mt_wifi/embedded/ap/ap_cfg.c
+old mode 100644
+new mode 100755
+index 1e2f9034..d1d0e99c
+--- a/mt_wifi/embedded/ap/ap_cfg.c
++++ b/mt_wifi/embedded/ap/ap_cfg.c
+@@ -470,6 +470,15 @@ INT Set_ACLShowAll_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+ 
+ INT Set_ACLClearAll_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+ 
++//[TW Jiangdingyong 2022.4.11 add start]
++INT Set_L2WhiteMacListSetEntry_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
++
++INT Set_L2WhiteMacListDelAllEntry_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
++
++INT Set_L2WhiteMacListShowAllEntry_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
++//[TW Jiangdingyong 2022.4.11 add end]
++
++
+ INT Set_SiteSurvey_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+ 
+ INT Set_AutoChannelSel_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+@@ -1229,6 +1238,12 @@ static struct {
+ 	{"ACLDelEntry",					Set_ACLDelEntry_Proc},
+ 	{"ACLShowAll",					Set_ACLShowAll_Proc},
+ 	{"ACLClearAll",					Set_ACLClearAll_Proc},
++//[TW Jiangdingyong 2022.4.11 add start]
++	{"L2WhiteMacListSet",				Set_L2WhiteMacListSetEntry_Proc},
++	{"L2WhiteMacListDelAll",			Set_L2WhiteMacListDelAllEntry_Proc},
++	{"L2WhiteMacListShowAll",			Set_L2WhiteMacListShowAllEntry_Proc},
++//[TW Jiangdingyong 2022.4.11 add end]
++
+ 	{"WPAPSK",					Set_SecWPAPSK_Proc},
+ 	{"RadioOn",					Set_RadioOn_Proc},
+ 	{"Lp",	Set_Lp_Proc},
+@@ -14662,6 +14677,204 @@ INT	Set_ACLShowAll_Proc(
+ 	return TRUE;
+ }
+ 
++
++//[TW Jiangdingyong 2022.4.11 add start]
++/*
++    ==========================================================================
++    Description:
++	Add one entry or several entries(if allowed to)
++		into Access control mac table list
++    Return:
++	TRUE if all parameters are OK, FALSE otherwise
++    ==========================================================================
++*/
++INT	Set_L2WhiteMacListSetEntry_Proc(
++	IN	PRTMP_ADAPTER	pAd,
++	IN	RTMP_STRING *arg)
++{
++	UCHAR					macAddr[MAC_ADDR_LEN];
++	/*	RT_802_11_ACL			acl; */
++	RT_802_11_ACL			*pacl = NULL;
++	RTMP_STRING *this_char;
++	RTMP_STRING *value;
++	INT						i, j;
++	BOOLEAN					isDuplicate = FALSE;
++	POS_COOKIE pObj = (POS_COOKIE) pAd->OS_Cookie;
++	UINT 					ifIndex = pObj->ioctl_if;
++
++	if (!VALID_MBSS(pAd, ifIndex)) {
++		MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR, ("%s(): invalid ioctl_if %d\n", __func__, ifIndex));
++		return FALSE;
++	}
++
++    MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("IF(ra%d) Set_L2WhiteMacListSetEntry_Proc::(pAd->ApCfg.MBSSID[ifIndex].L2WhiteMacList.Num=%ld)\n",
++             ifIndex, pAd->ApCfg.MBSSID[ifIndex].L2WhiteMacList.Num));
++
++	/* allocate memory */
++	os_alloc_mem(NULL, (UCHAR **)&pacl, sizeof(RT_802_11_ACL));
++
++	if (pacl == NULL) {
++		MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR, ("%s: Allocate memory fail!!!\n", __func__));
++		return FALSE;
++	}
++
++	NdisZeroMemory(pacl, sizeof(RT_802_11_ACL));
++	NdisMoveMemory(pacl, &pAd->ApCfg.MBSSID[ifIndex].L2WhiteMacList, sizeof(RT_802_11_ACL));
++
++	while ((this_char = strsep((char **)&arg, ";")) != NULL) {
++		if (*this_char == '\0') {
++			MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("An unnecessary delimiter entered!\n"));
++			continue;
++		}
++
++		if (strlen(this_char) != 17) { /*Mac address acceptable format 01:02:03:04:05:06 length 17 */
++			MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("illegal MAC address length!\n"));
++			continue;
++		}
++
++		for (i = 0, value = rstrtok(this_char, ":"); value; value = rstrtok(NULL, ":")) {
++			if ((strlen(value) != 2) || (!isxdigit(*value)) || (!isxdigit(*(value + 1)))) {
++				MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("illegal MAC address format or octet!\n"));
++				/* Do not use "continue" to replace "break" */
++				break;
++			}
++
++			AtoH(value, &macAddr[i++], 1);
++		}
++
++		if (i != MAC_ADDR_LEN)
++			continue;
++
++		/* Check if this entry is duplicate. */
++		isDuplicate = FALSE;
++
++		for (j = 0; j < pacl->Num; j++) {
++			if (memcmp(pacl->Entry[j].Addr, &macAddr, 6) == 0) {
++				isDuplicate = TRUE;
++				MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("You have added an entry before :\n"));
++				MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("The duplicate entry is %02x:%02x:%02x:%02x:%02x:%02x\n",
++						 macAddr[0], macAddr[1], macAddr[2], macAddr[3], macAddr[4], macAddr[5]));
++			}
++		}
++
++		if (!isDuplicate)
++			NdisMoveMemory(pacl->Entry[pacl->Num++].Addr, &macAddr, MAC_ADDR_LEN);
++
++		if (pacl->Num == MAX_NUM_OF_ACL_LIST) {
++			MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF,
++					 ("The AccessControlList is full, and no more entry can join the list!\n"));
++			MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("The last entry of ACL is %02x:%02x:%02x:%02x:%02x:%02x\n",
++					 macAddr[0], macAddr[1], macAddr[2], macAddr[3], macAddr[4], macAddr[5]));
++			break;
++		}
++	}
++
++	ASSERT(pacl->Num < MAX_NUM_OF_ACL_LIST);
++	NdisZeroMemory(&pAd->ApCfg.MBSSID[ifIndex].L2WhiteMacList, sizeof(RT_802_11_ACL));
++	NdisMoveMemory(&pAd->ApCfg.MBSSID[ifIndex].L2WhiteMacList, pacl, sizeof(RT_802_11_ACL));
++	/* check if the change in ACL affects any existent association */
++	MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF,
++			 ("Set::%s(Entry#=%ld)\n",
++			  __func__,  pAd->ApCfg.MBSSID[ifIndex].L2WhiteMacList.Num));
++#if 1//def DBG
++	MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF,
++			 ("=============== Entry ===============\n"));
++
++	for (i = 0; i < pAd->ApCfg.MBSSID[ifIndex].L2WhiteMacList.Num; i++) {
++		MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("Entry #%02d: ", i + 1));
++
++		for (j = 0; j < MAC_ADDR_LEN; j++)
++			MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF,
++					 ("%02X ", pAd->ApCfg.MBSSID[ifIndex].L2WhiteMacList.Entry[i].Addr[j]));
++
++		MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("\n"));
++	}
++
++#endif
++
++	if (pacl != NULL)
++		os_free_mem(pacl);
++
++	return TRUE;
++}
++
++
++INT	Set_L2WhiteMacListDelAllEntry_Proc(
++	IN	PRTMP_ADAPTER	pAd,
++	IN	RTMP_STRING *arg)
++{
++	INT						i, j;
++	POS_COOKIE pObj = (POS_COOKIE) pAd->OS_Cookie;
++	UINT 					ifIndex = pObj->ioctl_if;
++
++	if (!VALID_MBSS(pAd, ifIndex)) {
++		MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR, ("%s(): invalid ioctl_if %d\n", __func__, ifIndex));
++		return FALSE;
++	}
++
++    MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("IF(ra%d) Set_L2WhiteMacListDelAllEntry_Proc::(pAd->ApCfg.MBSSID[ifIndex].L2WhiteMacList.Num=%ld)\n",
++             ifIndex, pAd->ApCfg.MBSSID[ifIndex].L2WhiteMacList.Num));
++
++	NdisZeroMemory(&pAd->ApCfg.MBSSID[ifIndex].L2WhiteMacList, sizeof(RT_802_11_ACL));
++
++#if 1//def DBG
++	MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF,
++			 ("=============== Entry ===============\n"));
++
++	for (i = 0; i < pAd->ApCfg.MBSSID[ifIndex].L2WhiteMacList.Num; i++) {
++		MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("Entry #%02d: ", i + 1));
++
++		for (j = 0; j < MAC_ADDR_LEN; j++)
++			MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF,
++					 ("%02X ", pAd->ApCfg.MBSSID[ifIndex].L2WhiteMacList.Entry[i].Addr[j]));
++
++		MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("\n"));
++	}
++
++#endif
++
++	return TRUE;
++}
++
++
++INT	Set_L2WhiteMacListShowAllEntry_Proc(
++	IN	PRTMP_ADAPTER	pAd,
++	IN	RTMP_STRING *arg)
++{
++	INT						i, j;
++	POS_COOKIE pObj = (POS_COOKIE) pAd->OS_Cookie;
++	UINT 					ifIndex = pObj->ioctl_if;
++
++	if (!VALID_MBSS(pAd, ifIndex)) {
++		MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR, ("%s(): invalid ioctl_if %d\n", __func__, ifIndex));
++		return FALSE;
++	}
++
++MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("IF(ra%d) Set_L2WhiteMacListShowAllEntry_Proc::(pAd->ApCfg.MBSSID[ifIndex].L2WhiteMacList.Num=%ld)\n",
++         ifIndex, pAd->ApCfg.MBSSID[ifIndex].L2WhiteMacList.Num));
++
++#if 1//def DBG
++	MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF,
++			 ("=============== Entry ===============\n"));
++
++	for (i = 0; i < pAd->ApCfg.MBSSID[ifIndex].L2WhiteMacList.Num; i++) {
++		MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("Entry #%02d: ", i + 1));
++
++		for (j = 0; j < MAC_ADDR_LEN; j++)
++			MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF,
++					 ("%02X ", pAd->ApCfg.MBSSID[ifIndex].L2WhiteMacList.Entry[i].Addr[j]));
++
++		MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("\n"));
++	}
++
++#endif
++
++	return TRUE;
++}
++
++
++//[TW Jiangdingyong 2022.4.11 add end]
++
+ /*
+     ==========================================================================
+     Description:
+diff --git a/mt_wifi/embedded/ap/ap_data.c b/mt_wifi/embedded/ap/ap_data.c
+old mode 100644
+new mode 100755
+index 2685f8fc..a0553361
+--- a/mt_wifi/embedded/ap/ap_data.c
++++ b/mt_wifi/embedded/ap/ap_data.c
+@@ -3804,6 +3804,45 @@ INT ap_rx_ps_handle(RTMP_ADAPTER *pAd, struct wifi_dev *wdev, RX_BLK *pRxBlk)
+ 	return TRUE;
+ }
+ 
++
++//[TW Jiangdingyong 2022.4.11 add start]
++BOOLEAN ApCheckL2WhiteMacList_TW(RTMP_ADAPTER *pAd, UCHAR *pAddr, UCHAR Apidx)
++{
++	BOOLEAN fond = FALSE;
++         int i=0;
++
++         //MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("Apidx=%d   MAX_MBSSID_NUM(pAd)=%d\n", 
++         //                   Apidx, MAX_MBSSID_NUM(pAd)));
++
++	if (!VALID_MBSS(pAd, Apidx))
++		return FALSE;
++
++       // MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_OFF, (" pAd->ApCfg.MBSSID[Apidx].AccessControlList.Num=%ld  \n", 
++       //                    pAd->ApCfg.MBSSID[Apidx].L2WhiteMacList.Num));
++       // MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("i=%d pAddr mac=%02x:%02x:%02x:%02x:%02x:%02x:\n", i, 
++       //             pAddr[0],pAddr[1] ,pAddr[2],pAddr[3] ,pAddr[4],pAddr[5]));
++
++       for (i = 0; i < pAd->ApCfg.MBSSID[Apidx].L2WhiteMacList.Num; i++) {
++           //MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("i=%d Entry mac=%02x:%02x:%02x:%02x:%02x:%02x:\n", i, 
++          //         pAd->ApCfg.MBSSID[Apidx].L2WhiteMacList.Entry[i].Addr[0], 
++          //         pAd->ApCfg.MBSSID[Apidx].L2WhiteMacList.Entry[i].Addr[1],
++         //          pAd->ApCfg.MBSSID[Apidx].L2WhiteMacList.Entry[i].Addr[2], 
++         //          pAd->ApCfg.MBSSID[Apidx].L2WhiteMacList.Entry[i].Addr[3],
++         //          pAd->ApCfg.MBSSID[Apidx].L2WhiteMacList.Entry[i].Addr[4], 
++         //          pAd->ApCfg.MBSSID[Apidx].L2WhiteMacList.Entry[i].Addr[5]));
++                       
++           if (MAC_ADDR_EQUAL(pAddr, pAd->ApCfg.MBSSID[Apidx].L2WhiteMacList.Entry[i].Addr)) {
++               fond = TRUE;
++               break;
++           }
++       }
++
++        //MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("fond=%d \n", fond));
++	return fond;
++}
++//[TW Jiangdingyong 2022.4.11 add end]
++
++
+ INT ap_rx_pkt_foward(RTMP_ADAPTER *pAd, struct wifi_dev *wdev, PNDIS_PACKET pPacket)
+ {
+ 	MAC_TABLE_ENTRY *pEntry = NULL;
+@@ -3862,8 +3901,22 @@ INT ap_rx_pkt_foward(RTMP_ADAPTER *pAd, struct wifi_dev *wdev, PNDIS_PACKET pPac
+ 				to_air = TRUE;
+ 				to_os = FALSE;
+ 
+-				if (pMbss->IsolateInterStaTraffic == 1)
+-					to_air = FALSE;
++				if (pMbss->IsolateInterStaTraffic == 1){
++                                        //[TW Jiangdingyong 2022.4.11 add  start]
++                                        if (wdev->func_idx < pAd->ApCfg.BssidNum) {
++                                            if (ApCheckL2WhiteMacList_TW(pAd, pHeader802_3, wdev->func_idx)) {  //chack destinate mac
++                                                to_air = TRUE;
++                                            }
++                                            else if(ApCheckL2WhiteMacList_TW(pAd, pHDR->SAAddr2, wdev->func_idx))  {  //chack  source mac 
++                                                to_air = TRUE;
++                                            }
++                                            else
++                                                to_air = FALSE;
++                                        }else
++                                        //[TW Jiangdingyong 2022.4.11 add end]
++        					to_air = FALSE;
++                                       MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("to_air=%d \n", to_air));
++                                    }
+ 			} else {
+ 				/*
+ 					STAs in different SSID, default send to os and not to air
+diff --git a/mt_wifi/embedded/common/cmm_profile.c b/mt_wifi/embedded/common/cmm_profile.c
+old mode 100644
+new mode 100755
+index 8a22b182..1a3a1f54
+--- a/mt_wifi/embedded/common/cmm_profile.c
++++ b/mt_wifi/embedded/common/cmm_profile.c
+@@ -1693,6 +1693,75 @@ static void rtmp_read_acl_parms_from_file(RTMP_ADAPTER *pAd, RTMP_STRING *tmpbuf
+ 	}
+ }
+ 
++
++//[TW Jiangdingyong 2022.4.11 add start]
++static void rtmp_read_l2_acl_parms_from_file(RTMP_ADAPTER *pAd, RTMP_STRING *tmpbuf, RTMP_STRING *buffer)
++{
++	RTMP_STRING tok_str[32], *macptr;
++	INT			i = 0, j = 0, idx;
++	UCHAR		macAddress[MAC_ADDR_LEN];
++	BOOLEAN		isDuplicate = FALSE;
++	memset(macAddress, 0, MAC_ADDR_LEN);
++
++//MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("pAd->ApCfg.BssidNum=%d \n", pAd->ApCfg.BssidNum));
++	for (idx = 0; idx < pAd->ApCfg.BssidNum/*MAX_MBSSID_NUM(pAd)*/; idx++) {
++		memset(&pAd->ApCfg.MBSSID[PF_TO_BSS_IDX(pAd, idx)].L2WhiteMacList, 0, sizeof(RT_802_11_ACL));
++
++		/* L2WhiteMacListX*/
++		snprintf(tok_str, sizeof(tok_str), "L2WhiteMacList%d", idx);
++//MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("0 pAd->ApCfg.BssidNum=%d      idx=%d PF_TO_BSS_IDX(pAd, idx)=%d\n", 
++//        pAd->ApCfg.BssidNum, idx, PF_TO_BSS_IDX(pAd, idx)));
++
++		if (RTMPGetKeyParameter(tok_str, tmpbuf, MAX_PARAM_BUFFER_SIZE, buffer, TRUE)) {
++//MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("1 pAd->ApCfg.BssidNum=%d \n", pAd->ApCfg.BssidNum));
++			for (i = 0, macptr = rstrtok(tmpbuf, ";"); macptr; macptr = rstrtok(NULL, ";"), i++) {
++				if (strlen(macptr) != 17)  /* Mac address acceptable format 01:02:03:04:05:06 length 17*/
++					continue;
++//MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_OFF, (" 2 pAd->ApCfg.BssidNum=%d \n", pAd->ApCfg.BssidNum));
++
++				ASSERT(pAd->ApCfg.MBSSID[PF_TO_BSS_IDX(pAd, idx)].L2WhiteMacList.Num <= MAX_NUM_OF_ACL_LIST);
++
++				for (j = 0; j < MAC_ADDR_LEN; j++) {
++					AtoH(macptr, &macAddress[j], 1);
++					macptr = macptr + 3;
++				}
++//MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("3 pAd->ApCfg.BssidNum=%d \n", pAd->ApCfg.BssidNum));
++
++				if (pAd->ApCfg.MBSSID[PF_TO_BSS_IDX(pAd, idx)].L2WhiteMacList.Num == MAX_NUM_OF_ACL_LIST) {
++					MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF,
++							 ("The L2WhiteMacList is full, and no more entry can join the list!\n"));
++					MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("The last entry of L2WhiteMacList is %02x:%02x:%02x:%02x:%02x:%02x\n",
++							 macAddress[0], macAddress[1], macAddress[2], macAddress[3], macAddress[4], macAddress[5]));
++					break;
++				}
++				isDuplicate = FALSE;
++//MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("4 pAd->ApCfg.BssidNum=%d \n", pAd->ApCfg.BssidNum));
++				for (j = 0; j < pAd->ApCfg.MBSSID[PF_TO_BSS_IDX(pAd, idx)].L2WhiteMacList.Num; j++) {
++//MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("5 pAd->ApCfg.BssidNum=%d \n", pAd->ApCfg.BssidNum));
++					if (memcmp(pAd->ApCfg.MBSSID[PF_TO_BSS_IDX(pAd, idx)].L2WhiteMacList.Entry[j].Addr, &macAddress, 6) == 0) {
++						isDuplicate = TRUE;
++						MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF,
++							("You have added an entry before :\n"));
++						MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF,
++							("The duplicate entry is %02x:%02x:%02x:%02x:%02x:%02x\n",
++							macAddress[0], macAddress[1], macAddress[2], macAddress[3], macAddress[4], macAddress[5]));
++					}
++				}
++				if (!isDuplicate) {
++				pAd->ApCfg.MBSSID[PF_TO_BSS_IDX(pAd, idx)].L2WhiteMacList.Num++;
++//MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("6 Num=%ld \n", pAd->ApCfg.MBSSID[PF_TO_BSS_IDX(pAd, idx)].L2WhiteMacList.Num));
++				NdisMoveMemory(pAd->ApCfg.MBSSID[PF_TO_BSS_IDX(pAd, idx)].L2WhiteMacList.Entry[(pAd->ApCfg.MBSSID[PF_TO_BSS_IDX(pAd, idx)].L2WhiteMacList.Num - 1)].Addr,
++							   macAddress, MAC_ADDR_LEN);
++				}
++			}
++
++			MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("%s=Get %ld L2WhiteMacList\n", tok_str,
++					 pAd->ApCfg.MBSSID[PF_TO_BSS_IDX(pAd, idx)].L2WhiteMacList.Num));
++		}
++	}
++}
++//[TW Jiangdingyong 2022.4.11 add end]
++
+ /*
+     ========================================================================
+ 
+@@ -8382,6 +8451,7 @@ NDIS_STATUS	RTMPSetProfileParameters(
+ 		IF_DEV_CONFIG_OPMODE_ON_AP(pAd) {
+ 			/*Access Control List*/
+ 			rtmp_read_acl_parms_from_file(pAd, tmpbuf, pBuffer);
++			rtmp_read_l2_acl_parms_from_file(pAd, tmpbuf, pBuffer);//[TW Jiangdingyong 2022.4.11 add]
+ #ifdef APCLI_SUPPORT
+ 			rtmp_read_ap_client_from_file(pAd, tmpbuf, pBuffer);
+ #endif /* APCLI_SUPPORT */
+diff --git a/mt_wifi/embedded/include/rtmp.h b/mt_wifi/embedded/include/rtmp.h
+old mode 100644
+new mode 100755
+index cc2bdf11..1892ddbc
+--- a/mt_wifi/embedded/include/rtmp.h
++++ b/mt_wifi/embedded/include/rtmp.h
+@@ -2860,6 +2860,7 @@ typedef struct _BSS_STRUCT {
+ 	ULONG IsolateInterStaTraffic;
+ 
+ 	RT_802_11_ACL AccessControlList;
++	RT_802_11_ACL L2WhiteMacList;
+ 
+ 
+ 	/* EDCA QoS */
+-- 
+2.13.1
+

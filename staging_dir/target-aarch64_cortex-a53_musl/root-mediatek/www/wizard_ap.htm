@@ -1,0 +1,219 @@
+<%+header%>
+<%
+local uci = require("luci.model.uci").cursor()
+local disp = require "luci.dispatcher"
+local ssid, channel, passwd, encryption
+local ssid_5g, channel_5g, passwd_5g, encryption_5g
+	uci:foreach("wireless","wifi-iface",
+		function(s)
+		if s["ifname"] == 'ath0'  then
+			passwd = uci:get("wireless",s[".name"],"key")
+			ssid = uci:get("wireless",s[".name"],"ssid")
+			encryption = uci:get("wireless",s[".name"],"encryption")
+		end
+	end)
+	uci:foreach("wireless","wifi-iface",
+		function(s)
+		if s["ifname"] == 'ath1'  then
+			passwd_5g = uci:get("wireless",s[".name"],"key")
+			ssid_5g = uci:get("wireless",s[".name"],"ssid")
+			encryption_5g = uci:get("wireless",s[".name"],"encryption")
+		end
+	end)
+	ssid  = string.gsub(ssid,"\\","\\\\")
+	ssid  = string.gsub(ssid,"\"","\\\"")
+	ssid_5g  = string.gsub(ssid_5g,"\\","\\\\")
+	ssid_5g  = string.gsub(ssid_5g,"\"","\\\"")
+	if passwd then
+		passwd  = string.gsub(passwd,"\\","\\\\")
+		passwd  = string.gsub(passwd,"\"","\\\"")
+	end
+	if passwd_5g then
+		passwd_5g  = string.gsub(passwd_5g,"\\","\\\\")
+		passwd_5g  = string.gsub(passwd_5g,"\"","\\\"")
+	end
+%>
+<script>document.getElementById('menu_right_style').style.display = "none";
+$("#maincontent").removeClass();
+$("#maincontent").css('margin','auto');
+$("#maincontent").css('padding-top','30px');
+$("#maincontent").css('padding-bottom','50px');
+$("#maincontent").css('width','100%');
+
+function saveChanges() // add wep check rule
+{
+	var f = document.wizard_ap;
+	var passwd = document.getElementsByName("passwd")[0].value;
+	var passwd_5g = document.getElementsByName("passwd_5g")[0].value;
+	var ssid = document.getElementsByName("ssid")[0].value;
+	var ssid_5g = document.getElementsByName("ssid_5g")[0].value;
+
+	if(ssid == "" || ssid_5g == "")
+	{
+   		alert("<%:The SSID cannot be empty%>");
+		return false;
+	}
+	if(f.encryption.selectedIndex == 1) // aes
+	{
+		if(passwd.length < 8 || passwd.length > 64)
+		{
+			alert("<%:Please fill the key  match the selected input type and key length!%>");
+			return false;
+		}
+		if( passwd.length == 64)
+		{
+			for( var i =0; i<passwd.length;i++)
+			{	
+	    		if ( (passwd.charAt(i) >= '0' && passwd.charAt(i) <= '9') ||
+				(passwd.charAt(i) >= 'a' && passwd.charAt(i) <= 'f') ||
+				(passwd.charAt(i) >= 'A' && passwd.charAt(i) <= 'F') )
+	    			continue;
+   		    	alert("<%:Invalid pre-shared key value. It should be in hexadecimal number: 0-9 or a-f%>");
+					return false;
+			}
+		}
+	}
+	if(f.encryption_5g.selectedIndex == 1) // aes
+	{
+		if(passwd_5g.length < 8 || passwd_5g.length > 64)
+		{
+			alert("<%:Please fill the key  match the selected input type and key length!%>");
+			return false;
+		}
+		if( passwd_5g.length == 64)
+		{
+			for( var i =0; i<passwd_5g.length;i++)
+			{	
+	    		if ( (passwd_5g.charAt(i) >= '0' && passwd_5g.charAt(i) <= '9') ||
+				(passwd_5g.charAt(i) >= 'a' && passwd_5g.charAt(i) <= 'f') ||
+				(passwd_5g.charAt(i) >= 'A' && passwd_5g.charAt(i) <= 'F') )
+	    			continue;
+   		    	alert("<%:Invalid pre-shared key value. It should be in hexadecimal number: 0-9 or a-f%>");
+					return false;
+			}
+		}
+	}
+
+
+	return true;
+}
+function copyto()
+{
+	var f = document.wizard_ap;	
+    document.getElementsByName("ssid")[0].value = "<%=ssid%>";
+	document.getElementsByName("ssid_5g")[0].value = "<%=ssid_5g%>";
+    document.getElementsByName("passwd")[0].value = "<%=passwd%>";
+	document.getElementsByName("passwd_5g")[0].value = "<%=passwd_5g%>";
+    f.encryption.selectedIndex = ("<%=encryption%>"=="none")?0:1;
+    f.encryption_5g.selectedIndex = ("<%=encryption_5g%>"=="none")?0:1;
+    changeSecType(f.encryption.selectedIndex);
+    changeSecType_ra2(f.encryption_5g.selectedIndex);
+}
+function changeSecType(value)
+{
+	document.getElementById('key_block').style.display = (value==0)?"none":"";
+		document.getElementById('key_head').style.display = (value==0)?"none":"";
+}
+function changeSecType_ra2(value)
+{
+	document.getElementById('key_block_5g').style.display = (value==0)?"none":"";
+	document.getElementById('key_head_5g').style.display = (value==0)?"none":"";
+}
+function prev_action()
+{
+	location.href="<%=disp.build_url('admin/network/wizard_mesh')%>";
+}
+</script>
+
+<body onLoad="copyto();">
+<form name="wizard_ap" action='<%=luci.dispatcher.build_url("admin/network/wizard_ap")%>' method="post">
+<div>
+	<table>
+		<tr style="font-size: 18px;vertical-align: middle;color:#000000;height: 8px;">
+		<td colspan="4"style="font-weight:bold;">
+		<font size="5"><%:Step 3: Set up Wireless Security Settings%></font>
+		</td>
+		</tr>
+		<tr style="background-color:#ffffff;font-size: 16px;vertical-align: middle;color:#000000;height: 8px;">
+		<td colspan="4">
+		<br><%:Reset a Wi-Fi Name (SSID) that is easy to remember for your Mesh Network.%><br><%:For security reason, it’s highly suggested to enable the encryption for your network and avoid malicious intrusion.%>
+		<br><br>
+		</td>
+		</tr>
+		<tr class="title-option" style="font-size: 16px;vertical-align: middle;color:#000000;height: 8px;">
+			<td colspan="2" >
+				<%:Wireless Security:2.4GHz%>
+			</td>
+			<td colspan="2">
+				<%:Wireless Security:5GHz%>
+			</td>
+		</tr>
+		<tr class="title-option" style="font-size: 16px;vertical-align: middle;color:#000000;height: 8px;">
+			<td colspan="1">
+				<%:Wi-Fi Name(SSID):%>
+			</td>
+			<td colspan="1">
+				<input type="text"  name="ssid" id="ssid" maxlength="255" style="height:27px;">
+			</td>
+			<td colspan="1">
+				<%:Wi-Fi Name(SSID):%>
+			</td>
+			<td colspan="1">
+				<input type="text"  name="ssid_5g" id="ssid_5g" maxlength="255" style="height:27px;">
+			</td>
+		</tr>
+		<tr class="title-option" style="font-size: 16px;vertical-align: middle;color:#000000;height: 8px;">
+			<td colspan="1">
+				<%:Encryption:%>
+			</td>
+			<td colspan="1">
+				<select name="encryption" onChange="changeSecType(this.options[this.selectedIndex].value);" id="encryption" style="height:27px;">
+					<option value="0"><%:None%></option>
+					<option value="1"><%:WPA2(AES)%></option>
+				</select>
+			</td>
+			<td colspan="1">
+				<%:Encryption:%>
+			</td>
+			<td colspan="1">
+				<select name="encryption_5g" onChange="changeSecType_ra2(this.options[this.selectedIndex].value);" id="encryption_5g" style="height:27px;">
+					<option value="0"><%:None%></option>
+					<option value="1"><%:WPA2(AES)%></option>
+				</select>
+			</td>
+		</tr>
+		<tr style="font-size: 16px;vertical-align: middle;color:#000000;height: 8px;">
+			<td colspan="1">
+				<div id="key_head" style="display:none">
+					<%:Encryption Key:%>
+				</div>
+			</td>
+			<td colspan="1">
+				<div id="key_block" style="display:none">
+					<input type="text" name="passwd" id="passwd" maxlength="64" style="height:27px;">
+				</div>
+			</td>
+			<td colspan="1">
+				<div id="key_head_5g" style="display:none">
+					<%:Encryption Key:%>
+				</div>
+			</td>
+			<td colspan="1">
+				<div id="key_block_5g" style="display:none">
+					<input type="text" name="passwd_5g" id="passwd_5g" maxlength="64" style="height:27px;">
+				</div>
+			</td>
+		</tr>
+	</table>
+</div>
+<div class="cbi-page-actions">
+<table>
+	<tr style="background-color:#ffffff">
+		<td style="text-align:left" ><input class="cbi-button cbi-button-save" onclick="prev_action();" type="button" value="<%:Prev%>">&nbsp;<input class="cbi-button cbi-button-save" onclick="return saveChanges();" type="submit" value="<%:Done%>">
+		<input type="hidden" id="submitType" value="1" name="submitType"/></td>
+	</tr>
+</table>
+</div>
+</form>
+</body>
+<%+footer%>

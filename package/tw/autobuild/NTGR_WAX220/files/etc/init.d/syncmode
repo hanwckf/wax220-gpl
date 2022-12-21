@@ -1,0 +1,19 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2008 OpenWrt.org
+
+START=99
+
+sync_factoryMode()
+{
+	local factory_status=$(fw_printenv -n fenv_factory 2>/dev/null)
+	local factory_mode=$(envctl factory get factory_mode 2>/dev/null)
+
+	if [ "$factory_mode" == "off" ] && [ "$factory_status" != "off" ]; then
+		echo "set usermode" > /tmp/need2syncmode
+		fw_setenv fenv_factory off
+	fi
+}
+
+start() {
+	sync_factoryMode
+}

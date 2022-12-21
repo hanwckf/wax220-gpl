@@ -1,0 +1,67 @@
+--- a/nvram_env.h	2020-11-27 16:52:02.865190122 +0800
++++ b/nvram_env.h	2020-11-27 17:05:26.248067454 +0800
+@@ -22,6 +22,7 @@
+ 		.max_cache_idx = 0
+ 	},
+ #endif
++#if 0
+ 	{
+ 		.name = FB_2860_BLOCK_NAME,
+ 		.flash_offset =  0x2000,
+@@ -79,5 +80,21 @@
+ #endif
+ #endif
+ 	}
++#else
++	{
++		.name = "FENV",
++		.flash_offset =  0x40000,
++		.flash_max_len = ENV_BLK_SIZE * 1,
++		.valid = 0,
++		.max_cache_idx = 0
++	},
++	{
++		.name = "UENV",
++		.flash_offset =  0x60000,
++		.flash_max_len = ENV_BLK_SIZE * 1,
++		.valid = 0,
++		.max_cache_idx = 0
++	},
++#endif
+ };
+ #endif
+--- a/nvram.h	2020-11-27 17:12:40.705458842 +0800
++++ b/nvram.h	2020-11-27 17:13:00.136871469 +0800
+@@ -78,10 +78,10 @@
+ 	char dirty;
+ } block_t;
+ 
+-#define ENV_BLK_SIZE 0x1000
++#define ENV_BLK_SIZE 0x20000
+ 
+ #ifdef CONFIG_DUAL_IMAGE
+-#define ENV_UBOOT_SIZE 0x1000
++#define ENV_UBOOT_SIZE 0x20000
+ #endif
+ 
+ #define MAX_NAME_LEN 128
+--- a/flash_api.c
++++ b/flash_api.c
+@@ -122,7 +122,7 @@
+ #else
+ 	struct mtd_info_user info;
+ 
+-	fd = mtd_open("Config", O_RDONLY);
++	fd = mtd_open("u-boot-env", O_RDONLY);
+ 	if (fd < 0) {
+ 		fprintf(stderr, "Could not open mtd device\n");
+ 		return -1;
+@@ -174,6 +174,6 @@
+ 	struct mtd_info_user info;
+ 	struct erase_info_user ei;
+ 
+-	fd = mtd_open("Config", O_RDWR | O_SYNC);
++	fd = mtd_open("u-boot-env", O_RDWR | O_SYNC);
+ 	if (fd < 0) {
+ 		fprintf(stderr, "Could not open mtd device\n");
+ 		return -1;

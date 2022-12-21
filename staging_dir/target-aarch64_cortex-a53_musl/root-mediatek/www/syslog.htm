@@ -1,0 +1,81 @@
+<% http_header("script/jquery-1.12.4.min.js", "style/cascade2.css", "style/cascade.css", "style/cascade-custom.css", "script/cbi.js", "script/common.js", "script/xhr.js", "script/syslog.js") %>
+<body onLoad="please_wait(false);" bgcolor="#ffffff">
+<fieldset class="cbi-section">
+<table>
+	<tr>
+		<td colspan="2" class="title">$system_log</td>
+	</tr>
+	<tr class="title-option">
+		<td style="width:20%;"><label for="syslogEnable_enable">$status</label></td>
+		<td>
+			<input type="radio" name="syslogEnable" value="1" id="syslogEnable_enable" onclick="syslog_status()" checked/>
+			<label for="syslogEnable_enable">$enable</label>&nbsp;&nbsp;
+			<input type="radio" name="syslogEnable" value="0" id="syslogEnable_disable" onclick="syslog_status()" />
+			<label for="syslogEnable_disable">$disable</label>
+		</td>
+	</tr>
+	<tr class="title-option">
+		<td>$log_type</td>
+		<td><select name="log_type" id="log_type" style="height:27px;" onchange="logTypeChange(this.value)">
+			<option value="9">$all</option>
+			<option value="8">$debug</option>
+			<option value="7">$information_log</option>
+			<option value="6">$notice</option>
+			<option value="5">$warning</option>
+			<option value="4">$error</option>
+			<option value="3">$critical</option>
+			<option value="2">$alert</option>
+			<option value="1">$emergency</option>
+			</select>
+		</td>
+	</tr>
+	<tr class="title-option">
+		<td style="vertical-align:top; line-height:5px;">
+			<input class="cbi-button" id="log_refresh" type="button" name="log_refresh" value="$refresh" onclick="location.reload()" style="width:100px;"><br><br>
+			<input class="cbi-button" id="log_clear" type="button" name="log_clear" value="$clear" onclick="clearSysLog()" style="width:100px;">
+			<br><br>
+			<input class="cbi-button" id="log_dwload" type="button" name="log_dwload" value="$download" onclick="downloadSysLog()" style="width:100px;">
+		</td>
+		<td><textarea id="log_result" style="width:95%; height:auto; border:2px solid #dddddd; font-size:14px;" readonly="" wrap="off" rows="10" cols="40">$jsondate_log
+		</textarea></td>
+	</tr>
+</table>
+</fieldset>
+<fieldset class="cbi-section">
+<table>
+	<tr class="title-option">
+		<td style="width:20%;">$remote_log</td>
+		<td>
+			<input type="radio" name="remoteLogEnable" value="1" id="remoteLogEnable_enable" onclick="remote_log_status()"/>
+			<label for="remoteLogEnable_enable">$enable</label>&nbsp;&nbsp;
+			<input type="radio" name="remoteLogEnable" value="0" id="remoteLogEnable_disable" onclick="remote_log_status()" checked/>
+			<label for="remoteLogEnable_disable">$disable</label>
+		</td>
+	</tr>
+	<tr class="title-option">
+		<td style="width:20%;"><label for="syslogEnable_enable">$traffic_log</label></td>
+		<td>
+			<input type="radio" name="remote_trafficLogEnable" value="1" id="remote_trafficLogEnable_enable" />
+			<label for="trafficLogEnable_enable">$enable</label>&nbsp;&nbsp;
+			<input type="radio" name="remote_trafficLogEnable" value="0" id="remote_trafficLogEnable_disable" checked/>
+			<label for="trafficLogEnable_disable">$disable</label>
+		</td>
+	</tr>
+	<tr class="title-option">
+		<td>$log_server_ip_address</td>
+		<td><input type="text" name="remote_ip" id="remote_ip" maxlength="15" style="height:27px;width:250px" value="0.0.0.0"></td>
+	</tr>
+	<tr class="title-option">
+		<td>$log_server_port</td>
+		<td><input type="text" name="remote_port" id="remote_port" maxlength="5" style="height:27px;width:250px" value="514"></td>
+	</tr>
+</table>
+</fieldset>
+<br>
+<div class="cbi-page-actions">
+	<input type="hidden" id="submitType" name="submitType"/>
+	<input class="cbi-button cbi-button-apply" onclick="return saveCfg()" type="submit" myid="button_save" id="apply" value="$apply">&nbsp;<span class="btn_desc">$apply_saved_settings_to_take_effect</span>
+</div>
+</form>
+</body>
+

@@ -1,0 +1,7 @@
+./
+./host
+./usr
+./usr/include
+./usr/include/argp.h
+./usr/lib
+./usr/lib/libargp.a

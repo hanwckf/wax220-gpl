@@ -1,0 +1,32 @@
+#!/bin/sh
+
+attr_list=$1
+ip_addr=$2
+
+if [ `expr match $attr_list ".*name"` -gt 0 ]
+then
+	cmd_args="-q $ip_addr"
+	#logger -t devProbe -p 6 "$0> nbtscan $cmd_args"
+	dev_name=`nbtscan $cmd_args | grep "^$ip_addr" | awk {'printf $2;'}`
+
+	if [ -n "$dev_name" ] && [ "$dev_name" != "<unknown>" ]
+	then
+		cmd_args="{\"ip_addr\": \"$ip_addr\", \"dev_name\": \"$dev_name\"}"
+		#logger -t devProbe -p 6 "$0> ubus send dev_probe_complete '$cmd_args'"
+		ubus send dev_probe_complete "$cmd_args"
+	fi
+fi
+
+#if [ `expr match $attr_list ".*vendor"` -gt 0 ]
+#then
+#	cmd_args="-sP $ip_addr"
+#	logger -t devProbe -p 6 "$0> nmap $cmd_args"
+#	dev_vendor=`nmap $cmd_args | grep "MAC Address:" | sed -e 's/.*(\(.*\)).*/\1/'`
+#
+#	if [ -n "$dev_vendor" ] && [ "$dev_vendor" != "Unknown" ]
+#	then
+#		cmd_args="{\"ip_addr\": \"$ip_addr\", \"dev_vendor\": \"$dev_vendor\"}"
+#		logger -t devProbe -p 6 "$0> ubus send dev_probe_complete '$cmd_args'"
+#		ubus send dev_probe_complete "$cmd_args"
+#	fi
+#fi

@@ -1,0 +1,928 @@
+<%#
+LuCI - Lua Configuration Interface
+Copyright 2010 Jo-Philipp Wich <xm@subsignal.org>
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+	http://www.apache.org/licenses/LICENSE-2.0
+
+$Id: diagnostics.htm 9623 2013-01-18 14:08:37Z jow $
+
+-%>
+
+<%+header%>
+
+<%
+local fs   = require "nixio.fs"
+local uci = luci.model.uci.cursor()
+local disp = require "luci.dispatcher"
+
+local tabs_i18n = {}
+tabs_map = {["node_list"]=translate("Node List"), ["link_status"]=translate("Link Status"), ["ping"]=translate("Ping"), ["traceroute"]=translate("Trace Route"), ["throughput"]=translate("Throughput")}
+
+-- default tabs
+local tabs = {"node_list", "link_status", "ping", "traceroute", "throughput"}
+
+for k,v in ipairs(tabs) do
+	tabs_i18n[tabs[k]] = tabs_map[v]
+end
+
+local curtab = luci.http.formvalue("tab")
+if curtab == nil then curtab = "node_list" end
+
+mesh = uci:get("wireless","wifi0_mesh","disabled")
+local mesh_ID = uci:get("wireless","wifi0_mesh","Mesh_id")
+local mesh_ID_5g = uci:get("wireless","wifi1_mesh","Mesh_id")
+local rssi = uci:get("wireless","wifi0_mesh","LinkRobustThreshold")
+local meshlist = luci.util.trim(luci.util.exec('cat /tmp/mesh_global_node_info'))
+%>
+<script type="text/javascript">//<![CDATA[
+
+var pingdata, throughputdata, traceroutedata, ipv6;
+var t = 12;
+var myinterval;
+var meshdata=[];
+var gateway_number = 0;
+
+function notice_throughput()
+{
+	var url, data, fromMac, toMac;
+
+	t=12;
+	fromMac = document.getElementsByName("left_throughput")[0].value;
+	toMac = document.getElementsByName("right_throughput")[0].value;
+
+	if( fromMac == toMac )
+	{
+		alert("<%:Throughput can not choose same node%>");
+		return false;
+	}
+    url = '<%=luci.dispatcher.build_url("admin/network/ajax_notice_throughput")%>';
+    data = {myselfIP:'<%=luci.http.getenv("SERVER_NAME")%>',fromMac:fromMac,toMac:toMac};
+   
+    ajax_normal({
+		async: false,
+        type : "GET",
+        url:url,
+        data:data,
+        dataType:"json",
+        error:function(){
+        },
+        success:function(result){
+			document.getElementById('maincontainer').style.display = "";
+			document.getElementById('AtoB_throughput').style.display = "none";
+			document.getElementById("upload").innerHTML = "";
+			document.getElementById("download").innerHTML = "";
+        }
+    });
+
+	myinterval = setInterval("get_throughput()", 1000);
+	t = 12;
+}
+function get_throughput()
+{
+	var url, data, fromMac, toMac, obj;
+
+	if(t == 0)
+	{
+		window.clearInterval(myinterval);
+
+		obj = JSON.parse(throughputdata);
+		if( obj.UploadThroughput && obj.DownloadThroughput )
+		{
+			document.getElementById("upload").innerHTML = obj.UploadThroughput;
+			document.getElementById("download").innerHTML = obj.DownloadThroughput;
+			document.getElementById('AtoB_throughput').style.display = "";
+			document.getElementById('show_throughput').style.display = "";
+			document.getElementById('maincontainer').style.display = "none";
+			t = 12;
+		}
+		else
+		{
+			alert("<%:Throughput no connection%>");
+			document.getElementById('maincontainer').style.display = "none";
+			return false;	
+		}
+	}
+	else
+	{
+		fromMac = document.getElementsByName("left_throughput")[0].value;
+		toMac = document.getElementsByName("right_throughput")[0].value;
+	    url = '<%=luci.dispatcher.build_url("admin/network/ajax_get_throughput")%>';
+	    data = {myselfIP:'<%=luci.http.getenv("SERVER_NAME")%>',fromMac:fromMac,toMac:toMac};
+	    ajax_normal({
+			async: false,
+	        type : "GET",
+	        url:url,
+	        data:data,
+	        dataType:"json",
+	        error:function(){
+	        },
+	        success:function(result){
+				throughputdata = result;
+	        }
+	    });
+		t -= 1;
+	}
+}
+
+function notice_ping()
+{
+	var url, data, fromMac, toMac, pingnum;
+
+	t=12;
+	fromMac = document.getElementsByName("left_device_ping")[0].value;
+	toMac = document.getElementsByName("right_device_ping")[0].value;
+	pingnum = document.getElementsByName("pings")[0].value;
+	t = 12+(pingnum>12?(pingnum-12):0);
+	if(fromMac == toMac)
+	{
+		alert("<%:The source node and the destination node cannot be the same.%>");
+		return false;
+	}
+	if(!pingnum)
+	{
+		alert("<%:The number of pings cannot be null.%>");
+		return false;
+	}
+	if(isNaN(pingnum))
+	{
+		alert("<%:The number of pings is invalid.%>");
+		return false;
+	}
+	if(pingnum<=0)
+	{
+		alert("<%:The number of pings must be larger than 0.%>");
+		return false;
+	}
+	if(pingnum>10)
+	{
+		alert("<%:The number of pings must be less than 10.%>");
+		return false;
+	}
+	url = '<%=luci.dispatcher.build_url("admin/network/ajax_notice_ping")%>';
+	data = {myselfIP:'<%=luci.http.getenv("SERVER_NAME")%>',fromMac:fromMac,toMac:toMac,pingnum:pingnum};
+
+	ajax_normal({
+		async: false,
+		type : "GET",
+		url:url,
+		data:data,
+		dataType:"json",
+		error:function(){
+		},
+		success:function(result){
+			document.getElementById('pingCollecting').style.display = "";
+			document.getElementById('pingresult').style.display = "none";
+		}
+	});
+
+	myinterval = setInterval("get_ping()", 1000);
+}
+
+function get_ping()
+{
+	var url, data, fromMac, toMac, obj;
+
+	if(t == 0)
+	{
+		pingdata=pingdata.replace(/\n/g,'');
+		window.clearInterval(myinterval);
+		obj = JSON.parse(pingdata);
+		if(!obj.TestResult)
+		{
+			pingdata="{ \"TestResult\": [ \"Error - mac address of the ping destination could not be resolved and is not a bat-host name: "+ipv6+"\" ], \"GetMeshPingTestResultResult\": \"OK\" }";
+			pingdata=pingdata.replace(/\n/g,'');
+			obj = JSON.parse(pingdata);
+		}
+
+		document.getElementById('pingresult').innerHTML="";
+
+		for (var i = 0 ; i < obj.TestResult.length ; i++)
+		{
+			if(i==0)
+				document.getElementById('pingresult').innerHTML = document.getElementById('pingresult').innerHTML +obj.TestResult[i];
+			else
+				document.getElementById('pingresult').innerHTML = document.getElementById('pingresult').innerHTML +="&#13;&#10;" +obj.TestResult[i];
+		}
+		document.getElementById('show_ping').style.display = "";
+		document.getElementById('show_ping_1').style.display = "";
+		document.getElementById('pingresult').style.display = "";
+		document.getElementById('pingCollecting').style.display = "none";
+	}
+	else
+	{
+		fromMac = document.getElementsByName("left_device_ping")[0].value;
+		toMac = document.getElementsByName("right_device_ping")[0].value;
+		url = '<%=luci.dispatcher.build_url("admin/network/ajax_get_ping")%>';
+		data = {myselfIP:'<%=luci.http.getenv("SERVER_NAME")%>',fromMac:fromMac,toMac:toMac};
+		ajax_normal({
+			async: false,
+			type : "GET",
+			url:url,
+			data:data,
+			dataType:"json",
+			error:function(){
+			},
+			success:function(result){
+				pingdata = result.result;
+				ipv6 = result.ipv6;
+			}
+		});
+		t -= 1;
+	}
+}
+
+function notice_traceroute()
+{
+	var url, data, fromMac, toMac;
+
+	t=12;
+	fromMac = document.getElementsByName("left_traceroute")[0].value;
+	toMac = document.getElementsByName("right_traceroute")[0].value;
+
+	if( fromMac == toMac )
+	{
+		alert("<%:Traceroute can not choose same node%>");
+		return false;
+	}
+    url = '<%=luci.dispatcher.build_url("admin/network/ajax_notice_traceroute")%>';
+    data = {myselfIP:'<%=luci.http.getenv("SERVER_NAME")%>',fromMac:fromMac,toMac:toMac};
+   
+    ajax_normal({
+		async: false,
+        type : "GET",
+        url:url,
+        data:data,
+        dataType:"json",
+        error:function(){
+        },
+        success:function(result){
+			document.getElementById('tracerouteCollecting').style.display = "";
+			document.getElementById('tracedata').style.display = "none";
+			document.getElementById("tracedata").innerHTML = "";
+        }
+    });
+
+	myinterval = setInterval("get_traceroute()", 1000);
+	t = 12;
+}
+
+function get_traceroute()
+{
+	var url, data, fromMac, obj;
+
+	if(t == 0)
+	{
+		t = 12;
+		traceroutedata=traceroutedata.replace(/\n/g,'');
+
+		window.clearInterval(myinterval);
+		obj = JSON.parse(traceroutedata);
+
+		if( obj.TestResult )
+		{
+			for (var i = 0 ; i < obj.TestResult.length ; i++)
+			{
+				document.getElementById("tracedata").innerHTML = document.getElementById("tracedata").innerHTML +="&#13;&#10;" +obj.TestResult[i] ;
+			}
+			document.getElementById('tracedata').style.display = "";
+			document.getElementById('show_traceroute').style.display = "";
+			document.getElementById('tracerouteCollecting').style.display = "none";
+		}
+		else
+		{
+			alert("<%:Traceroute no connection%>");
+			document.getElementById('tracerouteCollecting').style.display = "none";
+			return false;	
+		}
+	}
+	else
+	{
+		fromMac = document.getElementsByName("left_traceroute")[0].value;
+		toMac = document.getElementsByName("right_traceroute")[0].value;
+	    url = '<%=luci.dispatcher.build_url("admin/network/ajax_get_traceroute")%>';
+	    data = {myselfIP:'<%=luci.http.getenv("SERVER_NAME")%>',fromMac:fromMac,toMac:toMac};
+	    ajax_normal({
+			async: false,
+	        type : "GET",
+	        url:url,
+	        data:data,
+	        dataType:"json",
+	        error:function(){
+	        },
+	        success:function(result){
+				traceroutedata = result;
+
+	        }
+	    });
+
+		t -= 1;
+	}
+}
+function nodelist()
+{
+    var url , node_list ,data, nodedata, jsonlist_64 ;
+    var obj, jsonlist, node_mac, node_mac_64, obj_64 ; // node_mac:alfred -r 67 ;node_mac_64:alfred -r 64
+    var i, j, k , l, rssi;
+    var counter = 0;
+    var neighbor_mac, neighbor_json, neighbor_obj;
+    var tips_count=0;
+	obj = meshdata;
+	neighbor_obj = meshdata;
+	for(i=0;i<obj.length;i++)
+	{
+		counter=0;
+
+		dw('<tr style="background-color:#ffffff;border-bottom: 1px solid #1B489C;height: 8px;color: #000000;	vertical-align: middle;">')
+		dw('<td style="word-break:break-all">'+obj[i].MeshDevice.DeviceName+'<br>('+obj[i].MeshDevice.MacAddress+')</td>');
+
+		if(obj[i].MeshDevice.MeshRole == "server") // Gateway
+		{
+			dw('<td><%:Root Node%>');
+			dw('<img class="popper" data-popbox="pop4" src="<%=media%>/pictures/icon_info_blue.png">');
+		}
+		else if(obj[i].MeshDevice.MeshRole == "client") // Mesh
+		{
+			dw('<td><%:Mesh Node%>');
+			dw('<img class="popper" data-popbox="pop5" src="<%=media%>/pictures/icon_info_blue.png">');
+		}
+		else
+		{
+			dw('<td><%:Unknown%>');
+		}
+		dw('</td>');
+		dw('<td>');
+		dw('<table><tr>');
+		if(obj[i].MeshDevice.RootHopCount == "-1" || obj[i].MeshDevice.RootHopCount == "0")
+		{
+			dw('<td width="50%" style="text-align:right;padding-left:0px;padding-right:0px;"><%:–%>'); // need tip
+		}
+		else
+		{
+			if (parseInt(obj[i].MeshDevice.RootHopCount) > 3)
+				dw('<td width="50%" style="text-align:right;color:red;padding-left:0px;padding-right:0px;">'+obj[i].MeshDevice.RootHopCount);
+			else
+				dw('<td width="50%" style="text-align:right;padding-left:0px;padding-right:0px;">'+obj[i].MeshDevice.RootHopCount);
+		}
+		dw('</td>');
+		dw('<td width="50%" style="padding-left:0px;padding-right:0px;">');
+		if((obj[i].MeshDevice.RootHopCount == "-1" || obj[i].MeshDevice.RootHopCount == "0") && tips_count == 0)
+		{
+			dw('<img class="popper" data-popbox="pop7" src="<%=media%>/pictures/icon_info_blue.png">');
+			tips_count++;
+		}
+		dw('</td>');
+		dw('</tr></table>');
+		dw('</td>');
+		dw('<td style="padding-left:0px;padding-right:0px;" colspan="3"><table>');
+		for(j=0;j<obj[i].Neighbors.length;j++)
+		{
+			for(k=0;k<neighbor_obj.length ;k++)
+			{
+				if(neighbor_obj[k].MeshDevice.MacAddress == (obj[i].Neighbors[j].MAC).toUpperCase() && obj[i].Neighbors[j].Flag ==".." )
+				{
+					if(counter==0)
+					{
+						dw('<tr>');
+						counter++;
+					}
+					else
+					{
+						dw('<tr style="border-top: 1px solid #1B489C;">');
+					}
+					dw('<td width="50%" style="word-break:break-all">'+neighbor_obj[k].MeshDevice.DeviceName+'<br>('+(obj[i].Neighbors[j].MAC).toUpperCase()+')</td>');
+					rssi = parseInt(obj[i].Neighbors[j].RSSI);
+					rssi = rssi - 95;
+					dw('<td width="12.5%" style="text-align:center">'+rssi+'</td>');
+				    if(rssi >= -60)
+					{
+						dw('<td style="text-align:center"><img class="popper" data-popbox="Reset_to_Default_info" src="<%=media%>/pictures/icon_signal_4.png"></td>');
+					}
+					else if(rssi <-60 && rssi >=-70)
+					{
+						dw('<td style="text-align:center"><img class="popper" data-popbox="Reset_to_Default_info" src="<%=media%>/pictures/icon_signal_3.png"></td>');
+					}
+					else if(rssi <-70 && rssi >=-75)
+					{
+						dw('<td style="text-align:center"><img class="popper" data-popbox="Reset_to_Default_info" src="<%=media%>/pictures/icon_signal_2.png"></td>');
+					}
+					else
+					{
+						dw('<td style="text-align:center"><img class="popper" data-popbox="Reset_to_Default_info" src="<%=media%>/pictures/icon_signal_1.png"></td>');
+					}
+					dw('</tr>');
+				}
+			}
+		}
+		dw('</table></td>');
+		dw('</tr>');
+	}
+ }
+
+var noRssiFlag=0;
+
+
+function nodeRSSIList()
+{
+	var meshNameList=[];
+  	var Obj = meshdata;
+
+	if(meshdata != "")
+	{
+		for(i=0;i<Obj.length ;i++)
+		{
+			meshNameList.push({mac:Obj[i].MeshDevice.MacAddress, name:Obj[i].MeshDevice.DeviceName})
+		}
+	}
+        
+
+  var tmpStr;
+  var node_mac=[];
+  var link_mac=[];
+  var mesh_mac=[];
+  var DeviceName=[];
+  var fromToList=[];
+  var node_mac_name=[];    
+
+  for(var i=0;i<Obj.length;i++)
+  {
+  	node_mac[i]=Obj[i].MeshDevice.MacAddress;
+  	for(var j=0;j<Obj[i].Neighbors.length;j++)
+    {
+    	fromToList.push({from:node_mac[i], to:Obj[i].Neighbors[j].MAC.toUpperCase(), rssi:Obj[i].Neighbors[j].RSSI, flag:Obj[i].Neighbors[j].Flag});
+    }    
+  }
+
+  noRssiFlag=0;
+
+  dw('<tr style="height: 8px;font-size: 16px;color: #000000;vertical-align: middle;background-color:#ffffff background-color:white; border-bottom:1px solid; background-color:white;">');
+  dw('<td width="40%"><%:Unreachable Mesh Node(s)%></td>');
+  dw('<td width="30%"><%:RSSI%></td>');
+  dw('<td width="30%"><%:Detector Nodes%></td>');
+  dw('</tr>');
+  
+  var tableList='';
+  var flagR=0;
+  
+  for(var i=0;i<fromToList.length;i++)
+  {
+  	tableList='<tr style="background-color:#ffffff;border-bottom: 1px solid #1B489C;height: 8px;font-size: 16px;color: #000000;	vertical-align: middle;">';
+
+  		if(fromToList[i].to)
+  		{
+  			if(checkNodeName(fromToList[i].to, meshNameList)!="")
+  			{
+  				tableList+='<td>'+checkNodeName(fromToList[i].to, meshNameList)+'<br>'+'('+fromToList[i].to+')'+'</td>';
+  			}
+  			else
+  			{
+  				tableList+='<td>'+fromToList[i].to+'</td>';
+  			}
+  		}
+	  	tableList+='<td>';
+	  	for(var j=0;j<node_mac.length;j++)
+	  	{
+	  		if(fromToList[i].from==node_mac[j] && fromToList[i].flag!="..")
+	  		{
+	  			if(fromToList[i].rssi >= 0)
+	  			{
+	  				fromToList[i].rssi=fromToList[i].rssi-95;
+	  				tableList+=fromToList[i].rssi+'<br>';
+	  			}
+	  			else
+	  			{
+	  				tableList+=fromToList[i].rssi+'<br>'
+	  			}
+
+	  			flagR++;
+	  		}
+	  		
+	  	}
+	  	tableList+='</td>';
+	  	tableList+='<td>';
+	  	for(var j=0;j<node_mac.length;j++)
+	  	{
+	  		if(fromToList[i].from==node_mac[j] && fromToList[i].flag!="..")
+	  		{
+
+	  			if(checkNodeName(fromToList[i].from, meshNameList)!="")
+	  			{
+	  				tableList+=checkNodeName(fromToList[i].from, meshNameList)+'<br>'+'('+fromToList[i].from+')'+'<br>';
+	  			}
+	  			else
+	  			{
+	  				tableList+=fromToList[i].from+'<br>';
+	  			}
+	  		}
+	  		
+	  	}
+	  	tableList+='</td>';
+
+  	tableList+='</tr>';
+  	if(flagR>0)
+  	{
+  		noRssiFlag++;
+  		dw(tableList);
+  	}
+  	tableList="";
+  	flagR=0;
+  }  
+}
+
+function checkNodeName(node_mac, meshNameList)
+{
+	for(var i=0;i<meshNameList.length;i++)
+	{		
+		if(node_mac==meshNameList[i].mac)
+		{
+			return meshNameList[i].name;
+		}
+	}
+	return "";
+}
+
+ function nodeTopology()
+ {
+ 	var str;
+ 	str='<div style="width:450px;height:450px;overflow:hidden;position:relative;">';
+	str+='<iframe width="410px" height="410px" id="topologyID" style="position:absolute;top:0px;left:0px;border-top-width: 0px; border-left-width: 0px; border-bottom-width: 0px;border-right-width: 0px;" scrolling="No" src="<%=luci.dispatcher.build_url('admin/network/mesh_topology')%>"> </iframe>';
+	str+='</div>';
+	$('#topology').html(str);
+ 	// var str="<iframe width=\"100%\" height=\"1000px\" style=\"border-top-width: 0px; border-left-width: 0px; border-bottom-width: 0px;border-right-width: 0px;\" src=\"<%=luci.dispatcher.build_url('admin', 'network', 'mesh_topology')%>\">";
+ 	/*var iframe = document.createElement("iframe");
+ 	iframe.id="topology";
+ 	iframe.src="<%=luci.dispatcher.build_url('admin', 'network', 'mesh_topology')%>";
+ 	document.body.appendChild(iframe);
+ 	alert(1)*/
+}
+function refreshLog()
+{
+	t = 1;
+	meshdata = [];	
+	document.getElementById('show_node_list').style.display = "none";
+	document.getElementById('show_node_info').style.display = "none";
+	document.getElementById('show_node_collecting').style.display = "";
+	myinterval = setInterval("get_meshresult()", 1000);
+}
+function get_meshresult()
+{
+	var obj, meshlist;
+	var url = '<%=luci.dispatcher.build_url("admin/network/ajax_getMeshList")%>';
+	var j=0;
+
+	if (t==0)
+	{
+		window.clearInterval(myinterval);
+		document.getElementById('show_node_collecting').style.display = "none";
+		if(meshdata != "")
+		{
+			document.getElementById('show_node_info').style.display = "";	
+			document.getElementById('show_node_list').style.display = "";
+		}
+	}
+	else
+	{
+		ajax_normal({
+			async: false,
+			type : "GET",
+			url:url,
+			dataType:"json",
+			error:function(){
+			},
+			success:function(result){
+				meshdata = [];
+				obj = JSON.parse(result);
+				for(var i=0;i<obj.length;i++)
+				{
+					if(obj[i].GetMeshNodeInfoResult == "OK")
+					{
+						meshdata[j] = obj[i];
+						j++;
+					}
+				}
+			}
+		});
+		t-=1;
+	}
+}
+function copyto()
+{
+}
+$(function(){
+<%if curtab == "node_list" then %>
+		refreshLog();
+<%end%>	
+<%if curtab == "link_status" then %>
+		nodeTopology();
+<%end%>
+});
+function gateway_num()
+{   
+	var mac, i;
+    var obj, jsonlist;
+
+	gateway_number =0;
+	obj = meshdata;
+	for(i=0;i<obj.length;i++)
+	{
+		if(obj[i].MeshDevice.MeshRole=="server")
+		{
+			gateway_number++;
+		}
+
+	}
+}
+function mesh_table()
+{
+	var i, obj;
+	var j=0;
+	if('<%=meshlist%>' != "")
+	{
+		obj = JSON.parse('<%=meshlist%>');
+		for(i=0;i<obj.length;i++)
+		{
+			if(obj[i].GetMeshNodeInfoResult == "OK")
+			{
+				meshdata[j] = obj[i];
+				j++;
+			}
+		}
+	}
+}
+function devicelist()
+{
+    var mac, i;
+    var obj, jsonlist;
+
+	obj = meshdata;
+	if(obj != "")
+	{
+		for(i=0;i<obj.length;i++)
+		{
+			dw('<option value='+obj[i].MeshDevice.MacAddress+'>'+obj[i].MeshDevice.DeviceName+' ('+obj[i].MeshDevice.MacAddress+')'+'</option>');
+		}
+	}
+}
+//]]>
+get_meshresult();
+</script>
+<div id="Traceroute_Test_Parameters_info" class="popbox" >
+    <p><%:It can specify the destination for Traceroute troubleshooting on network paths from this device.%></p>
+</div>
+<div id="Nslookup_Test_Parameters_info" class="popbox" >
+    <p><%:This utility performs DNS look up for available domain records.%></p>
+</div>
+<div id="Mesh_Topology" class="popbox">
+    <p><%:Mouse over on any Mesh node(black) for the linking status which is linking to other Mesh nodes(blue) with green line.%></p>
+</div>
+<div id="pop4" class="popbox" >
+<p><%:A node on the Mesh network that not only connected to outside network by wire, but also connects user to the Internet.%></p></div>
+<div id="pop5" class="popbox" >
+<p><%:A node on the mesh network that connected to other nodes by wireless.%></p></div>
+<div id="pop1" class="popbox" >
+<p><%:This is the Mesh network name, which generated from the Mesh ID. You can change the name by click the hyperlink.%></p></div>
+<div id="pop2" class="popbox" >
+<p><%:Display all the neighbor nodes which discovered by individually mesh node, no matter with its signal strength allowed to link or not.%></p></div>
+<div id="pop3" class="popbox" style="display:none;text-align:left">
+<p><%:There are four levels signal bar to display the RSSI, if the RSSI is below -76db, then it will display a red bar. %></p></div>
+<div id="pop6" class="popbox" >
+<p><%:The hops count refers to the number of intermediate devices through which data must pass between the Mesh node itself and Root node.%></p><p><%:If the Hops Count number is more than 3, we recommend that you have to optimise your deployment of the device location.%></p></div>
+<div id="pop7" class="popbox" >
+<p><%:System shows “—“ when the node is a Root or alone node.%></p></div>
+<div class="cbi-map">
+<body onLoad="copyto();">
+<form name="mesh_tools" action="<%=REQUEST_URI%>" method="post">
+	<fieldset class="cbi-section-node">
+		<div class="cbi-section-descr"></div>
+		<fieldset class="cbi-section-node">
+			<div class="cbi-value cbi-value-last">
+				<ul class="cbi-tabmenu">
+					<%for k,v in ipairs(tabs) do%>
+						<%if v=="link_status" then%>
+							<li class="cbi-tab<%if curtab ~= v then print("-disable") end%>" onclick=""><a href="<%=REQUEST_URI%>?tab=<%=v%>"><%=tabs_i18n[v]%></a></li>
+						<%else%>
+							<li class="cbi-tab<%if curtab ~= v then print("-disable") end%>"><a href="<%=REQUEST_URI%>?tab=<%=v%>"><%=tabs_i18n[v]%></a></li>
+						<%end%>
+					<%end%>
+				</ul>
+			</div>
+		</fieldset>
+	</fieldset>
+	<fieldset class="cbi-section">
+		<div id ="show_node_info" style="display:none">
+		<table style="<%if curtab ~= "node_list" then print("display:none;") end%>">
+			<tr style="height: 8px;font-size: 16px;color: #000000;vertical-align: middle;background-color:#ffffff">
+				<td style="padding-top:0px;padding-bottom:0px;" colspan="1">
+					 <u style="color:#1b489c"><a href="<%=disp.build_url('admin/network/wireless_mesh')%>"><%:Mesh ID%>:<script>("<%=mesh%>"==0)?dw('<%=mesh_ID%>'):dw('<%=mesh_ID_5g%>')</script></u>
+                      <img class="popper" data-popbox="pop1" src="<%=media%>/pictures/icon_info_blue.png"></a>					 
+					 <br><br>
+					<div id = "refresh" class="cbi-page-actions">
+						<input class="cbi-button cbi-button-save" onclick="location.href = '<%=luci.dispatcher.build_url("admin", "network", "mesh_tools")%>'" type="button" value="<%:Refresh%>" class="cbi-button cbi-button-save">
+					</div>
+
+					</td><td style="padding-top:0px;padding-bottom:0px;"><br>
+					<div id="" align="center" valign="middle" style="float:right; display:table-cell; vertical-align:bottom; width:150px; height:38px; color:#ffffff; background-color:#5599ff;padding-top:13px;padding-bottom:0px">
+						<script>
+						gateway_num();
+
+						dw('<a style="color:#ffffff;font-size:30px;">'+gateway_number+'</a>');
+						</script>
+						<%:Root Node(s)%>
+					</div>
+					<div style="float:right;">&nbsp;&nbsp;</div>
+					<div id="" align="center" valign="middle" style="float:right; display:table-cell; vertical-align:bottom; width:150px; height:38px; color:#ffffff; background-color:#1b489c;padding-top:13px;padding-bottom:0px">
+						<script>
+						dw('<a style="color:#ffffff;font-size:30px;">'+meshdata.length+'</a>');
+						</script>
+						<%:Node(s)%>
+					</div>
+				</td>
+			</tr>
+			<tr style="background-color:white; border-bottom:1px solid #1b489c;"><td></td></tr>
+		</table>
+		</div>
+		<div  id="show_node_collecting" style="display:none">
+		<p style="font-size:20px "><%:Collecting data...%><img src="<%=resource%>/icons/loading.gif" alt="<%:Loading%>" style="vertical-align:middle" /></p>
+		</div>
+		<div id = "show_node_list" style="display:none" width="500">
+		<table style="<%if curtab ~= "node_list" then print("display:none;") end%>">
+			<tr style"background-color:white;"><td><br></td></tr>
+			<tr style="height: 8px;font-size: 16px;color: #000000;vertical-align: middle;background-color:#ffffff background-color:white; border-bottom:1px solid; background-color:white;">
+				<td width="20%"><%:Node%></td>
+				<td width="15%"><%:Type%></td>
+				<td width="15%" style="text-align:center"><%:Hops Count%>
+				<img class="popper" data-popbox="pop6" src="<%=media%>/pictures/icon_info_blue.png">
+				</td>
+				<td width="25%"><%:Neighbor Nodes%>
+				<img class="popper" data-popbox="pop2" src="<%=media%>/pictures/icon_info_blue.png">
+				</td>
+				<td width="5%"><%:(RSSI)%></td>
+				<td width="20%" style="text-align:right"><%:Signal Strength%>
+				<img class="popper" data-popbox="pop3" src="<%=media%>/pictures/icon_info_blue.png">
+				</td>
+			</tr>
+			<script><%if curtab == "node_list" then%>
+			//if(meshdata.length > 1)
+			//{
+				nodelist();
+			//}
+			<%end%></script>
+		</table>
+		</div>
+
+		
+
+		<table id="show_ping" style="<%if curtab ~= "ping" then print("display:none;") end%>">
+			<tr>
+				<td class="title" colspan="2"><%:Ping Test Parameters%></td>
+			</tr>
+			<tr class="title-option">
+				<td width="35%">
+					<%:From%>&nbsp;&nbsp;
+					<select name="left_device_ping" style="height:27px;">
+					<script>devicelist();</script>
+					</select>
+				</td>
+				<td>
+					<%:To%>&nbsp;&nbsp;
+					<select name="right_device_ping" style="height:27px;">
+						<script>devicelist();</script>
+					</select>
+				</td>
+			</tr>
+		</table>
+		<table id="show_ping_1" style="<%if curtab ~= "ping" then print("display:none;") end%>">
+			<!-- <tr class="title-option">
+				<td style="width: 30%"><%:Ping Packet Size%></td>
+				<td><input id="pks" type="text" maxlength="5" size="5" value="64"/>&nbsp;<%:Bytes%></td>
+			</tr> -->
+			<tr class="title-option">
+				<td style="width: 35%"><%:Number of Pings%></td>
+				<td><input name="pings" type="text" maxlength="2" size="5" value="4"/></td>
+			</tr>
+			<tr class="title-option">
+				<td style="width: 30%; vertical-align: top;"><input type="button" value="<%:Start%>" class="cbi-button" onclick="notice_ping();" /></td>
+				<td>
+				<div  id="pingCollecting" style="display:none">
+				<p style="font-size:20px "><%:Collecting data...%><img src="<%=resource%>/icons/loading.gif" alt="<%:Loading%>" style="vertical-align:middle" /></p>
+				</div>
+					<pre id="pingresult" class="pre_mesh" style="display:none;"></pre>
+				</td>
+			</tr>
+		</table>
+
+
+		<table id ="show_traceroute" style="<%if curtab ~= "traceroute" then print("display:none;") end%>">
+			<tr style="height: 8px;font-size: 16px;color: #000000;vertical-align: middle;background-color:#ffffff">
+				<td class="title" colspan="4"><%:Traceroute Test Parameters%></td>
+			</tr>
+			<tr class="title-option">
+				<td width="35%"><%:From%>&nbsp;&nbsp;<select name="left_traceroute" style="height:27px;">
+					<script>devicelist();</script>
+					</select>
+				</td>
+				<td ><%:To%>&nbsp;&nbsp;<select name="right_traceroute" style="height:27px;">
+					<script>devicelist();</script>
+					</select>
+				</td>
+			</tr>
+			<tr class="title-option" id="AtoB_traceroute">
+				<td style="width: 30%; vertical-align: top;"><input type="button" value="<%:Start%>" class="cbi-button" onclick="notice_traceroute();" /></td>
+				<td>
+				<div  id="tracerouteCollecting" style="display:none">
+				<p style="font-size:20px "><%:Collecting data...%><img src="<%=resource%>/icons/loading.gif" alt="<%:Loading%>" style="vertical-align:middle" /></p>
+				</div>
+					<pre id="tracedata" name="tracedata" class="pre_mesh" style="display:none;"></pre>
+				</td>
+			</tr>
+		</table>
+
+		<table id ="show_throughput" style="<%if curtab ~= "throughput" then print("display:none;") end%>">
+			<tr style="height: 8px;font-size: 16px;color: #000000;vertical-align: middle;background-color:#ffffff">
+				<td class="title" colspan="4"><%:Throughput Test%></td>
+			</tr>
+			<tr class="title-option">
+				<td width="25%"><select name="left_throughput" style="height:27px;">
+					<script>devicelist();</script>
+					</select>
+				</td>
+				<td width="25%" style="text-align:center"><%:And%>
+				</td>
+				<td width="25%"><select name="right_throughput" style="height:27px;">
+					<script>devicelist();</script>
+					</select>
+				</td>
+				<td>
+				<input class="cbi-button cbi-button-save" onclick="notice_throughput();" type="button" value="<%:Start%>">
+				</td>
+			</tr>
+			<tr class="title-option" id="AtoB_throughput" style="display:none">
+				<td width="25%"><div style="text-align:left" id="upload" name="upload" value=""></div>
+				</td>
+				<td width="25%" style="text-align:center">
+					<img class="popper" data-popbox="Reset_to_Default_info" src="<%=media%>/pictures/iperf_arrow.png">
+				</td>
+				<td width="25%"><div style="text-align:left" id="download" name="download" value=""></div></td>
+				<td width="25%"></td>
+			</tr>
+		</table>
+
+		<div  id="maincontainer" style="display:none">
+			<br>
+			<p style="font-size:20px "><%:Collecting data...%><img src="<%=resource%>/icons/loading.gif" alt="<%:Loading%>" style="vertical-align:middle" />
+			</p>
+		</div>
+
+		
+
+		<form action="<%=luci.dispatcher.build_url('admin', 'network', 'mesh_tools')%>" method="post">
+
+		</form>
+
+		<table style="<%if curtab ~= "link_status" then print("display:none;") end%> ">
+			<tr>
+				<td colspan="3">
+				<table width="100%">
+				<tr>
+					<td width="23%">
+					<div  align="right" style="font-size: 16px;color: #000000;">
+					Mesh View
+					 <img class="popper" data-popbox="Mesh_Topology" src="<%=media%>/pictures/icon_info_blue.png"></a>
+					 </u>
+					</div>
+					</td>
+					<td>
+						<div id="topology"></div>
+					</td>
+				</tr>
+				</table>
+				</td>
+			</tr>			
+			<script type="text/javascript"><%if curtab == "link_status" then%>nodeRSSIList();<%end%></script>
+			<!--tr style="height: 8px;font-size: 16px;color: #000000;vertical-align: middle;background-color:#ffffff background-color:white;; background-color:white;height:10px;">
+			<td colspan="3"></td>
+			</tr-->
+			<script type="text/javascript">
+			if(noRssiFlag==0)
+			{
+				dw('<tr style="background-color:#ffffff;border-bottom: 1px solid #1B489C;height: 30px;font-size: 16px;color: #000000;	vertical-align: middle;">');
+				dw('<td colspan="3"></td>');
+  				dw('</tr>');
+  			}
+  			</script>
+			<tr style="background-color:#ffffff;height: 8px;font-size: 16px;color: #000000;	vertical-align: middle;">
+  				<td colspan="3"><%:A node is not allowed to link with mesh if its signal strength is continuously lower than%> <a href='<%=luci.dispatcher.build_url("admin/network/wireless_mesh")%>'><%=rssi%></a>. </td>
+  			</tr>
+  			
+		</table>
+
+		<br style="clear:both" /><br />
+	</fieldset>
+	</form>
+	</body>
+</div>
+
+<%+footer%>

@@ -1,0 +1,72 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<% http_header("style/top.css", "script/top.js") %>
+<% top_body_header("top_nochange.html", "change_language") %>
+
+<script>
+var language_oriArray = "<% lang_en() %>".split(" ");
+var language_showArray="<% lang_show() %>".split(" ");
+var gui_region = "<% cfg_get("GUI_Region") %>";
+var new_language = "<% cfg_get("New_Language") %>";
+
+var select_language_token = "<% generateToken("select_language") %>";
+var change_multiPPPoE_status_token = "<% generateToken("change_multiPPPoE_status") %>";
+
+function loadvalue()
+{
+
+	document.forms[0].language.value = new_language;
+	document.forms[0].language.disabled = true;
+
+	var upgrade_div = document.getElementById("update_info");
+	var basic_label = document.getElementById("basic_lab");
+	var advanced_label = document.getElementById("advanced_lab");
+
+	upgrade_div.style.display = "none";
+	if(parent.type == "basic")
+	{
+		basic_label.className = "label_click";
+		advanced_label.className = "label_unclick";
+	}
+	else if(parent.type == "advanced")
+	{
+		basic_label.className = "label_unclick";
+		advanced_label.className = "label_click";
+	}
+
+        form=document.forms[0];
+	form.submit();
+}
+
+</script>
+
+<input type=hidden name=hidden_lang_avi>
+<input type=hidden name=browser_or_top>
+<div id="logo"></div>
+<% top_hardware_version() %>
+<div id="labels">
+	<div id="basic_lab" class="label_unclick">
+		<div class="label_left"></div>
+		<div class="label_middle"><b><span id="basic_label">$basic_title</span></b></div>
+		<div class="label_right"></div>
+	</div>
+	<div id="advanced_lab" class="label_unclick">
+		<div class="label_left"></div>
+		<div class="label_middle"><b><span id="advanced_label">$advanced_title</span></b></div>
+		<div class="label_right"></div>
+	</div>
+	<div id="update_info" class="update_info_down" onclick="firmwareUpgrade();">
+		<div id="update_info_left"></div>
+		<div id="update_info_middle"><i>$firmware_upgrade_is_available_click_to_get</i></div>
+		<div id="update_info_right"></div>
+	</div>
+</div>
+<div id="firm_version" name="firm_version">$firmware_version <br /><% cat_file("/firmware_version") %></div>
+<div id="select_language" align=right class="disable_select_language">
+	<select align=right name="language" id="language" size=1 onChange="change_select();">
+		<script language="javascript" type="text/javascript">languageShowlist();</script>
+	</select>
+</div>
+
+</form>
+</body>
+</html>

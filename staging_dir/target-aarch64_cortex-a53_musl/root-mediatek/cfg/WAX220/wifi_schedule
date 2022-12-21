@@ -1,0 +1,13 @@
+config 'reboottbl' 'reboot'
+	option 'name' 'reboot'
+	option 'day' ''
+	option 'time' '0:0'
+	option 'rebootTime' ''
+	option 'status' '0'
+
+config 'schedule' 'wireless'
+	option 'ScheduleEnable' '0'
+	option 'iface' ''
+	option 'radio' '0'
+	option 'templates' '0'
+	option 'init' '0'

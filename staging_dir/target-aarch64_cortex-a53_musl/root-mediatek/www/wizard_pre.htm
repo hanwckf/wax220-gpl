@@ -1,0 +1,107 @@
+<%+header%>
+<%
+local uci = require("luci.model.uci").cursor()
+local disp = require "luci.dispatcher"
+%>
+<script>document.getElementById('menu_right_style').style.display = "none";
+$("#maincontent").removeClass();
+$("#maincontent").css('margin','auto');
+$("#maincontent").css('padding-top','30px');
+$("#maincontent").css('padding-bottom','50px');
+$("#maincontent").css('width','80%');
+function nextSetup()
+{
+	var f = document.wizard_pre;
+
+	if(document.getElementsByName("wizard")[0].checked == true)
+	{	
+		location.href="<%=disp.build_url('admin/network/wizard')%>";
+	}
+	else if(document.getElementsByName("wizard")[1].checked == true)
+	{
+		location.href="<%=disp.build_url('admin/network/wizard_join_mesh')%>";
+	}
+}
+function logout()
+{
+	location.href="<%=disp.build_url('admin/logout')%>";
+}
+function copyto()
+{
+	document.getElementsByName("wizard")[0].checked = true;
+}
+function showtext(value)
+{
+
+	document.getElementById('create_text').style.display = (value == "0")?"":"none";
+	document.getElementById('join_text').style.display = (value == "0")?"none":"";
+}
+</script>
+
+<body onLoad="copyto();">
+<form name="wizard_pre" action="<%=REQUEST_URI%>" method="post">
+<div id="welcome" >
+	<table >
+		<tr class="title" style="background: url('<%=media%>/banner_model.png');">
+			<td style="color:#ffffff;padding-left:20px;">
+				<%:Welcome to EnGenius Setup Wizard%>
+			</td>
+		</tr>
+	</table>
+</div>
+<div><table><tr><td></td></tr></table>
+</div>
+<div id="start_wizard" style="border-bottom: 1px solid #1B489C;border-top: 1px solid #1B489C;border-left: 1px solid #1B489C;border-right: 1px solid #1B489C;padding-left:20px;padding-right:20px">
+	<table >
+
+		<tr ><td>&nbsp;</td></tr>
+		<tr style="height: 8px;font-size: 16px;color: #000000;vertical-align: middle;background-color:#ffffff" >
+			<td >
+			<%:The Wizard will guide you through a step-by-step process to configure your new EnGenius device and connect to the internet%>
+			</td>
+		</tr>
+	</table>
+	<table style="text-align:center">
+		<tr style="height: 8px;font-size: 16px;color: #000000;vertical-align: middle;" >
+			<td style="text-align: center;">
+				<%:Mesh Network Setting:%>
+			<input type="radio" onclick="showtext(0);" maxlength="12" name="wizard" id="wizard_create">
+			<%:Setup New Mesh Network%>
+			<input type="radio" onclick="showtext(1);" maxlength="12" name="wizard" id="wizard_join">
+			<%:Join To Existing Mesh Network%>
+			</td>
+
+		</tr>
+		<tr id="create_text" style="height: 8px;font-size: 16px;color: #000000;vertical-align: middle;background-color:#ffffff;" >
+			<td style="padding:0px 0px 10px 250px;">
+				<br><%:Step 1.Set up the Wireless Security/Device Password%>
+				<br><br><%:Step 2.Check the Status and Save Settings%>
+			</td>
+		</tr>
+		<tr ><td></td></tr>
+		<tr id = "join_text" style="display:none;height: 8px;font-size: 16px;color: #000000;vertical-align: middle;background-color:#ffffff;" >
+			<td style="padding:0px 0px 10px 250px;">
+				<br><%:Step 1.Set up Mesh network settings%>
+				<br><br><%:Step 2.Set up the Wireless Security/Device Password%>
+				<br><br><%:Step 3.Check the Status and Save Settings%>
+			</td>
+		</tr>
+		<tr >
+			<td style="border-bottom: 1px solid #1B489C;padding-bottom:20px;text-align:center"><input class="cbi-button cbi-button-save" onclick="nextSetup();" type="button" value="<%:Next%>"></td>
+		</tr>
+		<tr style="background-color:#ffffff;"><td>&nbsp;</td></tr>
+		<tr style="font-size: 18px;padding-left: 10px;color:#000000;height: 31px;">
+			<td style="text-align:left"><%:If you do not want to use the setup wizard, you can skip setup wizard via below network settings button (for advanced user only)%>
+			</td>
+		</tr>
+		<tr style="background-color:#ffffff;">
+			<td style="text-align:center">
+			<input class="cbi-button cbi-button-save" type="button" onclick="logout();" value="<%:Network Settings%>">
+			<br><br><br>
+			</td>
+		</tr>
+	</table>
+</div>
+</form>
+</body>
+<%+footer%>

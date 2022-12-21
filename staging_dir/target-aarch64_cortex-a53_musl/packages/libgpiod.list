@@ -1,0 +1,12 @@
+./
+./host
+./usr
+./usr/include
+./usr/include/gpiod.h
+./usr/lib
+./usr/lib/libgpiod.so
+./usr/lib/libgpiod.so.2
+./usr/lib/libgpiod.so.2.1.4
+./usr/lib/libgpiod.a
+./usr/lib/pkgconfig
+./usr/lib/pkgconfig/libgpiod.pc

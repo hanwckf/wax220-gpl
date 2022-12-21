@@ -1,0 +1,3 @@
+config block_sites 'config'
+	option block_option 'never'
+	option enable_trusted_ip '0'

@@ -1,0 +1,83 @@
+From aba3024231f810d7a3fd0343202f906ed565fd77 Mon Sep 17 00:00:00 2001
+From: caojingzhe <caojingzhe@twsh.com>
+Date: Thu, 30 Jun 2022 11:14:08 +0800
+Subject: [PATCH] 2
+
+---
+ .../linux-mediatek_mt7986/mt_wifi/mt_wifi/chips/mt7986.c  | 13 +++++++++++++
+ .../mt_wifi/mt_wifi/txpwr/single_sku.c                    | 15 ++++++++-------
+ 2 files changed, 21 insertions(+), 7 deletions(-)
+ mode change 100644 => 100755 opt2102/build_dir/target-aarch64_cortex-a53_musl/linux-mediatek_mt7986/mt_wifi/mt_wifi/chips/mt7986.c
+ mode change 100644 => 100755 opt2102/build_dir/target-aarch64_cortex-a53_musl/linux-mediatek_mt7986/mt_wifi/mt_wifi/txpwr/single_sku.c
+
+diff --git a/mt_wifi/chips/mt7986.c b/mt_wifi/chips/mt7986.c
+old mode 100644
+new mode 100755
+index 70a1a837f..cf2359b7c
+--- a/mt_wifi/chips/mt7986.c
++++ b/mt_wifi/chips/mt7986.c
+@@ -12570,6 +12570,18 @@ static INT mt7986_set_rts_signal_ta(RTMP_ADAPTER *ad, UINT8 band_idx, BOOLEAN en
+ }
+ #endif
+ 
++static UINT32 mt7986_get_sku_tbl_idx(RTMP_ADAPTER *pAd, UINT8 *sku_tbl_idx)
++{
++	UINT8 tbl_idx = 0;
++
++	/* read profile for table index */
++	tbl_idx = pAd->CommonCfg.SKUTableIdx;
++
++	/* update sku table index */
++	*sku_tbl_idx = tbl_idx;
++
++	return 0;
++}
+ 
+ static VOID mt7986_chipOp_init(struct _RTMP_ADAPTER *pAd, RTMP_CHIP_OP *chip_op)
+ {
+@@ -12578,6 +12590,7 @@ static VOID mt7986_chipOp_init(struct _RTMP_ADAPTER *pAd, RTMP_CHIP_OP *chip_op)
+ 	chip_op->AsicMacInit = init_mac_cr;
+ 	chip_op->AsicReverseRfFromSleepMode = NULL;
+ 	chip_op->AsicHaltAction = NULL;
++	chip_op->get_sku_tbl_idx = mt7986_get_sku_tbl_idx;
+ 	/* BBP adjust */
+ 	chip_op->ChipBBPAdjust = NULL;
+ 	chip_op->ChipSwitchChannel = switch_channel;
+diff --git a/mt_wifi/txpwr/single_sku.c b/mt_wifi/txpwr/single_sku.c
+old mode 100644
+new mode 100755
+index 71ac9830e..62b8ce5c6
+--- a/mt_wifi/txpwr/single_sku.c
++++ b/mt_wifi/txpwr/single_sku.c
+@@ -344,6 +344,14 @@ NDIS_STATUS MtReadPwrLimitTable(RTMP_ADAPTER *pAd, PCHAR *pi1Buffer, UINT8 u1Typ
+ 		sizeof(Backoff_11), sizeof(Backoff_12), sizeof(Backoff_13), sizeof(Backoff_14), sizeof(Backoff_15),
+ 		sizeof(Backoff_16), sizeof(Backoff_17), sizeof(Backoff_18), sizeof(Backoff_19), sizeof(Backoff_20)};
+ 
++	/* query sku table index */
++	chip_get_sku_tbl_idx(pAd, &sku_tbl_idx);
++	if (sku_tbl_idx >= TABLE_SIZE)
++		return NDIS_STATUS_FAILURE;
++
++	MTWF_DBG(pAd, DBG_CAT_POWER, DBG_SUBCAT_ALL, DBG_LVL_INFO,
++		KBLU " sku table idx: %d\n" KNRM, sku_tbl_idx);
++
+ 	/* update buffer with sku table content */
+ 	if (POWER_LIMIT_TABLE_TYPE_SKU == u1Type) {
+ 		/* allocate memory for buffer power limit value , caller need to free the memoey */
+@@ -359,13 +367,6 @@ NDIS_STATUS MtReadPwrLimitTable(RTMP_ADAPTER *pAd, PCHAR *pi1Buffer, UINT8 u1Typ
+ 	if (!(*pi1Buffer))
+ 		goto error1;
+ 
+-	/* query sku table index */
+-	chip_get_sku_tbl_idx(pAd, &sku_tbl_idx);
+-	if (sku_tbl_idx >= TABLE_SIZE)
+-		return NDIS_STATUS_FAILURE;
+-
+-	MTWF_DBG(pAd, DBG_CAT_POWER, DBG_SUBCAT_ALL, DBG_LVL_INFO,
+-		KBLU " sku table idx: %d\n" KNRM, sku_tbl_idx);
+ 	return NDIS_STATUS_SUCCESS;
+ 
+ error1:
+-- 
+2.13.1
+

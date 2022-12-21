@@ -1,0 +1,40 @@
+<%+header%>
+<script>document.getElementById('menu_right_style').style.display = "none";
+$("#maincontent").removeClass();
+<%
+local ip = luci.http.getenv("REMOTE_ADDR")
+local disp = require "luci.dispatcher"
+local uci = luci.model.uci.cursor()
+local checkFW = uci:get("system","firmware","version_check")
+local newFWInfo = luci.util.trim(luci.util.exec('cat /tmp/new_fw_info'))
+local apcontroller_enable = uci:get("apcontroller","capwap","enable")
+local EnMesh_enable = uci:get("network","sys","EnMesh")
+if newFWInfo ~= nil then
+	newFWInfo  = string.gsub(newFWInfo,"\'","\\\'")
+end
+local username = luci.util.trim(luci.util.exec('cat /tmp/md5tmp_account'))
+local isAdminAccount = luci.util.exec("/lib/auth.sh get_authority \""..username.."\""):sub(1,-2)
+if ip == "127.0.0.1" then
+%>
+document.write('<iframe width="1180px" height="540px" style="border-top-width: 0px; border-left-width: 0px; border-bottom-width: 0px; border-right-width: 0px;" src="https://<%=luci.http.getenv("SERVER_NAME")%>/ipcam_liveview.htm'+camLiveViewInfo+'">');
+<%
+else
+%>
+document.write('<iframe width="1180px" height="540px" style="border-top-width: 0px; border-left-width: 0px; border-bottom-width: 0px; border-right-width: 0px;" src="http://<%=luci.http.getenv("SERVER_NAME")%>:'+camGuiTraversalPort+'/ipcam_liveview.htm'+camLiveViewInfo+'">');
+<%
+end
+%>
+document.write('</iframe>');
+
+if(functionlist.HAS_EG_AUTO_FW_CHECK==1)
+{
+    if (("<%=checkFW%>" == "1")&&(('<%=newFWInfo%>' != "")&&('<%=newFWInfo%>' != "0"))&&("<%=apcontroller_enable%>" == "0")&&("<%=EnMesh_enable%>" == "0")&&("<%=isAdminAccount%>" == "0"))
+    {
+        if (confirm("<%:New firmware available. Upgrade now?%>"))
+        {
+            location.href = "<%=disp.build_url('admin/system/flashops')%>";
+        }
+    }
+}
+</script>
+<%+footer%>

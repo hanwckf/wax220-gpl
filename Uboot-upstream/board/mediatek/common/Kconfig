@@ -1,0 +1,53 @@
+
+config MEDIATEK_BOOTMENU
+	bool "Enable MediaTek bootmenu framework"
+	select CMD_BOOTMENU
+	default n
+	help
+	  Enable this option will allow boards to use a bootmenu containing
+	  features for easy upgrading/booting.
+
+config MEDIATEK_BOOTMENU_COUNTDOWN
+	bool "Enable bootmenu countdown"
+	default y
+	depends on MEDIATEK_BOOTMENU
+	help
+	  Enable bootmenu auto-booting countdown timer.
+
+config MEDIATEK_BOOTMENU_DELAY
+	int "MediaTek bootmenu delay time (s)"
+	range 1 10
+	default 4
+	depends on MEDIATEK_BOOTMENU_COUNTDOWN
+	help
+	  The dealy seconds for the bootmenu to show before running the
+	  default command.
+
+config MEDIATEK_LOAD_FROM_RAM
+	bool "Enable loading from RAM support"
+	default n
+	depends on MEDIATEK_BOOTMENU
+	help
+	  Enable loading from RAM support for mtkload and mtkupgrade. This is
+	  useful when using JTAG debugging and ethernet is not available.
+
+config MTK_SECURE_BOOT
+	bool "Enable MediaTek secure boot framework"
+	select FIT_SIGNATURE
+	select ENV_IS_NOWHERE
+	select CHAIN_OF_TRUST
+	default n
+	help
+	  Enable this option will allow boards to verify Linux and Filesystem.
+
+config CHAIN_OF_TRUST
+	bool
+	default n
+
+config MTK_ANTI_ROLLBACK
+	bool "Enable MediaTek anti-rollback framework"
+	default n
+	depends on MTK_SECURE_BOOT
+	help
+	  Enable this option will allow boards to verify Firmware Anti-rollback
+	  Version.

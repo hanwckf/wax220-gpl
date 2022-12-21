@@ -1,0 +1,14 @@
+config vlanctl 'global'
+	option enabled '0'
+	option mode 'bridge'
+	option version '0'
+
+config internet_vlan 'internet'
+	option vlan '10'
+	option pbit '0'
+
+config bridge_vlan 'bridge'
+	option enabled '0'
+
+
+

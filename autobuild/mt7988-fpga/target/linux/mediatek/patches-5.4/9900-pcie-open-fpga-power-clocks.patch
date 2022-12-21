@@ -1,0 +1,23 @@
+diff --git a/drivers/pci/controller/pcie-mediatek-gen3.c b/drivers/pci/controller/pcie-mediatek-gen3.c
+index aa63bd7..27b35c7 100644
+--- a/drivers/pci/controller/pcie-mediatek-gen3.c
++++ b/drivers/pci/controller/pcie-mediatek-gen3.c
+@@ -864,6 +864,18 @@ static int mtk_pcie_probe(struct platform_device *pdev)
+ 	struct pci_host_bridge *host;
+ 	int err;
+ 
++	void __iomem *clk_base;
++	clk_base = ioremap(0x10001000, 0x100);
++	writel_relaxed((readl_relaxed(clk_base + 0x64) | 0xf000), (clk_base + 0x64));
++	writel_relaxed(0x780, (clk_base + 0x14));
++	iounmap(clk_base);
++
++	void __iomem *srampower_base;
++	srampower_base = ioremap(0x10003000, 0x100);
++	writel_relaxed(0x0, (srampower_base + 0x30));
++	writel_relaxed(0x7, (srampower_base + 0x1c));
++	iounmap(srampower_base);
++
+ 	host = devm_pci_alloc_host_bridge(dev, sizeof(*port));
+ 	if (!host)
+ 		return -ENOMEM;

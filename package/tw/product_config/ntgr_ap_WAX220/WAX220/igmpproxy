@@ -1,0 +1,16 @@
+config igmpproxy
+	option quickleave 1
+#	option verbose [0-2]
+
+config phyint wan
+	option network wan
+	option zone wan
+	option direction upstream
+	list altnet 0.0.0.0/0
+
+config phyint lan
+	option network lan
+	option zone lan
+	option direction downstream
+
+config 0 'enabled'

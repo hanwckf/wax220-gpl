@@ -1,0 +1,25 @@
+From 4c0ae991e58b362e7e37e502a7ef161c9b4b5eb9 Mon Sep 17 00:00:00 2001
+From: caojingzhe <caojingzhe@twsh.com>
+Date: Fri, 26 Aug 2022 19:29:40 +0800
+Subject: [PATCH] 2
+
+---
+ .../linux-mediatek_mt7986/mt_wifi/mt_wifi/embedded/common/mlme.c        | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mt_wifi/embedded/common/mlme.c b/mt_wifi/embedded/common/mlme.c
+index bce0d089c..f33ef0b47 100644
+--- a/mt_wifi/embedded/common/mlme.c
++++ b/mt_wifi/embedded/common/mlme.c
+@@ -6929,7 +6929,7 @@ CHAR RTMPAvgRssi(RTMP_ADAPTER *pAd, RSSI_SAMPLE *pRssi)
+ 	UINT8 i;
+ 
+ 	for (i = 0; i < pAd->Antenna.field.RxPath; i++) {
+-		if ((pRssi->AvgRssi[i] > -127) && (pRssi->AvgRssi[i] < 0))
++		if ((pRssi->AvgRssi[i] > -109) && (pRssi->AvgRssi[i] < 0))
+ 			rx_stream++;
+ 	}
+ 
+-- 
+2.13.1
+

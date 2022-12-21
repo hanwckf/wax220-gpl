@@ -1,0 +1,240 @@
+<% http_header("style/cascade.css", "style/cascade2.css", "style/cascade-custom.css", "script/jquery-1.12.4.min.js", "script/md5.js", "script/cbi.js", "script/common.js", "script/advanced.js") %>
+<body onLoad="please_wait(false);" bgcolor="#ffffff">
+<style>
+input[type=radio] {
+    margin: 1px 0;
+    vertical-align: top;
+}
+</style>
+
+<div id="Management_info" class="popbox">
+	<p>
+	$management_note1<br>
+	$management_note2<br>
+	$management_note3
+	</p>
+</div>
+<div id="SSH_Setting_info" class="popbox">
+    <p>$management_note4</p>
+</div>
+<div id="HTTPS_Settings_info" class="popbox">
+    <p>$management_note5</p>
+</div>
+<div id="Email_Alert_info" class="popbox">
+    <p>$management_note7</p>
+</div>
+<div id="SNMP_Setting_info" class="popbox">
+    <p>$management_note8</p>
+</div>
+
+<form name="form" action='<% action_url("apply.cgi", "advanced.htm") %>' method="post">
+
+<fieldset class="cbi-section">
+<table style="display: none;">
+	<tr>
+		<td colspan="2" class="title">$snmp_settings<img class="popper" data-popbox="SNMP_Setting_info" src="image/icon_info_blue.png"></td>
+	</tr>
+	<tr class="title-option">
+		<td style="width:40%;"><label for="SnmpEnable_enable">$status</label></td>
+		<td>
+			<input type="radio" name="SnmpEnable" value="1" id="SnmpEnable_enable" onclick="snmp_status(0)" checked/>
+			<label for="SnmpEnable_enable">$enable</label>&nbsp;&nbsp;
+			<input type="radio" name="SnmpEnable" value="0" id="SnmpEnable_disable" onclick="snmp_status(0)" />
+			<label for="SnmpEnable_disable">$disable</label>
+		</td>
+	</tr>
+	<tr class="title-option">
+		<td>$contact</td>
+		<td><input type="text" name="snmp_gen_contact" id="snmp_gen_contact" style="height:27px;" maxlength="255"></td>
+	</tr>
+	<tr class="title-option">
+		<td>$location_220</td>
+		<td><input type="text" name="snmp_gen_loaction" id="snmp_gen_loaction" style="height:27px;" maxlength="255"></td>
+	</tr> 		
+	<tr class="title-option">
+		<td>$community_name_read_only</td>
+		<td><input type="text" name="snmp_gen_ro" id="snmp_gen_ro" style="height:27px;" maxlength="32"></td>
+	</tr>
+	<tr class="title-option">
+		<td>$community_name_read_write</td>
+		<td><input type="text" name="snmp_gen_rw" id="snmp_gen_rw" style="height:27px;" maxlength="32"></td>
+	</tr>
+	<tr class="title-option">
+		<td>$trap_destination</td><td></td>
+	</tr>
+	<tr class="title-option">
+		<td class="subtitle">-&nbsp;$port</td>
+		<td><input type="text" name="snmp_gen_port" id="snmp_gen_port" style="height:27px;" maxlength="5"></td>
+	</tr>
+	<tr class="title-option">
+		<td class="subtitle">-&nbsp;$ip_address</td>
+		<td><input type="text" name="snmp_gen_ip" id="snmp_gen_ip" style="height:27px;" maxlength="15"></td>
+	</tr>
+	<tr class="title-option">
+		<td class="subtitle">-&nbsp;$community_name</td>
+		<td><input type="text" name="snmp_gen_comm" id="snmp_gen_comm" style="height:27px;" maxlength="32"></td>
+	</tr>
+	<tr class="title-option">
+		<td>$snmpv3_settings</td><td></td>
+	</tr>
+	<tr class="title-option">
+		<td class="subtitle" style="width:40%;"><label for="snmp_gen_v3_enable">-&nbsp;$status</label></td>
+		<td>
+			<input type="radio" name="snmp_gen_v3" value="1" id="snmp_gen_v3_enable" onclick="snmp_status(1)" checked/>
+			<label for="snmp_gen_v3_enable">$enable</label>&nbsp;&nbsp;
+			<input type="radio" name="snmp_gen_v3" value="0" id="snmp_gen_v3_disable"  onclick="snmp_status(1)" />
+			<label for="snmp_gen_v3_disable">$disable</label>
+		</td>
+	</tr>
+	<tr class="title-option">
+		<td class="subtitle">-&nbsp;$username</td>
+		<td><input type="text" name="snmp_v3_username" id="snmp_v3_username" style="height:27px;" maxlength="31">&nbsp;$characters_range1</td>
+	</tr>
+	<tr class="title-option">
+		<td class="subtitle">-&nbsp;$authorized_protocol</td>
+		<td><select name="snmp_v3_auth_protocol" id="snmp_v3_auth_protocol" style="height:27px;" onchange="snmp_status(2)">
+			<option value="0">$md5</option>
+			<option value="1">$sha</option>			
+			<option value="2">$none</option>
+			</select>
+		</td>
+	</tr>
+	<tr class="title-option">
+		<td class="subtitle">-&nbsp;$authorized_key</td>
+		<td><input type="text" name="snmp_v3_auth_key" id="snmp_v3_auth_key" style="height:27px;" maxlength="32">&nbsp;$characters_range2</td>
+	</tr>
+	<tr class="title-option">
+		<td class="subtitle">-&nbsp;$private_protocol</td>
+		<td><select name="snmp_v3_auth_private_protocol" id="snmp_v3_auth_private_protocol" style="height:27px;" onchange="snmp_status(3)">
+			<option value="0">$des</option>
+			<option value="1">$none</option>	
+			</select>
+		</td>
+	</tr>
+	<tr class="title-option">
+		<td class="subtitle">-&nbsp;$private_key</td>
+		<td><input type="text" name="snmp_v3_auth_private_key" id="snmp_v3_auth_private_key" style="height:27px;" maxlength="32">&nbsp;$characters_range2</td>
+	</tr>
+	<tr class="title-option">
+		<td class="subtitle">-&nbsp;$engine_id</td>
+		<td><input type="text" name="snmp_v3_engine_id" id="snmp_v3_engine_id" style="height:27px;" maxlength="32"></td>
+	</tr>
+	</table>
+</fieldset>
+
+<fieldset class="cbi-section">
+	<table id="tbl_ssh_setting">
+	<script>
+		var is_prod_firmware = '<% cfg_get("prod_firmware") %>';
+		if (1 == is_prod_firmware)
+		{
+			getById("tbl_ssh_setting").style.display = "none";
+		}
+	</script>
+	<tr>
+		<td colspan="2" class="title">$ssh_setting<img class="popper" data-popbox="SSH_Setting_info" src="image/icon_info_blue.png"></td>
+	</tr>
+	<tr class="title-option">
+		<td style="width:40%;"><label for="sshEnable_enable">$status</label></td>
+		<td>
+			<input type="radio" name="sshEnable" value="on" id="sshEnable_enable" checked/>
+			<label for="sshEnable_enable">$enable</label>&nbsp;&nbsp;
+			<input type="radio" name="sshEnable" value="off" id="sshEnable_disable"/>
+			<label for="sshEnable_disable">$disable</label>
+		</td>
+	</tr>
+	</table>
+</fieldset>
+
+<fieldset class="cbi-section" id="httpsPart">
+	<table style="display: none;">
+	<tr>
+		<td colspan="2" class="title">$https_settings<img class="popper" data-popbox="HTTPS_Settings_info" src="image/icon_info_blue.png"></td>
+	</tr>
+	<tr class="title-option">
+		<td style="width:40%;"><label for="httpsEnable_enable">$status</label></td>
+		<td>
+			<input type="radio" name="httpsEnable" value="1" id="httpsEnable_enable" onclick="https_status()" checked/>
+			<label for="httpsEnable_enable">$enable</label>&nbsp;&nbsp;
+			<input type="radio" name="httpsEnable" value="0" id="httpsEnable_disable" onclick="https_status()"/>
+			<label for="httpsEnable_disable">$disable</label>
+		</td>
+	</tr>
+	<tr class="title-option">
+		<td style="width:40%;"><label for="httpsForward_enable">$https_forward</label></td>
+		<td>
+			<input type="radio" name="httpsForward" value="1" id="httpsForward_enable" checked/>
+			<label for="httpsForward_enable">$enable</label>&nbsp;&nbsp;
+			<input type="radio" name="httpsForward" value="0" id="httpsForward_disable"/>
+			<label for="httpsForward_disable">$disable</label>
+		</td>
+	</tr>
+	</table>
+</fieldset>
+
+<fieldset class="cbi-section">
+	<table>
+	<tr>
+		<td colspan="2" class="title">$email_alert<img class="popper" data-popbox="Email_Alert_info" src="image/icon_info_blue.png"></td>
+	</tr>
+	<tr class="title-option">
+		<td style="width:40%;">$status</td>
+		<td>
+			<input type="checkbox" name="email_enable" id="email_enable" value="1" onclick="email_alert_status()" checked style="vertical-align: top;">
+			<label style="vertical-align: bottom;">&nbsp;$enable</label>
+		</td>
+	</tr>
+	<tr class="title-option">
+		<td class="subtitle">-&nbsp;$from</td>
+		<td><input type="text" name="em_from" id="em_from" style="height:27px;"></td>
+	</tr>
+	<tr class="title-option">
+		<td class="subtitle">-&nbsp;$to</td>
+		<td><input type="text" name="em_to" id="em_to" style="height:27px;"></td>
+	</tr>
+	<tr class="title-option">
+		<td class="subtitle">-&nbsp;$subject</td>
+		<td><input type="text" name="em_subject" id="em_subject" style="height:27px;"></td>
+	</tr>
+	<tr class="title-option">
+		<td>$email_account</td>
+		<td></td>
+	</tr>
+	<tr class="title-option">
+		<td class="subtitle">-&nbsp;$username</td>
+		<td><input type="text" name="em_username" id="em_username" style="height:27px;"></td>
+	</tr>
+	<tr class="title-option">
+		<td class="subtitle">-&nbsp;$password</td>
+		<td><input type="password" name="em_password" id="em_password" style="height:27px;">&nbsp;
+		<img src="image/eye-slash.svg" id="password_eye" style="vertical-align:middle" title="Reveal/hide password" onclick="changeInputType('em_password', 'password_eye')" />
+		</td>
+	</tr>
+	<tr class="title-option">
+		<td class="subtitle">-&nbsp;$smtp_server</td>
+		<td>
+		<input type="text" name="em_smtp_server" id="em_smtp_server" style="height:27px;">&nbsp;
+		$port&nbsp;&nbsp;<input type="text" name="em_smtp_port" id="em_smtp_port" style="height:27px;width:70px;" maxlength="5">
+		</td>
+	</tr>
+	<tr class="title-option">
+		<td class="subtitle">-&nbsp;$security_mode</td>
+		<td><select name="em_security" id="em_security" style="height:27px;" onchange="defServPort()">
+			<option value="0">$none</option>
+			<option value="1">$ssl_tls</option>			
+			<option value="2">$starttls</option>
+			</select>
+			<input type="button" name="em_sendEmail" class="cbi-button" id="sendEmail" value="$send_test_mail" onclick="savechanges(2)" style="float:right;">
+		</td>
+	</tr>
+</table>
+</fieldset>
+<br>
+<div class="cbi-page-actions">
+	<input type="hidden" id="submitType" name="submitType"/>
+	<input type="hidden" name="anticsrf" value='<% generateToken("advanced") %>'>
+	<input type="hidden" id="emailStatus" name="emailStatus"/>
+	<input class="cbi-button cbi-button-apply" onclick="return savechanges(1)" type="submit" id="advanced_submit" myid="button_save" value="$apply">&nbsp;<span class="btn_desc">$apply_saved_settings_to_take_effect</span>
+</div>
+</form>
+</body>

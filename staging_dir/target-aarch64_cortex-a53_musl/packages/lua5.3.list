@@ -1,0 +1,17 @@
+./
+./host
+./usr
+./usr/include
+./usr/include/lua5.3
+./usr/include/lua5.3/lua.h
+./usr/include/lua5.3/lualib.h
+./usr/include/lua5.3/luaconf.h
+./usr/include/lua5.3/lua.hpp
+./usr/include/lua5.3/lauxlib.h
+./usr/lib
+./usr/lib/liblua5.3.a
+./usr/lib/liblua5.3.so
+./usr/lib/liblua5.3.so.0
+./usr/lib/liblua5.3.so.0.0
+./usr/lib/liblua5.3.so.0.0.0
+./usr/lib/liblualib5.3.so

@@ -1,0 +1,17 @@
+
+config interface 'loopback'
+	option ifname 'lo'
+	option proto 'static'
+	option ipaddr '127.0.0.1'
+	option netmask '255.0.0.0'
+
+config interface 'lan'
+	option type 'bridge'
+	option ifname 'eth1'
+	option proto 'static'
+	option ipaddr '192.168.0.100'
+	option netmask '255.255.255.0'
+	option ip6assign '60'
+
+config device 'lan_dev'
+	option name 'eth1'

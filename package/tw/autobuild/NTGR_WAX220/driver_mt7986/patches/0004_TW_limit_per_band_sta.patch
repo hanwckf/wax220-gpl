@@ -1,0 +1,237 @@
+From 8ae43b269e487bb8f3eb261f16b2573f85d5728a Mon Sep 17 00:00:00 2001
+From: jiangdingyong <jiangdingyong@twsh.com>
+Date: Sun, 8 May 2022 18:03:13 +0800
+Subject: [PATCH] 2
+
+---
+ .../mt_wifi/mt_wifi/embedded/ap/ap_cfg.c           | 45 +++++++++++++++++
+ .../mt_wifi/mt_wifi/embedded/common/cmm_profile.c  | 12 +++++
+ .../mt_wifi/embedded/common/multi_profile.c        |  2 +
+ .../mt_wifi/mt_wifi/embedded/include/ap_cfg.h      |  7 +++
+ .../mt_wifi/mt_wifi/embedded/include/rtmp.h        |  1 +
+ .../mt_wifi/mt_wifi/embedded/mgmt/mgmt_entrytb.c   | 56 +++++++++++++++++++++-
+ 6 files changed, 122 insertions(+), 1 deletion(-)
+ mode change 100644 => 100755 mt_wifi/embedded/common/multi_profile.c
+ mode change 100644 => 100755 mt_wifi/embedded/include/ap_cfg.h
+ mode change 100644 => 100755 mt_wifi/embedded/mgmt/mgmt_entrytb.c
+
+diff --git a/mt_wifi/embedded/ap/ap_cfg.c b/mt_wifi/embedded/ap/ap_cfg.c
+index d1d0e99c..e3927d48 100755
+--- a/mt_wifi/embedded/ap/ap_cfg.c
++++ b/mt_wifi/embedded/ap/ap_cfg.c
+@@ -402,6 +402,7 @@ INT Set_TxRate_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+ 
+ INT	Set_OLBCDetection_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+ INT	Set_AP_PerMbssMaxStaNum_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
++INT	Set_AP_RadioMaxStaNum_Proc(	PRTMP_ADAPTER	pAd, RTMP_STRING *arg); //[TW Jiangdingyong 2022.5.7 add]
+ INT	Set_AP_SlotTime_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+ #ifdef IAPP_SUPPORT
+ INT	Set_IappPID_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+@@ -1128,6 +1129,7 @@ static struct {
+ 	{"PeakTpRxHigherBoundTh",		Set_peak_tp_rx_higher_bound_th_Proc},
+ #endif /* DELAY_TCP_ACK_V2 */
+ 	{"MbssMaxStaNum",					Set_AP_PerMbssMaxStaNum_Proc},
++	{"RadioMaxStaNum",					Set_AP_RadioMaxStaNum_Proc},//[TW Jiangdingyong 2022.5.7 add]
+ #if defined(MBSS_AS_WDS_AP_SUPPORT) || defined(APCLI_AS_WDS_STA_SUPPORT)
+ 	{"wds",							Set_Wds_Proc},
+ #endif
+@@ -13466,6 +13468,20 @@ INT	Set_AP_PerMbssMaxStaNum_Proc(
+ 	return ApCfg_Set_PerMbssMaxStaNum_Proc(pAd, apidx, arg);
+ }
+ 
++
++//[TW Jiangdingyong 2022.5.7 add start]
++INT	Set_AP_RadioMaxStaNum_Proc(
++	IN	PRTMP_ADAPTER	pAd,
++	IN	RTMP_STRING *arg)
++{
++	POS_COOKIE	pObj = (POS_COOKIE) pAd->OS_Cookie;
++	INT			apidx = pObj->ioctl_if;
++
++	return ApCfg_Set_RadioMaxStaNum_Proc(pAd, apidx, arg);
++}
++//[TW Jiangdingyong 2022.5.7 add end]
++
++
+ /*
+     ==========================================================================
+     Description:
+@@ -23986,6 +24002,35 @@ INT	ApCfg_Set_PerMbssMaxStaNum_Proc(
+ 	return TRUE;
+ }
+ 
++//[TW Jiangdingyong 2022.5.7 add start]
++#include "rt_config.h"
++INT	ApCfg_Set_RadioMaxStaNum_Proc(
++	IN PRTMP_ADAPTER	pAd,
++	IN INT				apidx,
++	IN RTMP_STRING *arg)
++{
++	UINT32 BssidNumB0 = pAd->ApCfg.BssidNumPerBand[DBDC_BAND0];
++	UINT32 BssidNumB1 = pAd->ApCfg.BssidNumPerBand[DBDC_BAND1];
++
++	MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("%s::(BssidNum=2G:%d  5G:%d 	apidx=%d)\n",
++			 __func__, BssidNumB0, BssidNumB1, apidx));
++	MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("%s::(before set MaxStaNumPerBand=2G:%d  5G:%d )\n",
++			 __func__, pAd->ApCfg.MaxStaNumPerBand[DBDC_BAND0], 
++			 pAd->ApCfg.MaxStaNumPerBand[DBDC_BAND1]));
++
++	if(apidx < BssidNumB0)
++		pAd->ApCfg.MaxStaNumPerBand[DBDC_BAND0] = (UINT16)os_str_tol(arg, 0, 10);
++	else
++		pAd->ApCfg.MaxStaNumPerBand[DBDC_BAND1] = (UINT16)os_str_tol(arg, 0, 10);
++    
++	MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("%s::(after set MaxStaNumPerBand=2G:%d  5G:%d )\n",
++			 __func__, pAd->ApCfg.MaxStaNumPerBand[DBDC_BAND0], 
++			 pAd->ApCfg.MaxStaNumPerBand[DBDC_BAND1]));
++
++	return TRUE;
++}
++//[TW Jiangdingyong 2022.5.7 add end]
++
+ INT	Set_MemDebug_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
+ {
+ #ifdef VENDOR_FEATURE2_SUPPORT
+diff --git a/mt_wifi/embedded/common/cmm_profile.c b/mt_wifi/embedded/common/cmm_profile.c
+index 1a3a1f54..07d2d1b1 100755
+--- a/mt_wifi/embedded/common/cmm_profile.c
++++ b/mt_wifi/embedded/common/cmm_profile.c
+@@ -7722,6 +7722,18 @@ NDIS_STATUS	RTMPSetProfileParameters(
+ 				}
+ 			}
+ 
++			//[TW Jiangdingyong 2022.5.7 add start]
++			if (RTMPGetKeyParameter("RadioMaxStaNum", tmpbuf, 32, pBuffer, TRUE)) {
++				//MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("tmpbuf=[%s] \n", tmpbuf));
++				for (i = BAND0, value = rstrtok(tmpbuf, ";"); value; value = rstrtok(NULL, ";"), i++) {
++					pAd->ApCfg.MaxStaNumPerBand[i] = (UINT16)os_str_tol(value, 0, 10);
++					MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_OFF, 	("RadioMaxStaNum[BAND%d]=[%d] \n",
++							 							 i, pAd->ApCfg.MaxStaNumPerBand[i]));
++				}
++				//ApCfg_Set_RadioMaxStaNum_Proc(pAd, tmpbuf);
++			}
++			//[TW Jiangdingyong 2022.5.7 add end]
++
+ 			/* BssMaxIdleEn */
+ 			if (RTMPGetKeyParameter("BssMaxIdleEn", tmpbuf, 128, pBuffer, TRUE)) {
+ 				for (i = 0, macptr = rstrtok(tmpbuf, ";"); macptr; macptr = rstrtok(NULL, ";"), i++) {
+diff --git a/mt_wifi/embedded/common/multi_profile.c b/mt_wifi/embedded/common/multi_profile.c
+old mode 100644
+new mode 100755
+index f5accba0..6255b26c
+--- a/mt_wifi/embedded/common/multi_profile.c
++++ b/mt_wifi/embedded/common/multi_profile.c
+@@ -3011,6 +3011,8 @@ static INT multi_profile_merge_txpwr(
+ 	/*merge TxPower*/
+ 	multi_profile_merge_separate("TxPower", buf1, buf2, final);
+ 
++	multi_profile_merge_separate("RadioMaxStaNum", buf1, buf2, final); //[TW Jiangdingyong 2022.5.7 add]
++    
+ #ifdef TX_POWER_CONTROL_SUPPORT
+ 	/*merge Tx Power Boost Table*/
+ 	multi_profile_merge_separate("PowerUpCck", buf1, buf2, final);
+diff --git a/mt_wifi/embedded/include/ap_cfg.h b/mt_wifi/embedded/include/ap_cfg.h
+old mode 100644
+new mode 100755
+index 2f1a85dc..7ebd6b56
+--- a/mt_wifi/embedded/include/ap_cfg.h
++++ b/mt_wifi/embedded/include/ap_cfg.h
+@@ -211,6 +211,13 @@ INT RTMPAPPrivIoctlLowPower(
+ 	IN RTMP_IOCTL_INPUT_STRUCT *pIoctlCmdStr);
+ #endif
+ 
++//[TW Jiangdingyong 2022.5.7 add start]
++INT	ApCfg_Set_RadioMaxStaNum_Proc(
++	IN PRTMP_ADAPTER	pAd,
++	IN INT				apidx,
++	IN RTMP_STRING *arg);
++//[TW Jiangdingyong 2022.5.7 add end]
++
+ struct apcfg_parameters {
+ 	LONG cfg_mode[2]; /*WirelessMode*/
+ 	ULONG tx_power_percentage; /*TxPower*/
+diff --git a/mt_wifi/embedded/include/rtmp.h b/mt_wifi/embedded/include/rtmp.h
+index 1892ddbc..b27cd052 100755
+--- a/mt_wifi/embedded/include/rtmp.h
++++ b/mt_wifi/embedded/include/rtmp.h
+@@ -5612,6 +5612,7 @@ typedef struct _AP_ADMIN_CONFIG {
+ 	BTWT_BUF_STRUCT btwt[DBDC_BAND_NUM]; /* trigger by bcn offload and used by bcn/brobe rsp/assco rsp*/
+ #endif /* WIFI_TWT_SUPPORT */
+ #endif /* DOT11_HE_AX */
++	UINT16 MaxStaNumPerBand[DBDC_BAND_NUM]; //[TW Jiangdingyong 2022.5.7 add]
+ } AP_ADMIN_CONFIG;
+ 
+ #ifdef CONFIG_AP_SUPPORT
+diff --git a/mt_wifi/embedded/mgmt/mgmt_entrytb.c b/mt_wifi/embedded/mgmt/mgmt_entrytb.c
+old mode 100644
+new mode 100755
+index 61a12567..2cd245b0
+--- a/mt_wifi/embedded/mgmt/mgmt_entrytb.c
++++ b/mt_wifi/embedded/mgmt/mgmt_entrytb.c
+@@ -1266,8 +1266,62 @@ MAC_TABLE_ENTRY *MacTableInsertEntry(
+     					NdisReleaseSpinLock(&pAd->MacTabLock);
+     					return NULL;
+     				}
+-                }
++
+ 				
++                                    //[TW Jiangdingyong 2022.4.11 add start]
++                                    {
++                                        UINT16  staCntBand=0;
++                                        UINT16 i=0;
++                                        UINT16 ifBandId=DBDC_BAND0;
++                                        UINT32 BssidNumB0 = pAd->ApCfg.BssidNumPerBand[DBDC_BAND0];
++                                        //UINT32 BssidNumB1 = pAd->ApCfg.BssidNumPerBand[DBDC_BAND1];
++                                        UINT32 bssidNum = pAd->ApCfg.BssidNum;
++
++                                        if(pEntry->func_tb_idx < BssidNumB0) {
++                                            ifBandId =DBDC_BAND0;
++                                            for(i=0; i<(BssidNumB0-1); i++) {// 0, 1,2,3
++                                                staCntBand += pAd->ApCfg.MBSSID[i].StaCount;
++                                            }
++                                        }
++                                        else {
++                                            ifBandId =DBDC_BAND1;
++                                            for(i=BssidNumB0;  i<(bssidNum -1);  i++) { // 5,6,7,8
++                                                staCntBand += pAd->ApCfg.MBSSID[i].StaCount;
++                                            }
++                                        }
++
++                                        //MTWF_LOG(DBG_CAT_MLME, CATMLME_WTBL, DBG_LVL_OFF, ("%s: ra%d.\n  StaCount= \n", __func__, pEntry->func_tb_idx));
++                                        
++                                        //for(i=0; i<bssidNum; i++) {
++                                        //    MTWF_LOG(DBG_CAT_MLME, CATMLME_WTBL, DBG_LVL_OFF,  ("[%d:%d]", i, pAd->ApCfg.MBSSID[i].StaCount));
++                                        //}
++                                        //MTWF_LOG(DBG_CAT_MLME, CATMLME_WTBL, DBG_LVL_OFF, ("\n pAd->ApCfg.MaxStaNumPerBand[%d]=%d staCntBand=%d\n",  
++                                        //    ifBandId, pAd->ApCfg.MaxStaNumPerBand[ifBandId], staCntBand));
++
++                                        if ((pEntry->func_tb_idx < pAd->ApCfg.BssidNum) &&
++                                                (VALID_MBSS(pAd, pEntry->func_tb_idx)) &&
++                                                (pAd->ApCfg.MaxStaNumPerBand[ifBandId] != 0) &&
++                                                 (staCntBand >= pAd->ApCfg.MaxStaNumPerBand[ifBandId])) {
++                                            
++                                            //MTWF_LOG(DBG_CAT_MLME, CATMLME_WTBL, DBG_LVL_WARN, ("%s: The connection table is full in ra%d.\n", __func__, pEntry->func_tb_idx));
++                                            MTWF_LOG(DBG_CAT_MLME, CATMLME_WTBL, DBG_LVL_ERROR, ("%s: The connection table is full in  ra%d.\n  StaCount= \n", __func__, pEntry->func_tb_idx));
++
++                                            for(i=0; i<bssidNum; i++) {
++                                                MTWF_LOG(DBG_CAT_MLME, CATMLME_WTBL, DBG_LVL_WARN,  ("[%d:%d]", i, pAd->ApCfg.MBSSID[i].StaCount));
++                                            }
++                                            MTWF_LOG(DBG_CAT_MLME, CATMLME_WTBL, DBG_LVL_WARN, ("\n pAd->ApCfg.MaxStaNumPerBand[%d]=%d staCntBand=%d\n",  
++                                                ifBandId, pAd->ApCfg.MaxStaNumPerBand[ifBandId], staCntBand));
++
++                                            HcReleaseUcastWcid(pAd, wdev, pEntry->wcid);
++                                            aid_clear(&pAd->MacTab.aid_info, pEntry->Aid);
++                                            MacTableResetEntry(pAd, pEntry, CleanAll);
++                                            NdisReleaseSpinLock(&pAd->MacTabLock);
++                                            return NULL;
++                                        }
++                                    }
++                                    //[TW Jiangdingyong 2022.4.11 add end]
++
++                }
+ 
+ 				if (!VALID_MBSS(pAd, pEntry->func_tb_idx)) {
+ 					MTWF_DBG(pAd, DBG_CAT_MLME, CATMLME_WTBL, DBG_LVL_ERROR,
+-- 
+2.13.1
+

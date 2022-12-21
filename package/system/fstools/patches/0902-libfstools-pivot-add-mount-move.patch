@@ -1,0 +1,13 @@
+--- a/libfstools/mount.c
++++ b/libfstools/mount.c
+@@ -81,6 +81,10 @@
+ 	mount_move(old, "", "/tmp");
+ 	mount_move(old, "", "/sys");
+ 	mount_move(old, "", "/overlay");
++	mount_move(old, "", "/etc");
++	mount_move(old, "", "/etc/config");
++	mount_move(old, "", "/etc/rc.d");
++	mount_move(old, "", "/rae");
+ 
+ 	return 0;
+ }

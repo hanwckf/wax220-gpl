@@ -1,0 +1,865 @@
+<%
+local uci = require "luci.model.uci".cursor()
+local ntm = require "luci.model.network".init()
+
+local AP_WIFI_IFACE_NUM = tonumber(uci:get("functionlist","vendorlist","AP_WIFI_IFACE_NUM")) or 0
+local WDSAP_WDS_WIFI_IFACE_NUM = tonumber(uci:get("functionlist","vendorlist","WDSAP_WDS_WIFI_IFACE_NUM")) or 0
+local WDSAP_AP_WIFI_IFACE_NUM = tonumber(uci:get("functionlist","vendorlist","WDSAP_AP_WIFI_IFACE_NUM")) or 0
+local STA_WIFI_IFACE_NUM = tonumber(uci:get("functionlist","vendorlist","STA_WIFI_IFACE_NUM")) or 0
+local WDSSTA_WIFI_IFACE_NUM = tonumber(uci:get("functionlist","vendorlist","WDSSTA_WIFI_IFACE_NUM")) or 0
+local WDSB_WIFI_IFACE_NUM = tonumber(uci:get("functionlist","vendorlist","WDSB_WIFI_IFACE_NUM")) or 0
+local STA_AP_WIFI_IFACE_NUM = tonumber(uci:get("functionlist","vendorlist","STA_AP_WIFI_IFACE_NUM")) or 0
+
+local sectionSyntax = {}
+
+for _, dev in ipairs(ntm:get_wifidevs()) do
+    if dev:get("opmode") ~= "mon" then
+        sectionSyntax[dev:name()] = {}
+        if AP_WIFI_IFACE_NUM ~= 0 then
+            for i=1,AP_WIFI_IFACE_NUM do
+                sectionSyntax[dev:name()]["AP_"..i..""] = ntm:get_wifinet_index(dev:name(),"ap",i):name()
+            end
+        end
+        if WDSAP_AP_WIFI_IFACE_NUM ~= 0 then
+            for i=1,WDSAP_WDS_WIFI_IFACE_NUM+WDSAP_AP_WIFI_IFACE_NUM do
+                sectionSyntax[dev:name()]["WDS_AP_"..i..""] = ntm:get_wifinet_index(dev:name(),"wds_ap",i):name()    
+            end
+        end
+        if STA_WIFI_IFACE_NUM ~= 0 then
+            sectionSyntax[dev:name()]["CB_1"] = ntm:get_wifinet_index(dev:name(),"sta",1):name()
+        end
+        if WDSSTA_WIFI_IFACE_NUM ~= 0 then
+            sectionSyntax[dev:name()]["WDS_STA_1"] = ntm:get_wifinet_index(dev:name(),"wds_sta",1):name()
+        end
+        if WDSB_WIFI_IFACE_NUM ~= 0 then
+            sectionSyntax[dev:name()]["WDS_BRIDGE_1"] = ntm:get_wifinet_index(dev:name(),"wds_bridge",1):name()
+        end
+        if STA_AP_WIFI_IFACE_NUM ~= 0 then
+            for i=1,STA_AP_WIFI_IFACE_NUM do
+                sectionSyntax[dev:name()]["STA_AP_"..i..""] = ntm:get_wifinet_index(dev:name(),"sta_ap",i):name()    
+            end
+        end
+    end
+end
+
+%>
+<script src="<%=media%>/jquery-1.12.4.min.js"></script>
+<script type="text/javascript">
+var syslog_idchange={
+    "remoteLogEnable_enable_enable":"remoteLogEnable_enable",
+    "remoteLogEnable_disable_disable":"remoteLogEnable_disable",
+    "remote_ip":"remote_ip"}
+var account_idchange={
+    "usr_name":"usr_name",
+    "cur_pw":"cur_pw",
+    "pw1":"pw1",
+    "pw2":"pw2"}
+
+var wifisch_idchange={
+    "power_RB_enable_enable":"power_RB_enable",
+    "power_RB_disable_disable":"power_RB_disable",
+    "auto_reboot_hour":"auto_reboot_hour",
+    "auto_reboot_minute":"auto_reboot_minute"
+    }
+var timezone_idchange={
+    "ntpserverEnable_disable_disable":"ntpserver_disable",
+    "ntpserverEnable_enable_enable":"ntpserver_enable",
+    "ntp_server":"ntp_server",
+    "man_year":"man_year",
+    "man_mon":"man_mon",
+    "man_day":"man_day",
+    "man_hour":"man_hour",
+    "man_min":"man_min"
+    }
+var advanced_idchange={
+ "checkIPHosetName":"controller_addr",
+ "snmp_gen_contact":"contact",
+ "snmp_gen_loaction":"location",
+ "snmp_gen_main_port":"snmp_port",
+ "snmp_gen_ro":"commu_ro",
+ "snmp_gen_rw":"commu_rw",
+ "SnmpEnable_enable_enable":"snmp_enable",
+ "SnmpEnable_disable_disable":"snmp_disable",
+ "snmp_gen_port":"trap_port",
+ "snmp_gen_ip":"trap_ipaddr",
+ "snmp_gen_comm":"trap_commu",
+ "snmp_gen_v3_enable_enable":"snmpv3_enable",
+ "snmp_gen_v3_disable_disable":"snmpv3_disable",
+ "snmp_v3_username":"snmpv3_username",
+ "snmp_v3_auth_protocol":"snmpv3_prot",
+ "snmp_v3_auth_key":"snmpv3_auth",
+ "snmp_v3_auth_private_protocol":"snmpv3_priv_prot",
+ "snmp_v3_auth_private_key":"snmpv3_key",
+ "snmp_v3_engine_id":"snmpv3_id",
+ "email_enable":"email_enable",
+ "em_from":"em_from",
+ "em_to":"em_to",
+ "em_subject":"em_subject",
+ "em_username":"em_username",
+ "em_password":"em_password",
+ "em_smtp_server":"em_smtp_server",
+ "em_security":"em_security",
+ "em_smtp_port":"em_smtp_port"
+}
+
+var idchange={
+"cbid.system.system.SystemName":"Device_Name_text",
+"cbid.wireless.wifi0.country":"wifi_country",
+"cbid.wireless.wifi0.obeyregpower":"wifi24_obeyregpower",
+"cbid.wireless.wifi0.opmode":"wifi24_opmode",
+"cbid.wireless.wifi1.obeyregpower":"wifi5_obeyregpower",
+"cbid.wireless.wifi1.opmode":"wifi5_opmode",
+"cbid.wireless.wifi2.obeyregpower":"wifi5_1_obeyregpower",
+"cbid.wireless.wifi2.opmode":"wifi5_1_opmode",
+"cbid.wireless.wifi0.hwmode":"wifi24_band",
+"cbid.wireless.wifi1.hwmode":"wifi5_band",
+"cbid.wireless.wifi2.hwmode":"wifi5_1_band",
+"cbid.wireless.wifi0.htmode":"wifi24_htmode",
+"cbid.wireless.wifi1.htmode":"wifi5_htmode",
+"cbid.wireless.wifi2.htmode":"wifi5_1_htmode",
+"cbid.wireless.wifi0.ext_channel":"wifi24_ex_channel",
+"cbid.wireless.wifi1.ext_channel":"wifi5_ex_channel",
+"cbid.wireless.wifi2.ext_channel":"wifi5_1_ex_channel",
+"cbid.wireless.wifi0.channel":"wifi24_channel",
+"cbid.wireless.wifi1.channel":"wifi5_channel",
+"cbid.wireless.wifi2.channel":"wifi5_1_channel",
+"cbid.wireless.wifi0.wifi_channel":"wifi_channel",
+"cbid.wireless.wifi0.txpower":"wifi24_txpower",
+"cbid.wireless.wifi1.txpower":"wifi5_txpower",
+"cbid.wireless.wifi2.txpower":"wifi5_1_txpower",
+"cbid.wireless.wifi0.rate":"wifi24_rate",
+"cbid.wireless.wifi1.rate":"wifi5_rate",
+"cbid.wireless.wifi2.rate":"wifi5_1_rate",
+"cbid.wireless.wifi0.rts":"wifi24_rts",
+"cbid.wireless.wifi1.rts":"wifi5_rts",
+"cbid.wireless.wifi2.rts":"wifi5_1_rts",
+"cbid.wireless.wifi0.clientlimits_number":"wifi24_clientlimits_number",
+"cbid.wireless.wifi1.clientlimits_number":"wifi5_clientlimits_number",
+"cbid.wireless.wifi2.clientlimits_number":"wifi5_1_clientlimits_number",
+"cbid.wireless.wifi0.clientlimits_enable1_enable":"wifi24_clientlimits_enable",
+"cbid.wireless.wifi0.clientlimits_enable1_disable":"wifi24_clientlimits_disable",
+"cbid.wireless.wifi1.clientlimits_enable1_enable":"wifi5_clientlimits_enable",
+"cbid.wireless.wifi1.clientlimits_enable1_disable":"wifi5_clientlimits_disable",
+"cbid.wireless.wifi2.clientlimits_enable1_enable":"wifi5_1_clientlimits_enable",
+"cbid.wireless.wifi2.clientlimits_enable1_disable":"wifi5_1_clientlimits_disable",
+"cbid.wireless.wifi0.aggregation_enable1_enable":"wifi24_aggregation_enable",
+"cbid.wireless.wifi0.aggregation_enable1_disable":"wifi24_aggregation_disable",
+"cbid.wireless.wifi0.aggregation_frame":"wifi24_aggregation_frame",
+"cbid.wireless.wifi0.aggregation_byte":"wifi24_aggregation_byte",
+"cbid.wireless.wifi1.aggregation_enable1_enable":"wifi5_aggregation_enable",
+"cbid.wireless.wifi1.aggregation_enable1_disable":"wifi5_aggregation_disable",
+"cbid.wireless.wifi1.aggregation_frame":"wifi5_aggregation_frame",
+"cbid.wireless.wifi1.aggregation_byte":"wifi5_aggregation_byte",
+"cbid.wireless.wifi0.AP_Detection":"wifi24_AP_Detection",
+"cbid.wireless.wifi1.AP_Detection":"wifi5_AP_Detection",
+"cbid.wireless.wifi2.AP_Detection":"wifi5_1_AP_Detection",
+"cbid.wireless.wifi1_guest.disabled":"wifi5_guest_status_enable",
+"cbid.wireless.wifi1_guest.ssid":"wifi5_guest_ssid",
+"cbid.wireless.wifi1_guest.encrEdit":"wifi5_guest_encrEdit",
+"cbid.wireless.wifi1_guest.hidden":"wifi5_guest_hidden",
+"cbid.wireless.wifi1_guest.isolate":"wifi5_guest_isolate",
+"cbid.wireless.wifi2_guest.disabled":"wifi5_1_guest_status_enable",
+"cbid.wireless.wifi2_guest.ssid":"wifi5_1_guest_ssid",
+"cbid.wireless.wifi2_guest.encrEdit":"wifi5_1_guest_encrEdit",
+"cbid.wireless.wifi2_guest.hidden":"wifi5_1_guest_hidden",
+"cbid.wireless.wifi2_guest.isolate":"wifi5_1_guest_isolate",
+"cbid.wireless.wifi0_guest.disabled":"wifi24_guest_status_enable",
+"cbid.wireless.wifi0_guest.ssid":"wifi24_guest_ssid",
+"cbid.wireless.wifi0_guest.encrEdit":"wifi24_guest_encrEdit",
+"cbid.wireless.wifi0_guest.hidden":"wifi24_guest_hidden",
+"cbid.wireless.wifi0_guest.isolate":"wifi24_guest_isolate",
+"cbid.wireless.wifi0.Multicast1_enable":"wifi24_mtou_enable",
+"cbid.wireless.wifi0.Multicast2_disable":"wifi24_mtou_disable",
+"cbid.network.guest.ipaddr":"wifi_guest_ipaddr",
+"cbid.network.guest.netmask":"wifi_guest_netmask",
+"cbid.dhcp.guest.start":"wifi_guest_startip",
+"cbid.dhcp.guest.limit":"wifi_guest_endip",
+"cbid.dhcp.guest.dhcp_option":"wifi_guest_serverip",
+"cbid.wireless.wifi0.fasthandover_status_enable":"wifi24_fasthandover_status_enable",
+"cbid.wireless.wifi0.fasthandover_status_disable":"wifi24_fasthandover_status_disable",
+"cbid.wireless.wifi0.fasthandover_status1_enable":"wifi24_fasthandover_status_enable",
+"cbid.wireless.wifi0.fasthandover_status2_disable":"wifi24_fasthandover_status_disable",
+"cbid.wireless.wifi1.fasthandover_status1_enable":"wifi5_fasthandover_status_enable",
+"cbid.wireless.wifi1.fasthandover_status2_disable":"wifi5_fasthandover_status_disable",
+"cbid.wireless.wifi1.fasthandover_rssi":"wifi5_fasthandover_rssi",
+"cbid.wireless.wifi2.fasthandover_status1_enable":"wifi5_1_fasthandover_status_enable",
+"cbid.wireless.wifi2.fasthandover_status2_disable":"wifi5_1_fasthandover_status_disable",
+"cbid.wireless.wifi2.fasthandover_rssi":"wifi5_1_fasthandover_rssi",
+
+<% if uci:get('functionlist','functionlist','SUPPORT_WIFIJET') == '1' then %>
+"cbid.wireless.wifi0.qboost_enable1_enable":"enjet_enable",
+"cbid.wireless.wifi0.qboost_enable1_disable":"enjet_disable",
+"cbid.wireless.wifi1.qboost_enable1_enable":"enjet_enable",
+"cbid.wireless.wifi1.qboost_enable1_disable":"enjet_disable",
+"cbid.wireless.wifi0.aptimeslot":"wifi2_time_slot",
+"cbid.wireless.wifi1.aptimeslot":"wifi5_time_slot",
+"cbid.wireless.wifi0.stationpriority":"wifi2_sta_priority",
+"cbid.wireless.wifi1.stationpriority":"wifi5_sta_priority",
+"cbid.wireless.wifix_ssid_tdma_1.disabled":"wifi5_enjet_radio_enable1",
+"cbid.wireless.wifix_ssid_tdma_1.ssid":"wifi5_enjet_ssid1",
+"cbid.wireless.wifix_ssid_tdma_1.encrEdit":"wifi5_enjet_encrEdit1",
+"cbid.wireless.wifix_ssid_tdma_1.guest_network":"wifi_guest_radio_enable_enjet1",
+"cbid.wireless.wifix_ssid_management_1.disabled":"wifi5_radio_enable_mgm_interface",
+"cbid.wireless.wifix_ssid_management_1.ssid":"wifi5_ssid_mgm_interface",
+"cbid.wireless.wifix_ssid_management_1.encrEdit":"wifi5_encrEdit_mgm_interface",
+<% end %>
+
+"cbid.network.sys.ManagementVLANID":"VLAN_id",
+<%
+if uci:get('functionlist','functionlist','SUPPORT_COMBINED_SSID_SETTING') ~= '1' then
+if AP_WIFI_IFACE_NUM ~= 0 then
+    for i=1,AP_WIFI_IFACE_NUM do
+%>
+    "cbid.wireless.<%=sectionSyntax['wifi0']['AP_'..i..'']%>.disabled":"wifi24_radio_enable<%=i%>",
+    "cbid.wireless.<%=sectionSyntax['wifi0']['AP_'..i..'']%>.ssid":"wifi24_ssid<%=i%>",
+    "cbid.wireless.<%=sectionSyntax['wifi0']['AP_'..i..'']%>.encrEdit":"wifi24_encrEdit<%=i%>",
+    "cbid.wireless.<%=sectionSyntax['wifi0']['AP_'..i..'']%>.hidden":"wifi24_hidden<%=i%>",
+    "cbid.wireless.<%=sectionSyntax['wifi0']['AP_'..i..'']%>.isolate":"wifi24_client_isolation<%=i%>",
+    "cbid.wireless.<%=sectionSyntax['wifi0']['AP_'..i..'']%>.isolation":"wifi24_vlan_isolation<%=i%>",
+    "cbid.wireless.<%=sectionSyntax['wifi0']['AP_'..i..'']%>.l2_isolatior":"wifi24_l2_isolation<%=i%>",
+    "cbid.wireless.<%=sectionSyntax['wifi0']['AP_'..i..'']%>.vlan_id":"wifi24_vlan_id<%=i%>",
+    "cbid.wireless.<%=sectionSyntax['wifi1']['AP_'..i..'']%>.disabled":"wifi5_radio_enable<%=i%>",
+    "cbid.wireless.<%=sectionSyntax['wifi1']['AP_'..i..'']%>.ssid":"wifi5_ssid<%=i%>",
+    "cbid.wireless.<%=sectionSyntax['wifi1']['AP_'..i..'']%>.encrEdit":"wifi5_encrEdit<%=i%>",
+    "cbid.wireless.<%=sectionSyntax['wifi1']['AP_'..i..'']%>.hidden":"wifi5_hidden<%=i%>",
+    "cbid.wireless.<%=sectionSyntax['wifi1']['AP_'..i..'']%>.isolate":"wifi5_client_isolation<%=i%>",
+    "cbid.wireless.<%=sectionSyntax['wifi1']['AP_'..i..'']%>.isolation":"wifi5_vlan_isolation<%=i%>",
+    "cbid.wireless.<%=sectionSyntax['wifi1']['AP_'..i..'']%>.l2_isolatior":"wifi5_l2_isolation<%=i%>",
+    "cbid.wireless.<%=sectionSyntax['wifi1']['AP_'..i..'']%>.vlan_id":"wifi5_vlan_id<%=i%>",
+    <% if uci:get('functionlist','functionlist','SUPPORT_WLAN5G_2') == '1' then --[[ #### WLAN5G_2 feature ### --]] %>
+        "cbid.wireless.<%=sectionSyntax['wifi2']['AP_'..i..'']%>.disabled":"wifi5_1_radio_enable<%=i%>",
+        "cbid.wireless.<%=sectionSyntax['wifi2']['AP_'..i..'']%>.ssid":"wifi5_1_ssid<%=i%>",
+        "cbid.wireless.<%=sectionSyntax['wifi2']['AP_'..i..'']%>.encrEdit":"wifi5_1_encrEdit<%=i%>",
+        "cbid.wireless.<%=sectionSyntax['wifi2']['AP_'..i..'']%>.hidden":"wifi5_1_hidden<%=i%>",
+        "cbid.wireless.<%=sectionSyntax['wifi2']['AP_'..i..'']%>.isolate":"wifi5_1_client_isolation<%=i%>",
+        "cbid.wireless.<%=sectionSyntax['wifi2']['AP_'..i..'']%>.isolation":"wifi5_1_vlan_isolation<%=i%>",
+        "cbid.wireless.<%=sectionSyntax['wifi2']['AP_'..i..'']%>.l2_isolatior":"wifi5_1_l2_isolation<%=i%>",
+        "cbid.wireless.<%=sectionSyntax['wifi2']['AP_'..i..'']%>.vlan_id":"wifi5_1_vlan_id<%=i%>",   
+    <% end --[[ #### WLAN5G_2 feature ### --]] %>
+<%
+    end
+end
+else
+	if AP_WIFI_IFACE_NUM ~= 0 then
+		for i=1,AP_WIFI_IFACE_NUM do
+%>
+    "cbid.wireless.wifix_ssid_<%=i%>.disabled":"wifi_radio_enable<%=i%>",
+    "cbid.wireless.wifix_ssid_<%=i%>.ssid":"wifi_ssid<%=i%>",
+    "cbid.wireless.wifix_ssid_<%=i%>.encrEdit":"wifi_encrEdit<%=i%>",
+    "cbid.wireless.wifix_ssid_<%=i%>.vlan_id":"wifi_vlan_id<%=i%>",
+    "cbid.wireless.wifix_ssid_<%=i%>.guest_network":"wifi_guest_radio_enable<%=i%>",
+    "wireless.<%=sectionSyntax['wifi0']['AP_'..i..'']%>.disabled":"wifi24_radio_enable<%=i%>",
+    "wireless.<%=sectionSyntax['wifi1']['AP_'..i..'']%>.disabled":"wifi5_radio_enable<%=i%>",
+    <% if uci:get('functionlist','functionlist','SUPPORT_WLAN5G_2') == '1' then --[[ #### WLAN5G_2 feature ### --]] %>
+    "wireless.<%=sectionSyntax['wifi2']['AP_'..i..'']%>.disabled":"wifi5_1_radio_enable<%=i%>",
+    <% end %>
+<%
+		end
+	end
+end --[[ #### SUPPORT_COMBINED_SSID_SETTING ### --]] %>
+
+<%
+if WDSAP_AP_WIFI_IFACE_NUM ~= 0 then
+    for i=1,WDSAP_WDS_WIFI_IFACE_NUM+WDSAP_AP_WIFI_IFACE_NUM do
+%>
+    "cbid.wireless.<%=sectionSyntax['wifi0']['WDS_AP_'..i+WDSAP_WDS_WIFI_IFACE_NUM..'']%>.disabled":"wifi24_wdsap_radio_enable<%=i%>",
+    "cbid.wireless.<%=sectionSyntax['wifi0']['WDS_AP_'..i+WDSAP_WDS_WIFI_IFACE_NUM..'']%>.ssid":"wifi24_wdsap_ssid<%=i%>",
+    "cbid.wireless.<%=sectionSyntax['wifi0']['WDS_AP_'..i+WDSAP_WDS_WIFI_IFACE_NUM..'']%>.encrEdit":"wifi24_wdsap_encrEdit<%=i%>",
+    "cbid.wireless.<%=sectionSyntax['wifi0']['WDS_AP_'..i+WDSAP_WDS_WIFI_IFACE_NUM..'']%>.hidden":"wifi24_wdsap_hidden<%=i%>",
+    "cbid.wireless.<%=sectionSyntax['wifi0']['WDS_AP_'..i+WDSAP_WDS_WIFI_IFACE_NUM..'']%>.isolate":"wifi24_wdsap_client_isolation<%=i%>",
+    "cbid.wireless.<%=sectionSyntax['wifi0']['WDS_AP_'..i+WDSAP_WDS_WIFI_IFACE_NUM..'']%>.isolation":"wifi24_wdsap_vlan_isolation<%=i%>",
+    "cbid.wireless.<%=sectionSyntax['wifi0']['WDS_AP_'..i+WDSAP_WDS_WIFI_IFACE_NUM..'']%>.l2_isolatior":"wifi24_wdsap_l2_isolation<%=i%>",
+    "cbid.wireless.<%=sectionSyntax['wifi0']['WDS_AP_'..i+WDSAP_WDS_WIFI_IFACE_NUM..'']%>.vlan_id":"wifi24_wdsap_vlan_id<%=i%>",
+    "cbid.wireless.<%=sectionSyntax['wifi1']['WDS_AP_'..i+WDSAP_WDS_WIFI_IFACE_NUM..'']%>.disabled":"wifi5_wdsap_radio_enable<%=i%>",
+    "cbid.wireless.<%=sectionSyntax['wifi1']['WDS_AP_'..i+WDSAP_WDS_WIFI_IFACE_NUM..'']%>.ssid":"wifi5_wdsap_ssid<%=i%>",
+    "cbid.wireless.<%=sectionSyntax['wifi1']['WDS_AP_'..i+WDSAP_WDS_WIFI_IFACE_NUM..'']%>.encrEdit":"wifi5_wdsap_encrEdit<%=i%>",
+    "cbid.wireless.<%=sectionSyntax['wifi1']['WDS_AP_'..i+WDSAP_WDS_WIFI_IFACE_NUM..'']%>.hidden":"wifi5_wdsap_hidden<%=i%>",
+    "cbid.wireless.<%=sectionSyntax['wifi1']['WDS_AP_'..i+WDSAP_WDS_WIFI_IFACE_NUM..'']%>.isolate":"wifi5_wdsap_client_isolation<%=i%>",
+    "cbid.wireless.<%=sectionSyntax['wifi1']['WDS_AP_'..i+WDSAP_WDS_WIFI_IFACE_NUM..'']%>.isolation":"wifi5_wdsap_vlan_isolation<%=i%>",
+    "cbid.wireless.<%=sectionSyntax['wifi1']['WDS_AP_'..i+WDSAP_WDS_WIFI_IFACE_NUM..'']%>.l2_isolatior":"wifi5_wdsap_l2_isolation<%=i%>",
+    "cbid.wireless.<%=sectionSyntax['wifi1']['WDS_AP_'..i+WDSAP_WDS_WIFI_IFACE_NUM..'']%>.vlan_id":"wifi5_wdsap_vlan_id<%=i%>",
+    <% if uci:get('functionlist','functionlist','SUPPORT_WLAN5G_2') == '1' then --[[ #### WLAN5G_2 feature ### --]] %>
+        "cbid.wireless.<%=sectionSyntax['wifi2']['WDS_AP_'..i+WDSAP_WDS_WIFI_IFACE_NUM..'']%>.disabled":"wifi5_1_wdsap_radio_enable<%=i%>",
+        "cbid.wireless.<%=sectionSyntax['wifi2']['WDS_AP_'..i+WDSAP_WDS_WIFI_IFACE_NUM..'']%>.ssid":"wifi5_1_wdsap_ssid<%=i%>",
+        "cbid.wireless.<%=sectionSyntax['wifi2']['WDS_AP_'..i+WDSAP_WDS_WIFI_IFACE_NUM..'']%>.encrEdit":"wifi5_1_wdsap_encrEdit<%=i%>",
+        "cbid.wireless.<%=sectionSyntax['wifi2']['WDS_AP_'..i+WDSAP_WDS_WIFI_IFACE_NUM..'']%>.hidden":"wifi5_1_wdsap_hidden<%=i%>",
+        "cbid.wireless.<%=sectionSyntax['wifi2']['WDS_AP_'..i+WDSAP_WDS_WIFI_IFACE_NUM..'']%>.isolate":"wifi5_1_wdsap_client_isolation<%=i%>",
+        "cbid.wireless.<%=sectionSyntax['wifi2']['WDS_AP_'..i+WDSAP_WDS_WIFI_IFACE_NUM..'']%>.isolation":"wifi5_1_wdsap_vlan_isolation<%=i%>",
+        "cbid.wireless.<%=sectionSyntax['wifi2']['WDS_AP_'..i+WDSAP_WDS_WIFI_IFACE_NUM..'']%>.l2_isolatior":"wifi5_1_wdsap_l2_isolation<%=i%>",
+        "cbid.wireless.<%=sectionSyntax['wifi2']['WDS_AP_'..i+WDSAP_WDS_WIFI_IFACE_NUM..'']%>.vlan_id":"wifi5_1_wdsap_vlan_id<%=i%>", 
+    <% end --[[ #### WLAN5G_2 feature ### --]] %>
+<%
+    end
+end
+%>
+
+<%
+if STA_WIFI_IFACE_NUM ~= 0 then
+    for i=1,STA_WIFI_IFACE_NUM do
+%>
+    "cbid.wireless.<%=sectionSyntax['wifi0']['CB_'..i..'']%>.ssid":"wifi24_cb_ssid",
+    "cbid.wireless.<%=sectionSyntax['wifi0']['CB_'..i..'']%>.encrEdit":"wifi24_cb_encrEdit",
+    "cbid.wireless.<%=sectionSyntax['wifi1']['CB_'..i..'']%>.ssid":"wifi5_cb_ssid",
+    "cbid.wireless.<%=sectionSyntax['wifi1']['CB_'..i..'']%>.encrEdit":"wifi5_cb_encrEdit",    
+    <% if uci:get('functionlist','functionlist','SUPPORT_WLAN5G_2') == '1' then --[[ #### WLAN5G_2 feature ### --]] %>
+        "cbid.wireless.<%=sectionSyntax['wifi2']['CB_'..i..'']%>.ssid":"wifi5_1_cb_ssid",
+        "cbid.wireless.<%=sectionSyntax['wifi2']['CB_'..i..'']%>.encrEdit":"wifi5_1_cb_encrEdit",    
+    <% end --[[ #### WLAN5G_2 feature ### --]] %>
+<%
+    end
+end
+%>
+
+<%
+if WDSSTA_WIFI_IFACE_NUM ~= 0 then
+    for i=1,WDSSTA_WIFI_IFACE_NUM do
+%>
+    "cbid.wireless.<%=sectionSyntax['wifi0']['WDS_STA_'..i..'']%>.ssid":"wifi24_wdssta_ssid",
+    "cbid.wireless.<%=sectionSyntax['wifi0']['WDS_STA_'..i..'']%>.encrEdit":"wifi24_wdssta_encrEdit",
+    "cbid.wireless.<%=sectionSyntax['wifi1']['WDS_STA_'..i..'']%>.ssid":"wifi5_wdssta_ssid",
+    "cbid.wireless.<%=sectionSyntax['wifi1']['WDS_STA_'..i..'']%>.encrEdit":"wifi5_wdssta_encrEdit",
+    <% if uci:get('functionlist','functionlist','SUPPORT_WLAN5G_2') == '1' then --[[ #### WLAN5G_2 feature ### --]] %>
+        "cbid.wireless.<%=sectionSyntax['wifi2']['WDS_STA_'..i..'']%>.ssid":"wifi5_1_wdssta_ssid",
+        "cbid.wireless.<%=sectionSyntax['wifi2']['WDS_STA_'..i..'']%>.encrEdit":"wifi5_1_wdssta_encrEdit",   
+    <% end --[[ #### WLAN5G_2 feature ### --]] %>
+<%
+    end
+end
+%>
+
+<%
+if STA_AP_WIFI_IFACE_NUM ~= 0 then
+    for i=1,STA_AP_WIFI_IFACE_NUM do
+%>
+    "cbid.wireless.<%=sectionSyntax['wifi0']['STA_AP_'..i..'']%>.ssid":"wifi24_sta_ap_ssid<%=i%>",
+    "cbid.wireless.<%=sectionSyntax['wifi0']['STA_AP_'..i..'']%>.encrEdit":"wifi24_sta_ap_encrEdit<%=i%>",
+    "cbid.wireless.<%=sectionSyntax['wifi1']['STA_AP_'..i..'']%>.ssid":"wifi5_sta_ap_ssid<%=i%>",
+    "cbid.wireless.<%=sectionSyntax['wifi1']['STA_AP_'..i..'']%>.encrEdit":"wifi5_sta_ap_encrEdit<%=i%>",
+    <% if uci:get('functionlist','functionlist','SUPPORT_WLAN5G_2') == '1' then --[[ #### WLAN5G_2 feature ### --]] %>
+        "cbid.wireless.<%=sectionSyntax['wifi2']['STA_AP_'..i..'']%>.ssid":"wifi5_1_sta_ap_ssid<%=i%>",
+        "cbid.wireless.<%=sectionSyntax['wifi2']['STA_AP_'..i..'']%>.encrEdit":"wifi5_1_sta_ap_encrEdit<%=i%>",   
+    <% end --[[ #### WLAN5G_2 feature ### --]] %>
+<%
+    end
+end
+%>
+
+"cbid.wireless.wifi0.fasthandover_status":"wifi24_fasthandover_status_enable",
+"cbid.wireless.wifi0.fasthandover_status1":"wifi24_fasthandover_status_enable",
+"cbid.wireless.wifi0.fasthandover_status2":"wifi24_fasthandover_status_disable",
+"cbid.wireless.wifi1.fasthandover_status1":"wifi5_fasthandover_status_enable",
+"cbid.wireless.wifi1.fasthandover_status2":"wifi5_fasthandover_status_disable",
+<% if uci:get('functionlist','functionlist','SUPPORT_WLAN5G_2') == '1' then --[[ #### WLAN5G_2 feature ### --]] %>
+    "cbid.wireless.wifi2.fasthandover_status1":"wifi5_1_fasthandover_status_enable",
+    "cbid.wireless.wifi2.fasthandover_status2":"wifi5_1_fasthandover_status_disable",
+<% end --[[ #### WLAN5G_2 feature ### --]] %>
+"cbid.network.sys.WLANVLANEnable1":"VLAN_enable",
+"cbid.network.sys.WLANVLANEnable2":"VLAN_disable",
+"cbid.network.sys.ManagementVLANID":"VLAN_id"
+};
+
+var securityTableTextArrayCount=0;
+var securityTableTextArray = [
+{id:"#cbi-wireless-wifi0_guest-encryption_view",myid:"wifi24_guest_securitymode_text"},
+{id:"#cbi-wireless-wifi1_guest-encryption_view",myid:"wifi5_guest_securitymode_text"},
+{id:"#cbi-wireless-wifi2_guest-encryption_view",myid:"wifi5_1_guest_securitymode_text"},
+<% if uci:get('functionlist','functionlist','SUPPORT_ENJET') == '1' then %>
+{id:"#cbi-wireless-wifix_ssid_tdma_1-encryption_view",myid:"wifi5_enjet_securitymode1_text"},
+{id:"#cbi-wireless-wifix_ssid_management_1-encryption_view",myid:"wifi5_securitymode_mgm_interface_text"},
+{name:"cbid.wireless.wifix_ssid_tdma_1.vlan_id",myid:"wifi_vlan_id_enjet1_text"},
+<% end %>
+<%
+if AP_WIFI_IFACE_NUM ~= 0 then
+    for i=1,AP_WIFI_IFACE_NUM do
+%>
+<% if uci:get('functionlist','functionlist','SUPPORT_COMBINED_SSID_SETTING') == '1' then %>
+{id:"#cbi-wireless-wifix_ssid_<%=i%>-encryption_view",myid:"wifi_securitymode<%=i%>_text"},
+{name:"cbid.wireless.wifix_ssid_<%=i%>.vlan_id",myid:"wifi_vlan_id<%=i%>_text"},
+<% end %>
+{id:"#cbi-wireless-<%=sectionSyntax['wifi0']['AP_'..i..'']%>-encryption_view",myid:"wifi24_securitymode<%=i%>_text"},
+{id:"#cbi-wireless-<%=sectionSyntax['wifi1']['AP_'..i..'']%>-encryption_view",myid:"wifi5_securitymode<%=i%>_text"},
+<% if uci:get('functionlist','functionlist','SUPPORT_WLAN5G_2') == '1' then --[[ #### WLAN5G_2 feature ### --]] %>
+    {id:"#cbi-wireless-<%=sectionSyntax['wifi2']['AP_'..i..'']%>-encryption_view",myid:"wifi5_1_securitymode<%=i%>_text"},
+<% end --[[ #### WLAN5G_2 feature ### --]] %>
+<%
+    end
+end
+%>
+
+<%
+if WDSAP_AP_WIFI_IFACE_NUM ~= 0 then
+    for i=1,WDSAP_WDS_WIFI_IFACE_NUM+WDSAP_AP_WIFI_IFACE_NUM do
+%>
+<% if uci:get('functionlist','functionlist','SUPPORT_COMBINED_SSID_SETTING') == '1' then %>
+{name:"cbid.wireless.<%=sectionSyntax['wifi0']['WDS_AP_'..i+WDSAP_WDS_WIFI_IFACE_NUM..'']%>.vlan_id",myid:"wifi24_vlan_id<%=i%>"},
+<% end %>
+{id:"#cbi-wireless-<%=sectionSyntax['wifi0']['WDS_AP_'..i+WDSAP_WDS_WIFI_IFACE_NUM..'']%>-encryption_view",myid:"wifi24_wdsap_securitymode<%=i%>_text"},
+<% if uci:get('functionlist','functionlist','SUPPORT_COMBINED_SSID_SETTING') == '1' then %>
+{name:"cbid.wireless.<%=sectionSyntax['wifi1']['WDS_AP_'..i+WDSAP_WDS_WIFI_IFACE_NUM..'']%>.vlan_id",myid:"wifi5_vlan_id<%=i%>"},
+<% end %>
+{id:"#cbi-wireless-<%=sectionSyntax['wifi1']['WDS_AP_'..i+WDSAP_WDS_WIFI_IFACE_NUM..'']%>-encryption_view",myid:"wifi5_wdsap_securitymode<%=i%>_text"},
+<% if uci:get('functionlist','functionlist','SUPPORT_WLAN5G_2') == '1' then --[[ #### WLAN5G_2 feature ### --]] %>
+<% if uci:get('functionlist','functionlist','SUPPORT_COMBINED_SSID_SETTING') == '1' then %>
+{name:"cbid.wireless.<%=sectionSyntax['wifi2']['WDS_AP_'..i+WDSAP_WDS_WIFI_IFACE_NUM..'']%>.vlan_id",myid:"wifi5_1_vlan_id<%=i%>"},
+<% end %>
+    {id:"#cbi-wireless-<%=sectionSyntax['wifi2']['WDS_AP_'..i+WDSAP_WDS_WIFI_IFACE_NUM..'']%>-encryption_view",myid:"wifi5_1_wdsap_securitymode<%=i%>_text"},
+<% end --[[ #### WLAN5G_2 feature ### --]] %>
+<%
+    end
+end
+%>
+
+<%
+if STA_WIFI_IFACE_NUM ~= 0 then
+    for i=1,STA_WIFI_IFACE_NUM do
+%>
+{id:"#cbi-wireless-<%=sectionSyntax['wifi0']['CB_'..i..'']%>-encryption_view",myid:"wifi24_cb_securitymode_text"},
+{id:"#cbi-wireless-<%=sectionSyntax['wifi1']['CB_'..i..'']%>-encryption_view",myid:"wifi5_cb_securitymode_text"},
+<% if uci:get('functionlist','functionlist','SUPPORT_WLAN5G_2') == '1' then --[[ #### WLAN5G_2 feature ### --]] %>
+    {id:"#cbi-wireless-<%=sectionSyntax['wifi2']['CB_'..i..'']%>-encryption_view",myid:"wifi5_1_cb_securitymode_text"},
+<% end --[[ #### WLAN5G_2 feature ### --]] %>
+<%
+    end
+end
+%>
+
+<%
+if WDSSTA_WIFI_IFACE_NUM ~= 0 then
+    for i=1,WDSSTA_WIFI_IFACE_NUM do
+%>
+{id:"#cbi-wireless-<%=sectionSyntax['wifi0']['WDS_STA_'..i..'']%>-encryption_view",myid:"wifi24_wdssta_securitymode_text"},
+{id:"#cbi-wireless-<%=sectionSyntax['wifi1']['WDS_STA_'..i..'']%>-encryption_view",myid:"wifi5_wdssta_securitymode_text"},
+<% if uci:get('functionlist','functionlist','SUPPORT_WLAN5G_2') == '1' then --[[ #### WLAN5G_2 feature ### --]] %>
+    {id:"#cbi-wireless-<%=sectionSyntax['wifi2']['WDS_STA_'..i..'']%>-encryption_view",myid:"wifi5_1_wdssta_securitymode_text"},
+<% end --[[ #### WLAN5G_2 feature ### --]] %>
+<%
+    end
+end
+%>
+];
+
+var wdsArrayCount=0;
+var wdsArray = [
+
+
+<%
+if WDSB_WIFI_IFACE_NUM ~= 0 then
+    for i=1,WDSB_WIFI_IFACE_NUM do
+%>
+    {id:"#cbid-wireless-<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>-nawds_encr_title",myid:"title_wifi24_wdsbg_securitymode"},
+    {id:"#cbid-wireless-<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>-nawds_encr",myid:"wifi24_wdsbg_securitymode"},
+    {id:"#cbid-wireless-<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>-wlanwdswepkey_title",myid:"title_wifi24_wdsbg_wepkey"},
+    {id:"#cbid-wireless-<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>-wlanwdswepkey",myid:"wifi24_wdsbg_wepkey"},
+    {id:"#cbid-wireless-<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>-index_dummy",myid:"wifi24_wdsbg_wepkey_type"},
+    {id:"#cbid-wireless-<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>-key_title",myid:"title_wifi24_wdsbg_aeskey"},
+    {id:"#cbid-wireless-<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>-key",myid:"wifi24_wdsbg_aeskey"},
+    {id:"#0<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca0",myid:"wifi24_wdsbg_mac1_1"},
+    {id:"#0<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca1",myid:"wifi24_wdsbg_mac1_2"},
+    {id:"#0<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca2",myid:"wifi24_wdsbg_mac1_3"},
+    {id:"#0<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca3",myid:"wifi24_wdsbg_mac1_4"},
+    {id:"#0<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca4",myid:"wifi24_wdsbg_mac1_5"},
+    {id:"#0<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca5",myid:"wifi24_wdsbg_mac1_6"},
+    {id:"#1<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca0",myid:"wifi24_wdsbg_mac2_1"},
+    {id:"#1<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca1",myid:"wifi24_wdsbg_mac2_2"},
+    {id:"#1<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca2",myid:"wifi24_wdsbg_mac2_3"},
+    {id:"#1<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca3",myid:"wifi24_wdsbg_mac2_4"},
+    {id:"#1<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca4",myid:"wifi24_wdsbg_mac2_5"},
+    {id:"#1<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca5",myid:"wifi24_wdsbg_mac2_6"},
+    {id:"#2<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca0",myid:"wifi24_wdsbg_mac3_1"},
+    {id:"#2<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca1",myid:"wifi24_wdsbg_mac3_2"},
+    {id:"#2<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca2",myid:"wifi24_wdsbg_mac3_3"},
+    {id:"#2<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca3",myid:"wifi24_wdsbg_mac3_4"},
+    {id:"#2<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca4",myid:"wifi24_wdsbg_mac3_5"},
+    {id:"#2<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca5",myid:"wifi24_wdsbg_mac3_6"},
+    {id:"#3<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca0",myid:"wifi24_wdsbg_mac4_1"},
+    {id:"#3<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca1",myid:"wifi24_wdsbg_mac4_2"},
+    {id:"#3<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca2",myid:"wifi24_wdsbg_mac4_3"},
+    {id:"#3<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca3",myid:"wifi24_wdsbg_mac4_4"},
+    {id:"#3<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca4",myid:"wifi24_wdsbg_mac4_5"},
+    {id:"#3<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca5",myid:"wifi24_wdsbg_mac4_6"},
+    {id:"#4<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca0",myid:"wifi24_wdsbg_mac5_1"},
+    {id:"#4<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca1",myid:"wifi24_wdsbg_mac5_2"},
+    {id:"#4<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca2",myid:"wifi24_wdsbg_mac5_3"},
+    {id:"#4<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca3",myid:"wifi24_wdsbg_mac5_4"},
+    {id:"#4<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca4",myid:"wifi24_wdsbg_mac5_5"},
+    {id:"#4<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca5",myid:"wifi24_wdsbg_mac5_6"},
+    {id:"#5<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca0",myid:"wifi24_wdsbg_mac6_1"},
+    {id:"#5<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca1",myid:"wifi24_wdsbg_mac6_2"},
+    {id:"#5<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca2",myid:"wifi24_wdsbg_mac6_3"},
+    {id:"#5<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca3",myid:"wifi24_wdsbg_mac6_4"},
+    {id:"#5<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca4",myid:"wifi24_wdsbg_mac6_5"},
+    {id:"#5<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca5",myid:"wifi24_wdsbg_mac6_6"},
+    {id:"#6<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca0",myid:"wifi24_wdsbg_mac7_1"},
+    {id:"#6<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca1",myid:"wifi24_wdsbg_mac7_2"},
+    {id:"#6<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca2",myid:"wifi24_wdsbg_mac7_3"},
+    {id:"#6<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca3",myid:"wifi24_wdsbg_mac7_4"},
+    {id:"#6<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca4",myid:"wifi24_wdsbg_mac7_5"},
+    {id:"#6<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca5",myid:"wifi24_wdsbg_mac7_6"},
+    {id:"#7<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca0",myid:"wifi24_wdsbg_mac8_1"},
+    {id:"#7<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca1",myid:"wifi24_wdsbg_mac8_2"},
+    {id:"#7<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca2",myid:"wifi24_wdsbg_mac8_3"},
+    {id:"#7<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca3",myid:"wifi24_wdsbg_mac8_4"},
+    {id:"#7<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca4",myid:"wifi24_wdsbg_mac8_5"},
+    {id:"#7<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>maca5",myid:"wifi24_wdsbg_mac8_6"},
+    {id:"#0<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>mac_select",myid:"wifi24_wdsbg_mac_mode1"},
+    {id:"#1<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>mac_select",myid:"wifi24_wdsbg_mac_mode2"},
+    {id:"#2<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>mac_select",myid:"wifi24_wdsbg_mac_mode3"},
+    {id:"#3<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>mac_select",myid:"wifi24_wdsbg_mac_mode4"},
+    {id:"#4<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>mac_select",myid:"wifi24_wdsbg_mac_mode5"},
+    {id:"#5<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>mac_select",myid:"wifi24_wdsbg_mac_mode6"},
+    {id:"#6<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>mac_select",myid:"wifi24_wdsbg_mac_mode7"},
+    {id:"#7<%=sectionSyntax['wifi0']['WDS_BRIDGE_'..i..'']%>mac_select",myid:"wifi24_wdsbg_mac_mode8"},
+    {id:"#cbid-wireless-<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>-nawds_encr_title",myid:"title_wifi5_wdsbg_securitymode"},
+    {id:"#cbid-wireless-<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>-nawds_encr",myid:"wifi5_wdsbg_securitymode"},
+    {id:"#cbid-wireless-<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>-wlanwdswepkey_title",myid:"title_wifi5_wdsbg_wepkey"},
+    {id:"#cbid-wireless-<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>-wlanwdswepkey",myid:"wifi5_wdsbg_wepkey"},
+    {id:"#cbid-wireless-<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>-index_dummy",myid:"wifi5_wdsbg_wepkey_type"},
+    {id:"#cbid-wireless-<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>-key_title",myid:"title_wifi5_wdsbg_aeskey"},
+    {id:"#cbid-wireless-<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>-key",myid:"wifi5_wdsbg_aeskey"},
+    {id:"#0<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca0",myid:"wifi5_wdsbg_mac1_1"},
+    {id:"#0<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca1",myid:"wifi5_wdsbg_mac1_2"},
+    {id:"#0<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca2",myid:"wifi5_wdsbg_mac1_3"},
+    {id:"#0<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca3",myid:"wifi5_wdsbg_mac1_4"},
+    {id:"#0<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca4",myid:"wifi5_wdsbg_mac1_5"},
+    {id:"#0<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca5",myid:"wifi5_wdsbg_mac1_6"},
+    {id:"#1<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca0",myid:"wifi5_wdsbg_mac2_1"},
+    {id:"#1<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca1",myid:"wifi5_wdsbg_mac2_2"},
+    {id:"#1<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca2",myid:"wifi5_wdsbg_mac2_3"},
+    {id:"#1<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca3",myid:"wifi5_wdsbg_mac2_4"},
+    {id:"#1<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca4",myid:"wifi5_wdsbg_mac2_5"},
+    {id:"#1<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca5",myid:"wifi5_wdsbg_mac2_6"},
+    {id:"#2<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca0",myid:"wifi5_wdsbg_mac3_1"},
+    {id:"#2<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca1",myid:"wifi5_wdsbg_mac3_2"},
+    {id:"#2<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca2",myid:"wifi5_wdsbg_mac3_3"},
+    {id:"#2<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca3",myid:"wifi5_wdsbg_mac3_4"},
+    {id:"#2<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca4",myid:"wifi5_wdsbg_mac3_5"},
+    {id:"#2<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca5",myid:"wifi5_wdsbg_mac3_6"},
+    {id:"#3<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca0",myid:"wifi5_wdsbg_mac4_1"},
+    {id:"#3<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca1",myid:"wifi5_wdsbg_mac4_2"},
+    {id:"#3<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca2",myid:"wifi5_wdsbg_mac4_3"},
+    {id:"#3<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca3",myid:"wifi5_wdsbg_mac4_4"},
+    {id:"#3<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca4",myid:"wifi5_wdsbg_mac4_5"},
+    {id:"#3<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca5",myid:"wifi5_wdsbg_mac4_6"},
+    {id:"#4<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca0",myid:"wifi5_wdsbg_mac5_1"},
+    {id:"#4<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca1",myid:"wifi5_wdsbg_mac5_2"},
+    {id:"#4<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca2",myid:"wifi5_wdsbg_mac5_3"},
+    {id:"#4<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca3",myid:"wifi5_wdsbg_mac5_4"},
+    {id:"#4<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca4",myid:"wifi5_wdsbg_mac5_5"},
+    {id:"#4<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca5",myid:"wifi5_wdsbg_mac5_6"},
+    {id:"#5<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca0",myid:"wifi5_wdsbg_mac6_1"},
+    {id:"#5<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca1",myid:"wifi5_wdsbg_mac6_2"},
+    {id:"#5<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca2",myid:"wifi5_wdsbg_mac6_3"},
+    {id:"#5<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca3",myid:"wifi5_wdsbg_mac6_4"},
+    {id:"#5<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca4",myid:"wifi5_wdsbg_mac6_5"},
+    {id:"#5<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca5",myid:"wifi5_wdsbg_mac6_6"},
+    {id:"#6<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca0",myid:"wifi5_wdsbg_mac7_1"},
+    {id:"#6<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca1",myid:"wifi5_wdsbg_mac7_2"},
+    {id:"#6<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca2",myid:"wifi5_wdsbg_mac7_3"},
+    {id:"#6<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca3",myid:"wifi5_wdsbg_mac7_4"},
+    {id:"#6<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca4",myid:"wifi5_wdsbg_mac7_5"},
+    {id:"#6<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca5",myid:"wifi5_wdsbg_mac7_6"},
+    {id:"#7<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca0",myid:"wifi5_wdsbg_mac8_1"},
+    {id:"#7<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca1",myid:"wifi5_wdsbg_mac8_2"},
+    {id:"#7<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca2",myid:"wifi5_wdsbg_mac8_3"},
+    {id:"#7<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca3",myid:"wifi5_wdsbg_mac8_4"},
+    {id:"#7<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca4",myid:"wifi5_wdsbg_mac8_5"},
+    {id:"#7<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>maca5",myid:"wifi5_wdsbg_mac8_6"},
+    {id:"#0<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>mac_select",myid:"wifi5_wdsbg_mac_mode1"},
+    {id:"#1<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>mac_select",myid:"wifi5_wdsbg_mac_mode2"},
+    {id:"#2<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>mac_select",myid:"wifi5_wdsbg_mac_mode3"},
+    {id:"#3<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>mac_select",myid:"wifi5_wdsbg_mac_mode4"},
+    {id:"#4<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>mac_select",myid:"wifi5_wdsbg_mac_mode5"},
+    {id:"#5<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>mac_select",myid:"wifi5_wdsbg_mac_mode6"},
+    {id:"#6<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>mac_select",myid:"wifi5_wdsbg_mac_mode7"},
+    {id:"#7<%=sectionSyntax['wifi1']['WDS_BRIDGE_'..i..'']%>mac_select",myid:"wifi5_wdsbg_mac_mode8"},
+<% if uci:get('functionlist','functionlist','SUPPORT_WLAN5G_2') == '1' then --[[ #### WLAN5G_2 feature ### --]] %>
+    {id:"#cbid-wireless-<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>-nawds_encr_title",myid:"title_wifi5_1_wdsbg_securitymode"},
+    {id:"#cbid-wireless-<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>-nawds_encr",myid:"wifi5_1_wdsbg_securitymode"},
+    {id:"#cbid-wireless-<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>-wlanwdswepkey_title",myid:"title_wifi5_1_wdsbg_wepkey"},
+    {id:"#cbid-wireless-<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>-wlanwdswepkey",myid:"wifi5_1_wdsbg_wepkey"},
+    {id:"#cbid-wireless-<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>-index_dummy",myid:"wifi5_1_wdsbg_wepkey_type"},
+    {id:"#cbid-wireless-<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>-key_title",myid:"title_wifi5_1_wdsbg_aeskey"},
+    {id:"#cbid-wireless-<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>-key",myid:"wifi5_1_wdsbg_aeskey"},
+    {id:"#0<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca0",myid:"wifi5_1_wdsbg_mac1_1"},
+    {id:"#0<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca1",myid:"wifi5_1_wdsbg_mac1_2"},
+    {id:"#0<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca2",myid:"wifi5_1_wdsbg_mac1_3"},
+    {id:"#0<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca3",myid:"wifi5_1_wdsbg_mac1_4"},
+    {id:"#0<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca4",myid:"wifi5_1_wdsbg_mac1_5"},
+    {id:"#0<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca5",myid:"wifi5_1_wdsbg_mac1_6"},
+    {id:"#1<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca0",myid:"wifi5_1_wdsbg_mac2_1"},
+    {id:"#1<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca1",myid:"wifi5_1_wdsbg_mac2_2"},
+    {id:"#1<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca2",myid:"wifi5_1_wdsbg_mac2_3"},
+    {id:"#1<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca3",myid:"wifi5_1_wdsbg_mac2_4"},
+    {id:"#1<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca4",myid:"wifi5_1_wdsbg_mac2_5"},
+    {id:"#1<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca5",myid:"wifi5_1_wdsbg_mac2_6"},
+    {id:"#2<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca0",myid:"wifi5_1_wdsbg_mac3_1"},
+    {id:"#2<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca1",myid:"wifi5_1_wdsbg_mac3_2"},
+    {id:"#2<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca2",myid:"wifi5_1_wdsbg_mac3_3"},
+    {id:"#2<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca3",myid:"wifi5_1_wdsbg_mac3_4"},
+    {id:"#2<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca4",myid:"wifi5_1_wdsbg_mac3_5"},
+    {id:"#2<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca5",myid:"wifi5_1_wdsbg_mac3_6"},
+    {id:"#3<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca0",myid:"wifi5_1_wdsbg_mac4_1"},
+    {id:"#3<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca1",myid:"wifi5_1_wdsbg_mac4_2"},
+    {id:"#3<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca2",myid:"wifi5_1_wdsbg_mac4_3"},
+    {id:"#3<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca3",myid:"wifi5_1_wdsbg_mac4_4"},
+    {id:"#3<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca4",myid:"wifi5_1_wdsbg_mac4_5"},
+    {id:"#3<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca5",myid:"wifi5_1_wdsbg_mac4_6"},
+    {id:"#4<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca0",myid:"wifi5_1_wdsbg_mac5_1"},
+    {id:"#4<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca1",myid:"wifi5_1_wdsbg_mac5_2"},
+    {id:"#4<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca2",myid:"wifi5_1_wdsbg_mac5_3"},
+    {id:"#4<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca3",myid:"wifi5_1_wdsbg_mac5_4"},
+    {id:"#4<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca4",myid:"wifi5_1_wdsbg_mac5_5"},
+    {id:"#4<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca5",myid:"wifi5_1_wdsbg_mac5_6"},
+    {id:"#5<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca0",myid:"wifi5_1_wdsbg_mac6_1"},
+    {id:"#5<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca1",myid:"wifi5_1_wdsbg_mac6_2"},
+    {id:"#5<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca2",myid:"wifi5_1_wdsbg_mac6_3"},
+    {id:"#5<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca3",myid:"wifi5_1_wdsbg_mac6_4"},
+    {id:"#5<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca4",myid:"wifi5_1_wdsbg_mac6_5"},
+    {id:"#5<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca5",myid:"wifi5_1_wdsbg_mac6_6"},
+    {id:"#6<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca0",myid:"wifi5_1_wdsbg_mac7_1"},
+    {id:"#6<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca1",myid:"wifi5_1_wdsbg_mac7_2"},
+    {id:"#6<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca2",myid:"wifi5_1_wdsbg_mac7_3"},
+    {id:"#6<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca3",myid:"wifi5_1_wdsbg_mac7_4"},
+    {id:"#6<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca4",myid:"wifi5_1_wdsbg_mac7_5"},
+    {id:"#6<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca5",myid:"wifi5_1_wdsbg_mac7_6"},
+    {id:"#7<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca0",myid:"wifi5_1_wdsbg_mac8_1"},
+    {id:"#7<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca1",myid:"wifi5_1_wdsbg_mac8_2"},
+    {id:"#7<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca2",myid:"wifi5_1_wdsbg_mac8_3"},
+    {id:"#7<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca3",myid:"wifi5_1_wdsbg_mac8_4"},
+    {id:"#7<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca4",myid:"wifi5_1_wdsbg_mac8_5"},
+    {id:"#7<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>maca5",myid:"wifi5_1_wdsbg_mac8_6"},
+    {id:"#0<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>mac_select",myid:"wifi5_1_wdsbg_mac_mode1"},
+    {id:"#1<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>mac_select",myid:"wifi5_1_wdsbg_mac_mode2"},
+    {id:"#2<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>mac_select",myid:"wifi5_1_wdsbg_mac_mode3"},
+    {id:"#3<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>mac_select",myid:"wifi5_1_wdsbg_mac_mode4"},
+    {id:"#4<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>mac_select",myid:"wifi5_1_wdsbg_mac_mode5"},
+    {id:"#5<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>mac_select",myid:"wifi5_1_wdsbg_mac_mode6"},
+    {id:"#6<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>mac_select",myid:"wifi5_1_wdsbg_mac_mode7"},
+    {id:"#7<%=sectionSyntax['wifi2']['WDS_BRIDGE_'..i..'']%>mac_select",myid:"wifi5_1_wdsbg_mac_mode8"},
+<% end --[[ #### WLAN5G_2 feature ### --]] %>
+<%
+    end
+end
+%>
+
+<%
+if WDSAP_AP_WIFI_IFACE_NUM ~= 0 then
+    for i=1,WDSAP_WDS_WIFI_IFACE_NUM do
+%>
+    {id:"#cbid-wireless-<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>-nawds_encr_title",myid:"title_wifi24_wds_securitymode"},
+    {id:"#cbid-wireless-<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>-nawds_encr",myid:"wifi24_wds_securitymode"},
+    {id:"#cbid-wireless-<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>-key_title",myid:"title_wifi24_wds_aeskey"},
+    {id:"#cbid-wireless-<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>-key",myid:"wifi24_wds_aeskey"},
+    {id:"#0<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca0",myid:"wifi24_wds_mac1_1"},
+    {id:"#0<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca1",myid:"wifi24_wds_mac1_2"},
+    {id:"#0<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca2",myid:"wifi24_wds_mac1_3"},
+    {id:"#0<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca3",myid:"wifi24_wds_mac1_4"},
+    {id:"#0<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca4",myid:"wifi24_wds_mac1_5"},
+    {id:"#0<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca5",myid:"wifi24_wds_mac1_6"},
+    {id:"#1<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca0",myid:"wifi24_wds_mac2_1"},
+    {id:"#1<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca1",myid:"wifi24_wds_mac2_2"},
+    {id:"#1<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca2",myid:"wifi24_wds_mac2_3"},
+    {id:"#1<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca3",myid:"wifi24_wds_mac2_4"},
+    {id:"#1<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca4",myid:"wifi24_wds_mac2_5"},
+    {id:"#1<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca5",myid:"wifi24_wds_mac2_6"},
+    {id:"#2<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca0",myid:"wifi24_wds_mac3_1"},
+    {id:"#2<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca1",myid:"wifi24_wds_mac3_2"},
+    {id:"#2<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca2",myid:"wifi24_wds_mac3_3"},
+    {id:"#2<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca3",myid:"wifi24_wds_mac3_4"},
+    {id:"#2<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca4",myid:"wifi24_wds_mac3_5"},
+    {id:"#2<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca5",myid:"wifi24_wds_mac3_6"},
+    {id:"#3<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca0",myid:"wifi24_wds_mac4_1"},
+    {id:"#3<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca1",myid:"wifi24_wds_mac4_2"},
+    {id:"#3<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca2",myid:"wifi24_wds_mac4_3"},
+    {id:"#3<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca3",myid:"wifi24_wds_mac4_4"},
+    {id:"#3<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca4",myid:"wifi24_wds_mac4_5"},
+    {id:"#3<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca5",myid:"wifi24_wds_mac4_6"},
+    {id:"#4<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca0",myid:"wifi24_wds_mac5_1"},
+    {id:"#4<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca1",myid:"wifi24_wds_mac5_2"},
+    {id:"#4<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca2",myid:"wifi24_wds_mac5_3"},
+    {id:"#4<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca3",myid:"wifi24_wds_mac5_4"},
+    {id:"#4<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca4",myid:"wifi24_wds_mac5_5"},
+    {id:"#4<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca5",myid:"wifi24_wds_mac5_6"},
+    {id:"#5<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca0",myid:"wifi24_wds_mac6_1"},
+    {id:"#5<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca1",myid:"wifi24_wds_mac6_2"},
+    {id:"#5<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca2",myid:"wifi24_wds_mac6_3"},
+    {id:"#5<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca3",myid:"wifi24_wds_mac6_4"},
+    {id:"#5<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca4",myid:"wifi24_wds_mac6_5"},
+    {id:"#5<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca5",myid:"wifi24_wds_mac6_6"},
+    {id:"#6<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca0",myid:"wifi24_wds_mac7_1"},
+    {id:"#6<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca1",myid:"wifi24_wds_mac7_2"},
+    {id:"#6<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca2",myid:"wifi24_wds_mac7_3"},
+    {id:"#6<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca3",myid:"wifi24_wds_mac7_4"},
+    {id:"#6<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca4",myid:"wifi24_wds_mac7_5"},
+    {id:"#6<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca5",myid:"wifi24_wds_mac7_6"},
+    {id:"#7<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca0",myid:"wifi24_wds_mac8_1"},
+    {id:"#7<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca1",myid:"wifi24_wds_mac8_2"},
+    {id:"#7<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca2",myid:"wifi24_wds_mac8_3"},
+    {id:"#7<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca3",myid:"wifi24_wds_mac8_4"},
+    {id:"#7<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca4",myid:"wifi24_wds_mac8_5"},
+    {id:"#7<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>maca5",myid:"wifi24_wds_mac8_6"},
+    {id:"#0<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>mac_select",myid:"wifi24_wds_mac_mode1"},
+    {id:"#1<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>mac_select",myid:"wifi24_wds_mac_mode2"},
+    {id:"#2<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>mac_select",myid:"wifi24_wds_mac_mode3"},
+    {id:"#3<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>mac_select",myid:"wifi24_wds_mac_mode4"},
+    {id:"#4<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>mac_select",myid:"wifi24_wds_mac_mode5"},
+    {id:"#5<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>mac_select",myid:"wifi24_wds_mac_mode6"},
+    {id:"#6<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>mac_select",myid:"wifi24_wds_mac_mode7"},
+    {id:"#7<%=sectionSyntax['wifi0']['WDS_AP_'..i..'']%>mac_select",myid:"wifi24_wds_mac_mode8"},
+<% if uci:get('functionlist','functionlist','SUPPORT_WLAN5G_2') == '1' then --[[ #### WLAN5G_2 feature ### --]] %>
+    {id:"#cbid-wireless-<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>-nawds_encr_title",myid:"title_wifi5_1_wds_securitymode"},
+    {id:"#cbid-wireless-<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>-nawds_encr",myid:"wifi5_1_wds_securitymode"},
+    {id:"#cbid-wireless-<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>-key_title",myid:"title_wifi5_1_wds_aeskey"},
+    {id:"#cbid-wireless-<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>-key",myid:"wifi5_1_wds_aeskey"},
+    {id:"#0<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca0",myid:"wifi5_1_wds_mac1_1"},
+    {id:"#0<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca1",myid:"wifi5_1_wds_mac1_2"},
+    {id:"#0<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca2",myid:"wifi5_1_wds_mac1_3"},
+    {id:"#0<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca3",myid:"wifi5_1_wds_mac1_4"},
+    {id:"#0<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca4",myid:"wifi5_1_wds_mac1_5"},
+    {id:"#0<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca5",myid:"wifi5_1_wds_mac1_6"},
+    {id:"#1<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca0",myid:"wifi5_1_wds_mac2_1"},
+    {id:"#1<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca1",myid:"wifi5_1_wds_mac2_2"},
+    {id:"#1<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca2",myid:"wifi5_1_wds_mac2_3"},
+    {id:"#1<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca3",myid:"wifi5_1_wds_mac2_4"},
+    {id:"#1<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca4",myid:"wifi5_1_wds_mac2_5"},
+    {id:"#1<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca5",myid:"wifi5_1_wds_mac2_6"},
+    {id:"#2<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca0",myid:"wifi5_1_wds_mac3_1"},
+    {id:"#2<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca1",myid:"wifi5_1_wds_mac3_2"},
+    {id:"#2<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca2",myid:"wifi5_1_wds_mac3_3"},
+    {id:"#2<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca3",myid:"wifi5_1_wds_mac3_4"},
+    {id:"#2<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca4",myid:"wifi5_1_wds_mac3_5"},
+    {id:"#2<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca5",myid:"wifi5_1_wds_mac3_6"},
+    {id:"#3<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca0",myid:"wifi5_1_wds_mac4_1"},
+    {id:"#3<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca1",myid:"wifi5_1_wds_mac4_2"},
+    {id:"#3<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca2",myid:"wifi5_1_wds_mac4_3"},
+    {id:"#3<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca3",myid:"wifi5_1_wds_mac4_4"},
+    {id:"#3<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca4",myid:"wifi5_1_wds_mac4_5"},
+    {id:"#3<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca5",myid:"wifi5_1_wds_mac4_6"},
+    {id:"#4<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca0",myid:"wifi5_1_wds_mac5_1"},
+    {id:"#4<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca1",myid:"wifi5_1_wds_mac5_2"},
+    {id:"#4<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca2",myid:"wifi5_1_wds_mac5_3"},
+    {id:"#4<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca3",myid:"wifi5_1_wds_mac5_4"},
+    {id:"#4<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca4",myid:"wifi5_1_wds_mac5_5"},
+    {id:"#4<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca5",myid:"wifi5_1_wds_mac5_6"},
+    {id:"#5<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca0",myid:"wifi5_1_wds_mac6_1"},
+    {id:"#5<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca1",myid:"wifi5_1_wds_mac6_2"},
+    {id:"#5<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca2",myid:"wifi5_1_wds_mac6_3"},
+    {id:"#5<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca3",myid:"wifi5_1_wds_mac6_4"},
+    {id:"#5<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca4",myid:"wifi5_1_wds_mac6_5"},
+    {id:"#5<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca5",myid:"wifi5_1_wds_mac6_6"},
+    {id:"#6<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca0",myid:"wifi5_1_wds_mac7_1"},
+    {id:"#6<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca1",myid:"wifi5_1_wds_mac7_2"},
+    {id:"#6<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca2",myid:"wifi5_1_wds_mac7_3"},
+    {id:"#6<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca3",myid:"wifi5_1_wds_mac7_4"},
+    {id:"#6<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca4",myid:"wifi5_1_wds_mac7_5"},
+    {id:"#6<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca5",myid:"wifi5_1_wds_mac7_6"},
+    {id:"#7<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca0",myid:"wifi5_1_wds_mac8_1"},
+    {id:"#7<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca1",myid:"wifi5_1_wds_mac8_2"},
+    {id:"#7<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca2",myid:"wifi5_1_wds_mac8_3"},
+    {id:"#7<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca3",myid:"wifi5_1_wds_mac8_4"},
+    {id:"#7<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca4",myid:"wifi5_1_wds_mac8_5"},
+    {id:"#7<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>maca5",myid:"wifi5_1_wds_mac8_6"},
+    {id:"#0<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>mac_select",myid:"wifi5_1_wds_mac_mode1"},
+    {id:"#1<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>mac_select",myid:"wifi5_1_wds_mac_mode2"},
+    {id:"#2<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>mac_select",myid:"wifi5_1_wds_mac_mode3"},
+    {id:"#3<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>mac_select",myid:"wifi5_1_wds_mac_mode4"},
+    {id:"#4<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>mac_select",myid:"wifi5_1_wds_mac_mode5"},
+    {id:"#5<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>mac_select",myid:"wifi5_1_wds_mac_mode6"},
+    {id:"#6<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>mac_select",myid:"wifi5_1_wds_mac_mode7"},
+    {id:"#7<%=sectionSyntax['wifi2']['WDS_AP_'..i..'']%>mac_select",myid:"wifi5_1_wds_mac_mode8"},
+<% end --[[ #### WLAN5G_2 feature ### --]] %>
+    {id:"#cbid-wireless-<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>-nawds_encr_title",myid:"title_wifi5_wds_securitymode"},
+    {id:"#cbid-wireless-<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>-nawds_encr",myid:"wifi5_wds_securitymode"},
+    {id:"#cbid-wireless-<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>-key_title",myid:"title_wifi5_wds_aeskey"},
+    {id:"#cbid-wireless-<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>-key",myid:"wifi5_wds_aeskey"},
+    {id:"#0<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca0",myid:"wifi5_wds_mac1_1"},
+    {id:"#0<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca1",myid:"wifi5_wds_mac1_2"},
+    {id:"#0<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca2",myid:"wifi5_wds_mac1_3"},
+    {id:"#0<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca3",myid:"wifi5_wds_mac1_4"},
+    {id:"#0<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca4",myid:"wifi5_wds_mac1_5"},
+    {id:"#0<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca5",myid:"wifi5_wds_mac1_6"},
+    {id:"#1<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca0",myid:"wifi5_wds_mac2_1"},
+    {id:"#1<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca1",myid:"wifi5_wds_mac2_2"},
+    {id:"#1<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca2",myid:"wifi5_wds_mac2_3"},
+    {id:"#1<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca3",myid:"wifi5_wds_mac2_4"},
+    {id:"#1<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca4",myid:"wifi5_wds_mac2_5"},
+    {id:"#1<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca5",myid:"wifi5_wds_mac2_6"},
+    {id:"#2<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca0",myid:"wifi5_wds_mac3_1"},
+    {id:"#2<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca1",myid:"wifi5_wds_mac3_2"},
+    {id:"#2<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca2",myid:"wifi5_wds_mac3_3"},
+    {id:"#2<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca3",myid:"wifi5_wds_mac3_4"},
+    {id:"#2<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca4",myid:"wifi5_wds_mac3_5"},
+    {id:"#2<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca5",myid:"wifi5_wds_mac3_6"},
+    {id:"#3<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca0",myid:"wifi5_wds_mac4_1"},
+    {id:"#3<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca1",myid:"wifi5_wds_mac4_2"},
+    {id:"#3<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca2",myid:"wifi5_wds_mac4_3"},
+    {id:"#3<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca3",myid:"wifi5_wds_mac4_4"},
+    {id:"#3<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca4",myid:"wifi5_wds_mac4_5"},
+    {id:"#3<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca5",myid:"wifi5_wds_mac4_6"},
+    {id:"#4<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca0",myid:"wifi5_wds_mac5_1"},
+    {id:"#4<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca1",myid:"wifi5_wds_mac5_2"},
+    {id:"#4<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca2",myid:"wifi5_wds_mac5_3"},
+    {id:"#4<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca3",myid:"wifi5_wds_mac5_4"},
+    {id:"#4<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca4",myid:"wifi5_wds_mac5_5"},
+    {id:"#4<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca5",myid:"wifi5_wds_mac5_6"},
+    {id:"#5<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca0",myid:"wifi5_wds_mac6_1"},
+    {id:"#5<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca1",myid:"wifi5_wds_mac6_2"},
+    {id:"#5<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca2",myid:"wifi5_wds_mac6_3"},
+    {id:"#5<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca3",myid:"wifi5_wds_mac6_4"},
+    {id:"#5<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca4",myid:"wifi5_wds_mac6_5"},
+    {id:"#5<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca5",myid:"wifi5_wds_mac6_6"},
+    {id:"#6<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca0",myid:"wifi5_wds_mac7_1"},
+    {id:"#6<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca1",myid:"wifi5_wds_mac7_2"},
+    {id:"#6<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca2",myid:"wifi5_wds_mac7_3"},
+    {id:"#6<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca3",myid:"wifi5_wds_mac7_4"},
+    {id:"#6<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca4",myid:"wifi5_wds_mac7_5"},
+    {id:"#6<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca5",myid:"wifi5_wds_mac7_6"},
+    {id:"#7<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca0",myid:"wifi5_wds_mac8_1"},
+    {id:"#7<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca1",myid:"wifi5_wds_mac8_2"},
+    {id:"#7<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca2",myid:"wifi5_wds_mac8_3"},
+    {id:"#7<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca3",myid:"wifi5_wds_mac8_4"},
+    {id:"#7<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca4",myid:"wifi5_wds_mac8_5"},
+    {id:"#7<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>maca5",myid:"wifi5_wds_mac8_6"},
+    {id:"#0<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>mac_select",myid:"wifi5_wds_mac_mode1"},
+    {id:"#1<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>mac_select",myid:"wifi5_wds_mac_mode2"},
+    {id:"#2<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>mac_select",myid:"wifi5_wds_mac_mode3"},
+    {id:"#3<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>mac_select",myid:"wifi5_wds_mac_mode4"},
+    {id:"#4<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>mac_select",myid:"wifi5_wds_mac_mode5"},
+    {id:"#5<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>mac_select",myid:"wifi5_wds_mac_mode6"},
+    {id:"#6<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>mac_select",myid:"wifi5_wds_mac_mode7"},
+    {id:"#7<%=sectionSyntax['wifi1']['WDS_AP_'..i..'']%>mac_select",myid:"wifi5_wds_mac_mode8"}
+<%
+    end
+end
+%>
+
+];
+function AddMyid(name,table){
+    //---------Add myid attribute for test-----------------------
+    $('form[name="'+name+'"] :input').each(function(){
+        var orgId = ($(this).attr('id')||$(this).attr('name')||"");
+        eval("var table = "+table+"");
+        if($(this).attr('type')=="radio"){
+            orgId = ($(this).val()!="0") ? orgId+"_enable" : orgId+"_disable";
+            $(this).attr("myid",table[orgId]); 
+        }
+        else{
+            $(this).attr("myid",table[orgId]);
+        }
+    });
+
+    for(securityTableTextArrayCount=0;securityTableTextArrayCount<securityTableTextArray.length;securityTableTextArrayCount++)
+    {
+        if ( securityTableTextArray[securityTableTextArrayCount].id != undefined)
+            $(securityTableTextArray[securityTableTextArrayCount].id).attr("myid",securityTableTextArray[securityTableTextArrayCount].myid);
+        else if ( securityTableTextArray[securityTableTextArrayCount].name != undefined )
+            $('[name="'+securityTableTextArray[securityTableTextArrayCount].name+'"]').attr("myid",securityTableTextArray[securityTableTextArrayCount].myid);
+    }
+
+    for(wdsArrayCount=0;wdsArrayCount<wdsArray.length;wdsArrayCount++)
+    {
+        $(wdsArray[wdsArrayCount].id).attr("myid",wdsArray[wdsArrayCount].myid);
+    }
+}
+
+</script>
